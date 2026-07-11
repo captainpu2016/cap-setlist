@@ -1,14 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { updateShowInfo, deleteShow } from '../../actions';
 import type { Show } from '@/types/database';
 
+type SaveState = 'idle' | 'saved' | 'error';
+
 export default function ShowInfoForm({ show }: { show: Show }) {
   const [status, setStatus] = useState(show.status);
+  const [isPending, startTransition] = useTransition();
+  const [saveState, setSaveState] = useState<SaveState>('idle');
+
+  function handleSubmit(formData: FormData) {
+    setSaveState('idle');
+    startTransition(async () => {
+      try {
+        await updateShowInfo(formData);
+        setSaveState('saved');
+        setTimeout(() => setSaveState('idle'), 2500);
+      } catch {
+        setSaveState('error');
+      }
+    });
+  }
 
   return (
-    <form action={updateShowInfo} className="grid gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2">
+    <form action={handleSubmit} className="grid gap-4 rounded-lg border border-stone-200 bg-white p-5 sm:grid-cols-2">
       <input type="hidden" name="id" value={show.id} />
 
       <div>
@@ -58,7 +75,19 @@ export default function ShowInfoForm({ show }: { show: Show }) {
       </div>
 
       <div className="flex items-center gap-3 sm:col-span-2">
-        <button type="submit" className="admin-btn">儲存場次資料</button>
+        <button type="submit" disabled={isPending} className="admin-btn">
+          {isPending ? '儲存中…' : '儲存場次資料'}
+        </button>
+
+        {saveState === 'saved' && (
+          <span className="flex items-center gap-1 text-sm text-green-600">
+            <span aria-hidden>✓</span> 已儲存
+          </span>
+        )}
+        {saveState === 'error' && (
+          <span className="text-sm text-red-600">儲存失敗，請再試一次</span>
+        )}
+
         <button
           type="submit"
           formAction={deleteShow}

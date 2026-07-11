@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -19,6 +19,8 @@ interface SongWithUsage extends Song {
   usageCount: number;
 }
 
+type SaveIndicator = 'idle' | 'saving' | 'saved';
+
 export default function SetlistEditor({
   showId,
   initialItems,
@@ -31,6 +33,22 @@ export default function SetlistEditor({
   const [items, setItems] = useState(initialItems);
   const [query, setQuery] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [saveIndicator, setSaveIndicator] = useState<SaveIndicator>('idle');
+  const wasPending = useRef(false);
+
+  // isPending 從 true 變回 false 時，代表一次儲存動作剛完成，
+  // 短暫顯示「已儲存」再淡出，讓管理者清楚知道系統有反應。
+  useEffect(() => {
+    if (isPending) {
+      wasPending.current = true;
+      setSaveIndicator('saving');
+    } else if (wasPending.current) {
+      wasPending.current = false;
+      setSaveIndicator('saved');
+      const timer = setTimeout(() => setSaveIndicator('idle'), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isPending]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -159,7 +177,10 @@ export default function SetlistEditor({
       </div>
 
       <div>
-        <p className="admin-label">目前歌單（{items.length} 首，可拖曳排序）</p>
+        <div className="flex items-center justify-between">
+          <p className="admin-label">目前歌單（{items.length} 首，可拖曳排序）</p>
+          <SaveIndicatorBadge state={saveIndicator} />
+        </div>
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
@@ -180,10 +201,28 @@ export default function SetlistEditor({
             從左側選曲加入歌單。
           </p>
         )}
-        {isPending && <p className="mt-2 text-xs text-stone-400">儲存中…</p>}
       </div>
     </div>
   );
+}
+
+function SaveIndicatorBadge({ state }: { state: SaveIndicator }) {
+  if (state === 'saving') {
+    return (
+      <span className="flex items-center gap-1.5 text-xs text-stone-400">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-stone-400" />
+        儲存中…
+      </span>
+    );
+  }
+  if (state === 'saved') {
+    return (
+      <span className="flex items-center gap-1 text-xs text-green-600 transition-opacity">
+        <span aria-hidden>✓</span> 已儲存
+      </span>
+    );
+  }
+  return null;
 }
 
 function SetlistRow({

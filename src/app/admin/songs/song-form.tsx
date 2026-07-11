@@ -1,13 +1,21 @@
 'use client';
 
+import { useTransition } from 'react';
 import { upsertSong, deleteSong } from './actions';
 import type { Song } from '@/types/database';
 
 export default function SongForm({ song }: { song?: Song }) {
   const isNew = !song;
+  const [isPending, startTransition] = useTransition();
+
+  function handleSubmit(formData: FormData) {
+    startTransition(() => {
+      upsertSong(formData);
+    });
+  }
 
   return (
-    <form action={upsertSong} className="max-w-xl space-y-5">
+    <form action={handleSubmit} className="max-w-xl space-y-5">
       <input type="hidden" name="id" value={song?.id ?? 'new'} />
 
       <div>
@@ -63,8 +71,8 @@ export default function SongForm({ song }: { song?: Song }) {
       </div>
 
       <div className="flex items-center gap-3 pt-2">
-        <button type="submit" className="admin-btn">
-          {isNew ? '新增歌曲' : '儲存變更'}
+        <button type="submit" disabled={isPending} className="admin-btn">
+          {isPending ? '儲存中…' : isNew ? '新增歌曲' : '儲存變更'}
         </button>
         <a href="/admin/songs" className="admin-btn-secondary">取消</a>
       </div>

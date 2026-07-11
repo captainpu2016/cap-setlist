@@ -1,7 +1,6 @@
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { formatShowDate } from '@/lib/format';
 import type { Show } from '@/types/database';
+import ShowListSection from './show-list-section';
 
 export const revalidate = 60;
 
@@ -15,8 +14,8 @@ export default async function HomePage() {
     .returns<Show[]>();
 
   const today = new Date().toISOString().slice(0, 10);
-  const upcoming = (shows ?? []).filter((s: Show) => s.show_date >= today).reverse();
-  const past = (shows ?? []).filter((s: Show) => s.show_date < today);
+  const upcoming = (shows ?? []).filter((s) => s.show_date >= today).reverse();
+  const past = (shows ?? []).filter((s) => s.show_date < today);
 
   return (
     <main className="min-h-screen bg-noise">
@@ -29,54 +28,21 @@ export default async function HomePage() {
         <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">
           瀏覽每一場演出的完整歌單，找到當天播了哪些歌，並可一鍵生成同名 Spotify 播放清單。
         </p>
+        {(shows ?? []).length > 0 && (
+          <p className="mt-6 text-xs uppercase tracking-widest text-stone-600">
+            共 {(shows ?? []).length} 場演出紀錄
+          </p>
+        )}
       </header>
 
       <section className="px-6 py-10 sm:px-10">
-        {upcoming.length > 0 && (
-          <ShowGroup title="近期場次" shows={upcoming} accent />
-        )}
-        <ShowGroup title="歷史場次" shows={past} />
+        {upcoming.length > 0 && <ShowListSection title="近期場次" shows={upcoming} accent />}
+        <ShowListSection title="歷史場次" shows={past} collapsible />
 
         {(shows ?? []).length === 0 && (
           <p className="py-20 text-center text-stone-500">目前還沒有上架的場次，敬請期待。</p>
         )}
       </section>
     </main>
-  );
-}
-
-function ShowGroup({ title, shows, accent }: { title: string; shows: Show[]; accent?: boolean }) {
-  if (shows.length === 0) return null;
-  return (
-    <div className="mb-12">
-      <h2 className="mb-4 font-display text-lg font-bold text-stone-300">{title}</h2>
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {shows.map((show) => (
-          <li key={show.id}>
-            <Link
-              href={`/show/${show.slug}`}
-              className={`group block h-full rounded-lg border p-5 transition ${
-                accent
-                  ? 'border-marquee/40 bg-stage-900 hover:border-marquee'
-                  : 'border-stage-700 bg-stage-900/60 hover:border-stone-500'
-              }`}
-            >
-              <p className="text-xs uppercase tracking-widest text-stone-500">
-                {formatShowDate(show.show_date)}
-              </p>
-              <h3 className="mt-2 font-display text-xl font-bold text-paper group-hover:text-marquee">
-                {show.title}
-              </h3>
-              {show.venue && <p className="mt-1 text-sm text-stone-400">{show.venue}</p>}
-              {show.spotify_playlist_url && (
-                <span className="mt-4 inline-block rounded-full bg-signal/20 px-3 py-1 text-xs text-signal">
-                  已有播放清單
-                </span>
-              )}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
