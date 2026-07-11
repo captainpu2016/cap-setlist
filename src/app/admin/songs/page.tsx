@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { formatDuration } from '@/lib/format';
+import type { Song } from '@/types/database';
+
+type SongWithUsage = Song & { setlist_items: { count: number }[] };
 
 interface SearchParams {
   q?: string;
@@ -18,7 +21,7 @@ export default async function AdminSongsPage({ searchParams }: { searchParams: S
   if (filter === 'missing-spotify') query = query.is('spotify_track_id', null);
   if (filter === 'missing-apple') query = query.is('apple_music_url', null);
 
-  const { data: songs } = await query;
+const { data: songs } = await query.returns<SongWithUsage[]>();
 
   return (
     <div className="max-w-5xl">

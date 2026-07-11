@@ -2,23 +2,34 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ShowInfoForm from './show-info-form';
 import SetlistEditor from './setlist-editor';
-import type { SetlistItemWithSong } from '@/types/database';
+import type { Show, Song, SetlistItemWithSong } from '@/types/database';
+
+type SongWithUsage = Song & { setlist_items: { count: number }[] };
 
 export default async function SetlistEditorPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const { data: show } = await supabase.from('shows').select('*').eq('id', params.id).single();
+  const { data: show } = await supabase
+    .from('shows')
+    .select('*')
+    .eq('id', params.id)
+    .single<Show>();
   if (!show) notFound();
 
   const { data: items } = await supabase
     .from('setlist_items')
     .select('*, song:songs(*)')
     .eq('show_id', show.id)
-    .order('position', { ascending: true });
+    .order('position', { ascending: true })
+    .returns<SetlistItemWithSong[]>();
 
-  const { data: songs } = await supabase.from('songs').select('*, setlist_items(count)').order('title');
+  const { data: songs } = await supabase
+    .from('songs')
+    .select('*, setlist_items(count)')
+    .order('title')
+    .returns<SongWithUsage[]>();
 
-  const songLibrary = (songs ?? []).map((s: any) => ({
+  const songLibrary = (songs ?? []).map((s) => ({
     ...s,
     usageCount: s.setlist_items?.[0]?.count ?? 0
   }));
@@ -34,7 +45,7 @@ export default async function SetlistEditorPage({ params }: { params: { id: stri
 
       <SetlistEditor
         showId={show.id}
-        initialItems={(items ?? []) as unknown as SetlistItemWithSong[]}
+        initialItems={items ?? []}
         songLibrary={songLibrary}
       />
     </div>

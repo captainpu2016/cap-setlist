@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { formatShowDate } from '@/lib/format';
+import type { Show, Song } from '@/types/database';
+
+type SongMissingLink = Pick<Song, 'id' | 'title' | 'spotify_track_id' | 'apple_music_url'>;
 
 export default async function AdminDashboardPage() {
   const supabase = createClient();
@@ -9,13 +12,15 @@ export default async function AdminDashboardPage() {
     .from('shows')
     .select('*')
     .order('show_date', { ascending: false })
-    .limit(6);
+    .limit(6)
+    .returns<Show[]>();
 
   const { data: songsMissingLinks } = await supabase
     .from('songs')
     .select('id, title, spotify_track_id, apple_music_url')
     .or('spotify_track_id.is.null,apple_music_url.is.null')
-    .limit(8);
+    .limit(8)
+    .returns<SongMissingLink[]>();
 
   return (
     <div className="max-w-5xl">

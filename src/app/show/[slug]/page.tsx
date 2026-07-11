@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { formatDuration, formatShowDate, sumDuration } from '@/lib/format';
-import type { SetlistItemWithSong } from '@/types/database';
+import type { Show, SetlistItemWithSong } from '@/types/database';
 import GeneratePlaylistButton from './generate-playlist-button';
 
 export const revalidate = 0;
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     .select('title, show_date, venue')
     .eq('slug', params.slug)
     .eq('status', 'published')
-    .single();
+    .single<Pick<Show, 'title' | 'show_date' | 'venue'>>();
 
   if (!show) return { title: '找不到場次｜普通隊長' };
 
@@ -31,12 +31,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ShowPage({ params }: { params: { slug: string } }) {
   const supabase = createClient();
 
-  const { data: show } = await supabase
+const { data: show } = await supabase
     .from('shows')
     .select('*')
     .eq('slug', params.slug)
     .eq('status', 'published')
-    .single();
+    .single<Show>();
 
   if (!show) notFound();
 
@@ -44,9 +44,10 @@ export default async function ShowPage({ params }: { params: { slug: string } })
     .from('setlist_items')
     .select('*, song:songs(*)')
     .eq('show_id', show.id)
-    .order('position', { ascending: true });
+    .order('position', { ascending: true })
+    .returns<SetlistItemWithSong[]>();
 
-  const setlist = (items ?? []) as unknown as SetlistItemWithSong[];
+  const setlist = items ?? [];
   const totalSeconds = sumDuration(setlist.map((i) => i.song?.duration_seconds ?? null));
   const hasAnySpotifyTrack = setlist.some((i) => i.song?.spotify_track_id);
 

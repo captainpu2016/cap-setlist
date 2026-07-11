@@ -10,7 +10,7 @@ export default async function SpotifySettingsPage({
     .from('app_settings')
     .select('value, updated_at')
     .eq('key', 'spotify_refresh_token')
-    .single();
+    .single<{ value: string | null; updated_at: string }>();
 
   const isConnected = Boolean(data?.value);
 

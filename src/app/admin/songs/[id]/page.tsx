@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import SongForm from '../song-form';
+import type { Song } from '@/types/database';
 
 export default async function EditSongPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
-  const { data: song } = await supabase.from('songs').select('*').eq('id', params.id).single();
+  const { data: song } = await supabase
+    .from('songs')
+    .select('*')
+    .eq('id', params.id)
+    .single<Song>();
 
   if (!song) notFound();
 

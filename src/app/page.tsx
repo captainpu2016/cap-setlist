@@ -11,7 +11,8 @@ export default async function HomePage() {
     .from('shows')
     .select('*')
     .eq('status', 'published')
-    .order('show_date', { ascending: false });
+    .order('show_date', { ascending: false })
+    .returns<Show[]>();
 
   const today = new Date().toISOString().slice(0, 10);
   const upcoming = (shows ?? []).filter((s: Show) => s.show_date >= today).reverse();

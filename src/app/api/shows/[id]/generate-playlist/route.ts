@@ -6,7 +6,7 @@ import {
   getSpotifyAccessToken,
   getSpotifyUserId
 } from '@/lib/spotify/client';
-import type { SetlistItemWithSong } from '@/types/database';
+import type { Show, SetlistItemWithSong } from '@/types/database';
 
 /**
  * POST /api/shows/[id]/generate-playlist
@@ -20,12 +20,12 @@ import type { SetlistItemWithSong } from '@/types/database';
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const admin = createAdminClient();
 
-  const { data: show, error: showError } = await admin
+ const { data: show, error: showError } = await admin
     .from('shows')
     .select('*')
     .eq('id', params.id)
     .eq('status', 'published')
-    .single();
+    .single<Show>();
 
   if (showError || !show) {
     return NextResponse.json({ error: '找不到此場次' }, { status: 404 });
@@ -40,13 +40,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .from('setlist_items')
     .select('*, song:songs(*)')
     .eq('show_id', show.id)
-    .order('position', { ascending: true });
+    .order('position', { ascending: true })
+    .returns<SetlistItemWithSong[]>();
 
   if (itemsError) {
     return NextResponse.json({ error: '讀取歌單失敗' }, { status: 500 });
   }
 
-  const setlist = (items ?? []) as unknown as SetlistItemWithSong[];
+  const setlist = items ?? [];
   const trackIds = setlist
     .filter((i) => !i.is_placeholder && i.song?.spotify_track_id)
     .map((i) => i.song!.spotify_track_id as string);
@@ -75,7 +76,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       .eq('id', show.id)
       .is('spotify_playlist_url', null)
       .select('spotify_playlist_url')
-      .single();
+      .single<{ spotify_playlist_url: string | null }>();
 
     const finalUrl = updated?.spotify_playlist_url ?? playlist.url;
 

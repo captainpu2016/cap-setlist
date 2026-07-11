@@ -21,7 +21,7 @@ export async function GET() {
   const state = randomBytes(16).toString('hex');
   cookies().set('spotify_oauth_state', state, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 60 * 10
   });

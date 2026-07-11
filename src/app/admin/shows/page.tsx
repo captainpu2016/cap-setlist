@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { formatShowDate } from '@/lib/format';
+import type { Show } from '@/types/database';
 
 export default async function AdminShowsPage() {
   const supabase = createClient();
-  const { data: shows } = await supabase.from('shows').select('*').order('show_date', { ascending: false });
+  const { data: shows } = await supabase
+    .from('shows')
+    .select('*')
+    .order('show_date', { ascending: false })
+    .returns<Show[]>();
 
   return (
     <div className="max-w-4xl">
