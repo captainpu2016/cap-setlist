@@ -64,7 +64,11 @@ export default function GeneratePlaylistButton({
 
   return (
     <div>
-      <button onClick={handleGenerate} disabled={loading} className="admin-btn rounded-full bg-marquee text-stage-950 hover:bg-marquee/80">
+      <button
+        onClick={handleGenerate}
+        disabled={loading}
+        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1DB954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:cursor-not-allowed disabled:opacity-60"
+      >
         {loading ? '生成中…' : '生成 Spotify 播放清單'}
       </button>
       {message && <p className="mt-2 text-xs text-marquee">{message}</p>}

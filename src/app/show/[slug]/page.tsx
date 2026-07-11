@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ShowPage({ params }: { params: { slug: string } }) {
   const supabase = createClient();
 
-const { data: show } = await supabase
+  const { data: show } = await supabase
     .from('shows')
     .select('*')
     .eq('slug', params.slug)
@@ -79,8 +79,11 @@ const { data: show } = await supabase
 
         <ol className="mt-10 divide-y divide-stage-700">
           {setlist.map((item, idx) => (
-            <li key={item.id} className="flex items-center gap-4 py-4">
-              <span className="w-6 shrink-0 font-display text-stone-600">
+            <li
+              key={item.id}
+              className="flex items-center gap-4 rounded-md px-2 py-4 transition-colors hover:bg-stage-900/70 -mx-2"
+            >
+              <span className="w-6 shrink-0 font-display tabular-nums text-stone-600">
                 {String(idx + 1).padStart(2, '0')}
               </span>
               <div className="min-w-0 flex-1">
@@ -93,9 +96,9 @@ const { data: show } = await supabase
                   </>
                 )}
               </div>
-              {!item.is_placeholder && item.song?.duration_seconds != null && (
-                <span className="shrink-0 text-xs text-stone-500">
-                  {formatDuration(item.song.duration_seconds)}
+              {!item.is_placeholder && (
+                <span className="shrink-0 tabular-nums text-xs text-stone-500">
+                  {formatDuration(item.song?.duration_seconds) ?? '—'}
                 </span>
               )}
               {!item.is_placeholder && item.song?.apple_music_url && (
@@ -124,7 +127,7 @@ const { data: show } = await supabase
 function AppleMusicIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M23.997 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043A5.022 5.022 0 0 0 19.577.03c-.2-.013-.399-.017-.6-.03H5.023c-.24.016-.48.024-.72.048-1.006.096-1.945.4-2.75 1.06C.657 1.87.108 2.87.03 4.157c-.013.213-.02.427-.02.64L0 19.253c.013.214.02.427.02.64.079 1.287.628 2.288 1.523 3.05.805.66 1.744.964 2.75 1.06.24.024.48.032.72.048h13.954c.201-.013.4-.017.6-.03a5.022 5.022 0 0 0 1.999-.86c1.118-.732 1.863-1.732 2.18-3.042.16-.66.238-1.36.24-2.19V6.124z" />
+      <path d="M23.994 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043A5.022 5.022 0 0 0 19.577.03c-.2-.013-.399-.017-.6-.03H5.023c-.24.016-.48.024-.72.048-1.006.096-1.945.4-2.75 1.06C.657 1.87.108 2.87.03 4.157c-.013.213-.02.427-.02.64L0 19.253c.013.214.02.427.02.64.079 1.287.628 2.288 1.523 3.05.805.66 1.744.964 2.75 1.06.24.024.48.032.72.048h13.954c.201-.013.4-.017.6-.03a5.022 5.022 0 0 0 1.999-.86c1.118-.732 1.863-1.732 2.18-3.042.16-.66.238-1.36.24-2.19V6.124zM16.868 5.83v9.652c0 .214-.012.428-.038.633a2.001 2.001 0 0 1-1.593 1.636 2.85 2.85 0 0 1-.79.086c-.85 0-1.628-.485-1.977-1.24-.336-.72-.238-1.6.33-2.24.32-.363.73-.6 1.185-.72.36-.096.72-.13 1.09-.144.264-.012.44-.036.55-.108.096-.06.144-.144.156-.276.012-.096.012-.204.012-.312V6.987c0-.108-.012-.192-.06-.264-.06-.084-.156-.108-.24-.096-.204.036-3.7.744-3.878.78-.144.024-.24.096-.288.204-.036.084-.036.192-.036.324v7.032c0 .576-.036 1.152-.192 1.704-.264.912-.9 1.548-1.812 1.836a2.85 2.85 0 0 1-.906.132c-.85 0-1.628-.48-1.977-1.236-.336-.72-.238-1.596.33-2.236.32-.363.73-.6 1.19-.72.36-.096.72-.13 1.09-.144.264-.012.44-.036.55-.108.096-.06.144-.144.156-.276.012-.096.012-.204.012-.312V6.02c0-.336.096-.516.42-.612.192-.06 8.088-1.632 8.244-1.656.336-.048.516.144.516.492z" />
     </svg>
   );
 }
