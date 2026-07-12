@@ -20,6 +20,7 @@ export type Show = {
   venue: string | null;
   status: ShowStatus;
   spotify_playlist_url: string | null;
+  cover_image_url: string | null;
   created_at: string;
   updated_at: string;
 };

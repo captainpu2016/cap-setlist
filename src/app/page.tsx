@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import type { Show } from '@/types/database';
 import { getSiteContent } from '@/lib/site-settings';
 import ShowListSection from './show-list-section';
-import CaptainBadge from '@/components/CaptainBadge';
 import SiteLogo from '@/components/SiteLogo';
 
 export const revalidate = 60;
@@ -58,27 +57,24 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
               src={content.bgImageUrl}
               alt=""
               aria-hidden
-              className="absolute inset-0 h-full w-full object-cover opacity-25"
+              className="absolute inset-0 h-full w-full object-cover opacity-55"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-stage-950 via-stage-950/85 to-stage-950/40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-stage-950 via-stage-950/60 to-stage-950/10" />
           </>
         )}
 
-        <div className="relative flex flex-col-reverse items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-display text-sm uppercase tracking-[0.3em] text-marquee">{content.eyebrow}</p>
-            <h1 className="mt-4">
-              <span className="sr-only">普通隊長</span>
-              <SiteLogo height={72} className="sm:!h-24" />
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-400">{content.tagline}</p>
-            {allShows.length > 0 && (
-              <p className="mt-6 text-xs uppercase tracking-widest text-stone-600">
-                共 {allShows.length} 場演出紀錄
-              </p>
-            )}
-          </div>
-          <CaptainBadge size={110} rotate={-3} className="mr-1 shadow-lg shadow-black/40 sm:mr-4" />
+        <div className="relative">
+          <p className="font-display text-sm uppercase tracking-[0.3em] text-marquee">{content.eyebrow}</p>
+          <h1 className="mt-4">
+            <span className="sr-only">普通隊長</span>
+            <SiteLogo height={72} className="sm:!h-24" />
+          </h1>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-300">{content.tagline}</p>
+          {allShows.length > 0 && (
+            <p className="mt-6 text-xs uppercase tracking-widest text-stone-400">
+              共 {allShows.length} 場演出紀錄
+            </p>
+          )}
         </div>
       </header>
 

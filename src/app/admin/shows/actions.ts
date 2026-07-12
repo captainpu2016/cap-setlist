@@ -46,6 +46,7 @@ export async function updateShowInfo(formData: FormData) {
   const venue = (formData.get('venue') as string)?.trim() || null;
   const slug = (formData.get('slug') as string)?.trim();
   const status = formData.get('status') as 'draft' | 'published';
+  const coverImageUrl = (formData.get('cover_image_url') as string)?.trim() || null;
 
   if (!title || !showDate || !slug) throw new Error('場次名稱、日期、slug 為必填');
 
