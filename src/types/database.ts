@@ -1,5 +1,14 @@
 export type ShowStatus = 'draft' | 'published';
 
+export type Album = {
+  id: string;
+  title: string;
+  release_date: string | null;
+  is_cover: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Song = {
   id: string;
   title: string;
@@ -9,8 +18,15 @@ export type Song = {
   apple_music_url: string | null;
   youtube_url: string | null;
   dropbox_url: string | null;
+  album_id: string | null;
+  track_number: number | null;
   created_at: string;
   updated_at: string;
+};
+
+/** songs JOIN albums，後台歌曲列表用 */
+export type SongWithAlbum = Song & {
+  album: Album | null;
 };
 
 export type Show = {
@@ -42,15 +58,18 @@ export type SetlistItemWithSong = SetlistItem & {
 };
 
 export type Database = {
-  __InternalSupabase: {
-    PostgrestVersion: '12';
-  };
   public: {
     Tables: {
       songs: {
         Row: Song;
         Insert: Partial<Song> & { title: string };
         Update: Partial<Song>;
+        Relationships: [];
+      };
+      albums: {
+        Row: Album;
+        Insert: Partial<Album> & { title: string };
+        Update: Partial<Album>;
         Relationships: [];
       };
       shows: {

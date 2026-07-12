@@ -2,9 +2,9 @@
 
 import { useTransition } from 'react';
 import { upsertSong, deleteSong } from './actions';
-import type { Song } from '@/types/database';
+import type { Album, Song } from '@/types/database';
 
-export default function SongForm({ song }: { song?: Song }) {
+export default function SongForm({ song, albums }: { song?: Song; albums: Album[] }) {
   const isNew = !song;
   const [isPending, startTransition] = useTransition();
 
@@ -21,6 +21,33 @@ export default function SongForm({ song }: { song?: Song }) {
       <div>
         <label className="admin-label" htmlFor="title">歌名 *</label>
         <input id="title" name="title" required defaultValue={song?.title} className="admin-input" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="admin-label" htmlFor="album_id">所屬專輯</label>
+          <select id="album_id" name="album_id" defaultValue={song?.album_id ?? ''} className="admin-input">
+            <option value="">未分類</option>
+            {albums.map((album) => (
+              <option key={album.id} value={album.id}>
+                {album.title}
+                {album.is_cover ? '（Cover 作品）' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="admin-label" htmlFor="track_number">專輯曲序</label>
+          <input
+            id="track_number"
+            name="track_number"
+            type="number"
+            min={1}
+            defaultValue={song?.track_number ?? ''}
+            className="admin-input"
+            placeholder="例：3"
+          />
+        </div>
       </div>
 
       <div>

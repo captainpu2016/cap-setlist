@@ -3,6 +3,7 @@ import Link from 'next/link';
 const NAV = [
   { href: '/admin', label: '總覽' },
   { href: '/admin/songs', label: '歌曲資料庫' },
+  { href: '/admin/albums', label: '專輯管理' },
   { href: '/admin/shows', label: '場次管理' },
   { href: '/admin/settings/site', label: '網站文案' },
   { href: '/admin/settings/spotify', label: 'Spotify 設定' }
