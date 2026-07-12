@@ -16,9 +16,11 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
     const audio = audioRef.current;
     if (!audio || !item.song?.dropbox_url) return;
 
-    audio.src = toDropboxDirectUrl(item.song.dropbox_url);
-    audio.play().catch(() => {
-      // 瀏覽器阻擋自動播放時靜默失敗即可，使用者可以再點一次
+    const src = toDropboxDirectUrl(item.song.dropbox_url);
+    audio.src = src;
+    audio.play().catch((err) => {
+      // eslint-disable-next-line no-console
+      console.error('[setlist] 播放失敗', src, err);
     });
     setPlayingId(item.id);
     setIsPlaylistMode(playlistMode);
@@ -72,7 +74,15 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
   return (
     <div>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-      <audio ref={audioRef} onEnded={handleEnded} className="hidden" />
+      <audio
+        ref={audioRef}
+        onEnded={handleEnded}
+        onError={(e) => {
+          // eslint-disable-next-line no-console
+          console.error('[setlist] audio 載入錯誤', e.currentTarget.error);
+        }}
+        style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}
+      />
 
       {playableItems.length > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-3">
@@ -128,37 +138,30 @@ function SongRow({
   return (
     <li className="rounded-md px-2 transition-colors hover:bg-stage-900/70 -mx-2">
       <div className="flex items-center gap-4 py-3">
-        {canPlay ? (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label={isPlaying ? '暫停' : '播放'}
-            className="flex w-6 shrink-0 items-center justify-center text-stone-600 hover:text-marquee"
-          >
-            {isPlaying ? <PauseIcon small /> : <PlayIcon small />}
-          </button>
-        ) : (
-          <span className="w-6 shrink-0 text-center font-display tabular-nums text-stone-600">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-        )}
+        <span className="w-6 shrink-0 text-center font-display tabular-nums text-stone-600">
+          {String(index + 1).padStart(2, '0')}
+        </span>
 
         <div className="min-w-0 flex-1">
           {item.is_placeholder ? (
             <p className="italic text-stone-500">敬請期待</p>
           ) : canPlay ? (
-            <button type="button" onClick={onToggle} className="block max-w-full text-left">
-              <p className={`truncate font-medium transition-colors ${isPlaying ? 'text-marquee' : 'text-paper hover:text-marquee'}`}>
+            <button type="button" onClick={onToggle} className="flex max-w-full items-center gap-2 text-left">
+              <span className={`shrink-0 ${isPlaying ? 'text-marquee' : 'text-stone-500'}`}>
+                {isPlaying ? <PauseIcon small /> : <PlayIcon small />}
+              </span>
+              <span
+                className={`truncate font-medium transition-colors ${
+                  isPlaying ? 'text-marquee' : 'text-paper hover:text-marquee'
+                }`}
+              >
                 {item.song?.title}
-              </p>
-              {item.notes && <p className="text-xs text-stone-500">{item.notes}</p>}
+              </span>
             </button>
           ) : (
-            <>
-              <p className="truncate font-medium text-paper">{item.song?.title}</p>
-              {item.notes && <p className="text-xs text-stone-500">{item.notes}</p>}
-            </>
+            <p className="truncate font-medium text-paper">{item.song?.title}</p>
           )}
+          {item.notes && <p className="mt-0.5 text-xs text-stone-500">{item.notes}</p>}
         </div>
 
         {!item.is_placeholder && (
