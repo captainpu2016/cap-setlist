@@ -3,10 +3,15 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { formatDuration, formatShowDate, sumDuration } from '@/lib/format';
 import type { Show, SetlistItemWithSong } from '@/types/database';
-import GeneratePlaylistButton from './generate-playlist-button';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
-import SongRow from './song-row';
+import Setlist from './setlist';
+
+// 生成 Spotify 播放清單的功能先隱藏（Spotify Development Mode 限制，見對話紀錄）。
+// 後端邏輯都還在 src/app/api/shows/[id]/generate-playlist/、
+// src/app/show/[slug]/generate-playlist-button.tsx，之後申請過 Extended Quota
+// Mode 或決定付費升級 Premium 帳號後，把下面這行 import 跟 JSX 區塊復原即可。
+// import GeneratePlaylistButton from './generate-playlist-button';
 
 export const revalidate = 0;
 
@@ -52,7 +57,6 @@ export default async function ShowPage({ params }: { params: { slug: string } })
 
   const setlist = items ?? [];
   const totalSeconds = sumDuration(setlist.map((i) => i.song?.duration_seconds ?? null));
-  const hasAnySpotifyTrack = setlist.some((i) => i.song?.spotify_track_id);
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
@@ -86,19 +90,12 @@ export default async function ShowPage({ params }: { params: { slug: string } })
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <GeneratePlaylistButton
-              showId={show.id}
-              initialPlaylistUrl={show.spotify_playlist_url}
-              hasAnySpotifyTrack={hasAnySpotifyTrack}
-            />
             <ShareButton title={show.title} />
           </div>
 
-          <ol className="mt-10 divide-y divide-stage-700">
-            {setlist.map((item, idx) => (
-              <SongRow key={item.id} item={item} index={idx} />
-            ))}
-          </ol>
+          <div className="mt-10">
+            <Setlist items={setlist} />
+          </div>
 
           {setlist.length === 0 && (
             <p className="mt-10 text-center text-stone-500">歌單準備中，敬請期待。</p>

@@ -82,8 +82,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     return NextResponse.json({ playlistUrl: finalUrl, skippedCount });
   } catch (err) {
+    console.error('[generate-playlist] 發生錯誤', err);
     const message = err instanceof Error ? err.message : 'UNKNOWN';
-    if (message === 'SPOTIFY_NOT_CONNECTED' || message === 'SPOTIFY_TOKEN_INVALID') {
+    if (message.startsWith('SPOTIFY_NOT_CONNECTED') || message.startsWith('SPOTIFY_TOKEN_INVALID')) {
       return NextResponse.json(
         { error: 'Spotify 官方帳號尚未連接或授權已失效，請聯絡管理者。' },
         { status: 503 }
