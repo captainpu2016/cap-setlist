@@ -24,6 +24,8 @@ export async function upsertSong(formData: FormData) {
   const appleMusicUrl = (formData.get('apple_music_url') as string)?.trim() || null;
   const youtubeUrl = (formData.get('youtube_url') as string)?.trim() || null;
   const dropboxUrl = (formData.get('dropbox_url') as string)?.trim() || null;
+  const albumId = (formData.get('album_id') as string)?.trim() || null;
+  const trackNumberRaw = formData.get('track_number') as string;
 
   if (!title) throw new Error('歌名為必填');
 
@@ -33,7 +35,9 @@ export async function upsertSong(formData: FormData) {
     spotify_track_id: spotifyUrlRaw ? parseSpotifyTrackId(spotifyUrlRaw) : null,
     apple_music_url: appleMusicUrl,
     youtube_url: youtubeUrl,
-    dropbox_url: dropboxUrl
+    dropbox_url: dropboxUrl,
+    album_id: albumId,
+    track_number: trackNumberRaw ? Number(trackNumberRaw) : null
   };
 
   if (id && id !== 'new') {
