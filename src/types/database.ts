@@ -8,6 +8,7 @@ export type Song = {
   spotify_track_id: string | null;
   apple_music_url: string | null;
   youtube_url: string | null;
+  dropbox_url: string | null;
   created_at: string;
   updated_at: string;
 };

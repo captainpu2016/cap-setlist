@@ -37,7 +37,9 @@ export async function getSpotifyAccessToken(): Promise<string> {
   });
 
   if (!res.ok) {
-    throw new Error('SPOTIFY_TOKEN_INVALID');
+    const body = await res.text();
+    console.error('[spotify] token 換發失敗', res.status, body);
+    throw new Error(`SPOTIFY_TOKEN_INVALID: ${res.status} ${body}`);
   }
 
   const json = await res.json();
@@ -48,7 +50,11 @@ export async function getSpotifyUserId(accessToken: string): Promise<string> {
   const res = await fetch(`${SPOTIFY_API_BASE}/me`, {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
-  if (!res.ok) throw new Error('SPOTIFY_ME_FAILED');
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('[spotify] 取得使用者資訊失敗', res.status, body);
+    throw new Error(`SPOTIFY_ME_FAILED: ${res.status} ${body}`);
+  }
   const json = await res.json();
   return json.id as string;
 }
@@ -67,7 +73,11 @@ export async function createSpotifyPlaylist(
     },
     body: JSON.stringify({ name, description, public: true })
   });
-  if (!res.ok) throw new Error('SPOTIFY_CREATE_PLAYLIST_FAILED');
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('[spotify] 建立播放清單失敗', res.status, body);
+    throw new Error(`SPOTIFY_CREATE_PLAYLIST_FAILED: ${res.status} ${body}`);
+  }
   const json = await res.json();
   return { id: json.id, url: json.external_urls.spotify };
 }
@@ -87,5 +97,9 @@ export async function addTracksToPlaylist(
     },
     body: JSON.stringify({ uris })
   });
-  if (!res.ok) throw new Error('SPOTIFY_ADD_TRACKS_FAILED');
+  if (!res.ok) {
+    const body = await res.text();
+    console.error('[spotify] 加入曲目失敗', res.status, body);
+    throw new Error(`SPOTIFY_ADD_TRACKS_FAILED: ${res.status} ${body}`);
+  }
 }

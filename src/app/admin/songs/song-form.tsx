@@ -49,6 +49,20 @@ export default function SongForm({ song }: { song?: Song }) {
       </div>
 
       <div>
+        <label className="admin-label" htmlFor="dropbox_url">Dropbox 完整音檔連結</label>
+        <input
+          id="dropbox_url"
+          name="dropbox_url"
+          defaultValue={song?.dropbox_url ?? ''}
+          className="admin-input"
+          placeholder="https://www.dropbox.com/s/xxxx/song.mp3?dl=0"
+        />
+        <p className="mt-1 text-xs text-stone-400">
+          前台歌單頁的線上播放（單首試聽、歌單播放）都是讀這個連結，貼 Dropbox 分享連結即可，不用自己改 dl=0/1。
+        </p>
+      </div>
+
+      <div>
         <label className="admin-label" htmlFor="apple_music_url">Apple Music 連結</label>
         <input
           id="apple_music_url"

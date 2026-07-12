@@ -33,6 +33,23 @@ export function parseSpotifyTrackId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * 把 Dropbox 分享連結轉成可以直接串流播放的網址。
+ * Dropbox 分享連結預設 (?dl=0) 開啟的是預覽頁面，瀏覽器的 <audio> 標籤沒辦法直接播放；
+ * 把參數改成 dl=1 之後，Dropbox 會直接回傳檔案本身的內容，<audio src="..."> 才播得動。
+ */
+export function toDropboxDirectUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('dropbox.com')) {
+      u.searchParams.set('dl', '1');
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 /** slug 化：中文保留、空白轉 -、移除特殊符號，供場次網址使用 */
 export function slugify(input: string): string {
   return input
