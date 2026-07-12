@@ -41,6 +41,28 @@ export default function SiteContentForm({ content }: { content: SiteContent }) {
         />
       </div>
 
+      <div>
+        <label className="admin-label" htmlFor="bg_image_url">首頁背景圖片網址（選填）</label>
+        <input
+          id="bg_image_url"
+          name="bg_image_url"
+          defaultValue={content.bgImageUrl ?? ''}
+          className="admin-input"
+          placeholder="https://xxxxxxxxxxxx.supabase.co/storage/v1/object/public/..."
+        />
+        <p className="mt-1 text-xs text-stone-400">
+          先到 Supabase Dashboard 左側「Storage」上傳照片，複製它給你的公開網址貼在這裡。留空則不顯示背景圖。
+        </p>
+        {content.bgImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={content.bgImageUrl}
+            alt="目前的背景圖片預覽"
+            className="mt-3 h-32 w-full rounded-md border border-stone-200 object-cover"
+          />
+        )}
+      </div>
+
       <div className="flex items-center gap-3">
         <button type="submit" disabled={isPending} className="admin-btn">
           {isPending ? '儲存中…' : '儲存文案'}

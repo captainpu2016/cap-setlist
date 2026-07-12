@@ -17,11 +17,13 @@ export async function updateSiteContent(formData: FormData) {
 
   const eyebrow = (formData.get('eyebrow') as string)?.trim();
   const tagline = (formData.get('tagline') as string)?.trim();
+  const bgImageUrl = (formData.get('bg_image_url') as string)?.trim();
 
   const { error } = await supabase.from('site_settings').upsert(
     [
       { key: 'homepage_eyebrow', value: eyebrow || null },
-      { key: 'homepage_tagline', value: tagline || null }
+      { key: 'homepage_tagline', value: tagline || null },
+      { key: 'homepage_bg_image_url', value: bgImageUrl || null }
     ],
     { onConflict: 'key' }
   );
