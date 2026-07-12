@@ -6,19 +6,19 @@ const config: Config = {
     extend: {
       colors: {
         stage: {
-          950: '#0c0a09',
-          900: '#151211',
-          800: '#211c1a',
-          700: '#332a26'
+          950: '#170f0a',
+          900: '#20140d',
+          800: '#2c1c12',
+          700: '#40291a'
         },
         marquee: {
-          DEFAULT: '#f4b93c',
-          soft: '#f7d488'
+          DEFAULT: '#c9a876',
+          soft: '#ddc79c'
         },
         signal: {
-          DEFAULT: '#e0523a'
+          DEFAULT: '#e2231c'
         },
-        paper: '#f4efe6'
+        paper: '#f2ece0'
       },
       fontFamily: {
         display: ['var(--font-display)', 'sans-serif'],

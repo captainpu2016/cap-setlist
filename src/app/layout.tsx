@@ -16,7 +16,16 @@ const body = Noto_Sans_TC({
 
 export const metadata: Metadata = {
   title: '普通隊長｜演出歌單',
-  description: '普通隊長歷年演出場次與每場歌單，可一鍵生成 Spotify 播放清單。'
+  description: '普通隊長歷年演出場次與每場歌單，可一鍵生成 Spotify 播放清單。',
+  icons: {
+    icon: '/favicon.png'
+  },
+  themeColor: '#170f0a',
+  openGraph: {
+    title: '普通隊長｜演出歌單',
+    description: '普通隊長歷年演出場次與每場歌單，可一鍵生成 Spotify 播放清單。',
+    images: ['/brand/album-cover.jpg']
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

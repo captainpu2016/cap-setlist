@@ -69,6 +69,12 @@ export type Database = {
         Update: { value: string | null };
         Relationships: [];
       };
+      site_settings: {
+        Row: { key: string; value: string | null; updated_at: string };
+        Insert: { key: string; value: string | null };
+        Update: { value: string | null };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {};
