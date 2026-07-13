@@ -82,9 +82,9 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
         {allShows.length > 0 && (
           <form
             method="get"
-            className="mb-8 flex flex-wrap items-end gap-3 rounded-lg border border-stage-700 bg-stage-900/60 p-4"
+            className="mb-8 flex flex-col gap-3 rounded-lg border border-stage-700 bg-stage-900/60 p-4 sm:flex-row sm:flex-wrap sm:items-end"
           >
-            <div>
+            <div className="w-full sm:w-auto">
               <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="year">
                 年份
               </label>
@@ -92,7 +92,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
                 id="year"
                 name="year"
                 defaultValue={selectedYear}
-                className="rounded-md border border-stage-700 bg-stage-950 px-3 py-1.5 text-sm text-paper focus:border-marquee focus:outline-none"
+                className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
               >
                 <option value="">全部</option>
                 {years.map((y) => (
@@ -103,7 +103,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
               </select>
             </div>
 
-            <div>
+            <div className="w-full sm:w-auto">
               <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="venue">
                 場地
               </label>
@@ -111,7 +111,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
                 id="venue"
                 name="venue"
                 defaultValue={selectedVenue}
-                className="max-w-[14rem] rounded-md border border-stage-700 bg-stage-950 px-3 py-1.5 text-sm text-paper focus:border-marquee focus:outline-none"
+                className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
               >
                 <option value="">全部</option>
                 {venues.map((v) => (
@@ -122,18 +122,20 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
               </select>
             </div>
 
-            <button
-              type="submit"
-              className="rounded-md bg-marquee px-4 py-1.5 text-sm font-bold text-stage-950 transition hover:bg-marquee/80"
-            >
-              篩選
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                className="flex-1 rounded-md bg-marquee px-4 py-2 text-sm font-bold text-stage-950 transition hover:bg-marquee/80 sm:flex-none sm:py-1.5"
+              >
+                篩選
+              </button>
 
-            {hasFilter && (
-              <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
-                清除篩選
-              </a>
-            )}
+              {hasFilter && (
+                <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
+                  清除篩選
+                </a>
+              )}
+            </div>
           </form>
         )}
 
