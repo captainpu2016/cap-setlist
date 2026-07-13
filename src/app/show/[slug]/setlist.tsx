@@ -236,18 +236,64 @@ function SongRow({
 }) {
   const canPlay = !item.is_placeholder && Boolean(item.song?.dropbox_url);
 
+  const linksAndDuration = !item.is_placeholder && (
+    <div className="flex shrink-0 items-center gap-3">
+      {item.song?.spotify_track_id && (
+        <a
+          href={`https://open.spotify.com/track/${item.song.spotify_track_id}`}
+          target="_blank"
+          rel="noreferrer noopener"
+          title="在 Spotify 開啟"
+          className="p-1 text-stone-500 hover:text-marquee"
+        >
+          <SpotifyIcon />
+        </a>
+      )}
+      {item.song?.apple_music_url && (
+        <a
+          href={item.song.apple_music_url}
+          target="_blank"
+          rel="noreferrer noopener"
+          title="在 Apple Music 開啟"
+          className="p-1 text-stone-500 hover:text-marquee"
+        >
+          <AppleMusicIcon />
+        </a>
+      )}
+      {item.song?.youtube_url && (
+        <a
+          href={item.song.youtube_url}
+          target="_blank"
+          rel="noreferrer noopener"
+          title="在 YouTube 開啟"
+          className="p-1 text-stone-500 hover:text-marquee"
+        >
+          <YouTubeIcon />
+        </a>
+      )}
+      <span className="w-10 text-right tabular-nums text-xs text-stone-500">
+        {formatDuration(item.song?.duration_seconds) ?? '—'}
+      </span>
+    </div>
+  );
+
   return (
     <li className="rounded-md px-2 transition-colors hover:bg-stage-900/70 -mx-2">
-      <div className="flex items-center gap-4 py-3">
-        <span className="w-6 shrink-0 text-center font-display tabular-nums text-stone-600">
+      <div className="flex items-start gap-4 py-3 sm:items-center">
+        <span className="mt-2 w-6 shrink-0 text-center font-display tabular-nums text-stone-600 sm:mt-0">
           {String(index + 1).padStart(2, '0')}
         </span>
 
         <div className="min-w-0 flex-1">
           {item.is_placeholder ? (
-            <p className="italic text-stone-500">敬請期待</p>
+            <p className="py-2 italic text-stone-500">敬請期待</p>
           ) : canPlay ? (
-            <button type="button" onClick={onToggle} className="flex max-w-full items-center gap-2 text-left">
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label={isPlaying ? `暫停播放 ${item.song?.title}` : `播放 ${item.song?.title}`}
+              className="-m-2 flex max-w-full items-center gap-2 p-2 text-left"
+            >
               <span className={`shrink-0 ${isActive ? 'text-marquee' : 'text-stone-500'}`}>
                 {isPlaying ? <PauseIcon small /> : <PlayIcon small />}
               </span>
@@ -260,51 +306,16 @@ function SongRow({
               </span>
             </button>
           ) : (
-            <p className="truncate font-medium text-paper">{item.song?.title}</p>
+            <p className="truncate py-2 font-medium text-paper sm:py-0">{item.song?.title}</p>
           )}
           {item.notes && <p className="mt-0.5 text-xs text-stone-500">{item.notes}</p>}
+
+          {/* 手機版：連結圖示跟時長換到歌名下方第二行，避免跟歌名擠在同一行 */}
+          {linksAndDuration && <div className="mt-1 sm:hidden">{linksAndDuration}</div>}
         </div>
 
-        {!item.is_placeholder && (
-          <div className="flex shrink-0 items-center gap-3">
-            {item.song?.spotify_track_id && (
-              <a
-                href={`https://open.spotify.com/track/${item.song.spotify_track_id}`}
-                target="_blank"
-                rel="noreferrer noopener"
-                title="在 Spotify 開啟"
-                className="text-stone-500 hover:text-marquee"
-              >
-                <SpotifyIcon />
-              </a>
-            )}
-            {item.song?.apple_music_url && (
-              <a
-                href={item.song.apple_music_url}
-                target="_blank"
-                rel="noreferrer noopener"
-                title="在 Apple Music 開啟"
-                className="text-stone-500 hover:text-marquee"
-              >
-                <AppleMusicIcon />
-              </a>
-            )}
-            {item.song?.youtube_url && (
-              <a
-                href={item.song.youtube_url}
-                target="_blank"
-                rel="noreferrer noopener"
-                title="在 YouTube 開啟"
-                className="text-stone-500 hover:text-marquee"
-              >
-                <YouTubeIcon />
-              </a>
-            )}
-            <span className="w-10 text-right tabular-nums text-xs text-stone-500">
-              {formatDuration(item.song?.duration_seconds) ?? '—'}
-            </span>
-          </div>
-        )}
+        {/* 桌機版：同一行右側顯示 */}
+        {linksAndDuration && <div className="hidden sm:block">{linksAndDuration}</div>}
       </div>
     </li>
   );
