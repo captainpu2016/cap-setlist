@@ -1,109 +1,207 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatDuration, toDropboxDirectUrl } from '@/lib/format';
 import type { SetlistItemWithSong } from '@/types/database';
 
 export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [playingId, setPlayingId] = useState<string | null>(null);
+  const [currentItemId, setCurrentItemId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isPlaylistMode, setIsPlaylistMode] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playError, setPlayError] = useState<string | null>(null);
 
   // 依歌單順序，只留下「有 Dropbox 連結」的可播放曲目
   const playableItems = items.filter((i) => !i.is_placeholder && i.song?.dropbox_url);
 
-  function playItem(item: SetlistItemWithSong, playlistMode: boolean) {
+  // 給 event listener 用，避免 closure 抓到舊的 state
+  const isPlaylistModeRef = useRef(isPlaylistMode);
+  const currentItemIdRef = useRef(currentItemId);
+  const playableItemsRef = useRef(playableItems);
+  isPlaylistModeRef.current = isPlaylistMode;
+  currentItemIdRef.current = currentItemId;
+  playableItemsRef.current = playableItems;
+
+  // 音訊元件的播放狀態，完全交給瀏覽器原生事件驅動，不用自己猜測
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const onPlay = () => {
+      setIsPlaying(true);
+      setPlayError(null);
+    };
+    const onPause = () => setIsPlaying(false);
+    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onLoadedMetadata = () => setDuration(audio.duration || 0);
+    const onEnded = () => {
+      if (!isPlaylistModeRef.current) {
+        setCurrentItemId(null);
+        return;
+      }
+      const idx = playableItemsRef.current.findIndex((i) => i.id === currentItemIdRef.current);
+      const next = playableItemsRef.current[idx + 1];
+      if (next && next.song?.dropbox_url) {
+        setCurrentItemId(next.id);
+        audio.src = toDropboxDirectUrl(next.song.dropbox_url);
+        audio.play().catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error('[setlist] 接續播放失敗', err);
+          setPlayError('接續播放下一首時發生問題，請手動點擊繼續。');
+        });
+      } else {
+        setCurrentItemId(null);
+        setIsPlaylistMode(false);
+      }
+    };
+    const onError = () => {
+      // eslint-disable-next-line no-console
+      console.error('[setlist] audio 載入錯誤', audio.error, audio.src);
+      setPlayError('這首歌的音檔連結無法播放，請確認 Dropbox 分享連結是否正確、檔案是否還存在。');
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener('play', onPlay);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('error', onError);
+
+    return () => {
+      audio.removeEventListener('play', onPlay);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('error', onError);
+    };
+  }, []);
+
+  function loadAndPlay(item: SetlistItemWithSong, playlistMode: boolean) {
     const audio = audioRef.current;
     if (!audio || !item.song?.dropbox_url) return;
+
+    setPlayError(null);
+    setIsPlaylistMode(playlistMode);
+    setCurrentItemId(item.id);
+    setDuration(0);
+    setCurrentTime(0);
 
     const src = toDropboxDirectUrl(item.song.dropbox_url);
     audio.src = src;
     audio.play().catch((err) => {
       // eslint-disable-next-line no-console
       console.error('[setlist] 播放失敗', src, err);
+      setPlayError('播放失敗，請稍後再試，或確認這首歌的 Dropbox 連結是否正確。');
     });
-    setPlayingId(item.id);
-    setIsPlaylistMode(playlistMode);
   }
 
   function handleTitleToggle(item: SetlistItemWithSong) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (playingId === item.id && !audio.paused) {
-      audio.pause();
-      setPlayingId(null);
+    if (currentItemId === item.id) {
+      if (isPlaying) {
+        audio.pause();
+      } else {
+        audio.play().catch((err) => {
+          // eslint-disable-next-line no-console
+          console.error('[setlist] 播放失敗', err);
+          setPlayError('播放失敗，請稍後再試。');
+        });
+      }
       return;
     }
-    playItem(item, false);
+    loadAndPlay(item, false);
   }
 
   function handlePlaylistToggle() {
     const audio = audioRef.current;
-    if (playingId && isPlaylistMode && audio && !audio.paused) {
+    if (!audio) return;
+
+    if (isPlaylistMode && isPlaying) {
       audio.pause();
-      setPlayingId(null);
-      setIsPlaylistMode(false);
+      return;
+    }
+    if (isPlaylistMode && currentItemId) {
+      audio.play().catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('[setlist] 播放失敗', err);
+        setPlayError('播放失敗，請稍後再試。');
+      });
       return;
     }
     if (playableItems.length === 0) return;
 
-    // 若目前正停在歌單中某一首（暫停狀態），從那首接續播放；否則從第一首開始
-    const resumeFrom = playableItems.find((i) => i.id === playingId) ?? playableItems[0];
-    playItem(resumeFrom, true);
+    const resumeFrom = playableItems.find((i) => i.id === currentItemId) ?? playableItems[0];
+    loadAndPlay(resumeFrom, true);
   }
 
-  function handleEnded() {
-    if (!isPlaylistMode) {
-      setPlayingId(null);
-      return;
-    }
-    const currentIndex = playableItems.findIndex((i) => i.id === playingId);
-    const next = playableItems[currentIndex + 1];
-    if (next) {
-      playItem(next, true);
-    } else {
-      setPlayingId(null);
-      setIsPlaylistMode(false);
-    }
+  function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const time = Number(e.target.value);
+    audio.currentTime = time;
+    setCurrentTime(time);
   }
 
-  const currentPlayingItem = items.find((i) => i.id === playingId);
-  const isPlaying = Boolean(playingId);
+  const currentPlayingItem = items.find((i) => i.id === currentItemId);
 
   return (
     <div>
       {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
       <audio
         ref={audioRef}
-        onEnded={handleEnded}
-        onError={(e) => {
-          // eslint-disable-next-line no-console
-          console.error('[setlist] audio 載入錯誤', e.currentTarget.error);
-        }}
         style={{ position: 'fixed', width: 1, height: 1, opacity: 0, pointerEvents: 'none', bottom: 0, left: 0 }}
       />
 
       {playableItems.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handlePlaylistToggle}
-            className="inline-flex items-center gap-2 rounded-full bg-marquee px-5 py-2.5 text-sm font-bold text-stage-950 transition hover:bg-marquee/80"
-          >
-            {isPlaylistMode && isPlaying ? (
-              <>
-                <PauseIcon /> 暫停播放
-              </>
-            ) : (
-              <>
-                <PlayIcon /> 歌單播放
-              </>
-            )}
-          </button>
-          {isPlaylistMode && isPlaying && currentPlayingItem?.song && (
-            <span className="text-xs text-stone-400">現正播放：{currentPlayingItem.song.title}</span>
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handlePlaylistToggle}
+              className="inline-flex items-center gap-2 rounded-full bg-marquee px-5 py-2.5 text-sm font-bold text-stage-950 transition hover:bg-marquee/80"
+            >
+              {isPlaylistMode && isPlaying ? (
+                <>
+                  <PauseIcon /> 暫停播放
+                </>
+              ) : (
+                <>
+                  <PlayIcon /> 歌單播放
+                </>
+              )}
+            </button>
+          </div>
+
+          {currentPlayingItem?.song && (
+            <div className="mt-3 rounded-lg border border-stage-700 bg-stage-900/60 px-4 py-3">
+              <p className="truncate text-sm font-medium text-paper">{currentPlayingItem.song.title}</p>
+              <div className="mt-2 flex items-center gap-3">
+                <span className="w-9 shrink-0 text-right text-xs tabular-nums text-stone-500">
+                  {formatDuration(Math.floor(currentTime)) ?? '0:00'}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={duration || 0}
+                  step={0.1}
+                  value={Math.min(currentTime, duration || 0)}
+                  onChange={handleSeek}
+                  className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-stage-700 accent-marquee"
+                />
+                <span className="w-9 shrink-0 text-xs tabular-nums text-stone-500">
+                  {duration ? formatDuration(Math.floor(duration)) : '0:00'}
+                </span>
+              </div>
+            </div>
           )}
+
+          {playError && <p className="mt-2 text-xs text-signal">{playError}</p>}
         </div>
       )}
 
@@ -113,7 +211,8 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
             key={item.id}
             item={item}
             index={idx}
-            isPlaying={playingId === item.id && isPlaying}
+            isActive={currentItemId === item.id}
+            isPlaying={currentItemId === item.id && isPlaying}
             onToggle={() => handleTitleToggle(item)}
           />
         ))}
@@ -125,11 +224,13 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
 function SongRow({
   item,
   index,
+  isActive,
   isPlaying,
   onToggle
 }: {
   item: SetlistItemWithSong;
   index: number;
+  isActive: boolean;
   isPlaying: boolean;
   onToggle: () => void;
 }) {
@@ -147,12 +248,12 @@ function SongRow({
             <p className="italic text-stone-500">敬請期待</p>
           ) : canPlay ? (
             <button type="button" onClick={onToggle} className="flex max-w-full items-center gap-2 text-left">
-              <span className={`shrink-0 ${isPlaying ? 'text-marquee' : 'text-stone-500'}`}>
+              <span className={`shrink-0 ${isActive ? 'text-marquee' : 'text-stone-500'}`}>
                 {isPlaying ? <PauseIcon small /> : <PlayIcon small />}
               </span>
               <span
                 className={`truncate font-medium transition-colors ${
-                  isPlaying ? 'text-marquee' : 'text-paper hover:text-marquee'
+                  isActive ? 'text-marquee' : 'text-paper hover:text-marquee'
                 }`}
               >
                 {item.song?.title}
