@@ -4,6 +4,7 @@ import { getSiteContent } from '@/lib/site-settings';
 import { getCity } from '@/lib/format';
 import ShowListSection from './show-list-section';
 import SiteLogo from '@/components/SiteLogo';
+import FilterBar from './filter-bar';
 
 export const revalidate = 60;
 
@@ -13,11 +14,6 @@ interface HomeSearchParams {
   venue?: string;
   city?: string;
 }
-
-const MONTH_LABELS = [
-  '1月', '2月', '3月', '4月', '5月', '6月',
-  '7月', '8月', '9月', '10月', '11月', '12月'
-];
 
 export default async function HomePage({ searchParams }: { searchParams: HomeSearchParams }) {
   const supabase = createClient();
@@ -98,105 +94,17 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
 
       <section className="px-6 py-10 sm:px-10">
         {allShows.length > 0 && (
-          <form
-            method="get"
-            className="mb-8 flex flex-col gap-3 rounded-lg border border-stage-700 bg-stage-900/60 p-4 sm:flex-row sm:flex-wrap sm:items-end"
-          >
-            <div className="grid grid-cols-2 gap-3 sm:contents">
-              <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="year">
-                  年份
-                </label>
-                <select
-                  id="year"
-                  name="year"
-                  defaultValue={selectedYear}
-                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
-                >
-                  <option value="">全部年份</option>
-                  {years.map((y) => (
-                    <option key={y} value={y}>
-                      {y} 年
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="month">
-                  月份
-                </label>
-                <select
-                  id="month"
-                  name="month"
-                  defaultValue={selectedMonth}
-                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
-                >
-                  <option value="">全部月份</option>
-                  {months.map((m) => (
-                    <option key={m} value={m}>
-                      {MONTH_LABELS[Number(m) - 1]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:contents">
-              <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="city">
-                  城市
-                </label>
-                <select
-                  id="city"
-                  name="city"
-                  defaultValue={selectedCity}
-                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
-                >
-                  <option value="">全部城市</option>
-                  {cities.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="venue">
-                  場地
-                </label>
-                <select
-                  id="venue"
-                  name="venue"
-                  defaultValue={selectedVenue}
-                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
-                >
-                  <option value="">全部場地</option>
-                  {venues.map((v) => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                className="flex-1 rounded-md bg-marquee px-4 py-2 text-sm font-bold text-stage-950 transition hover:bg-marquee/80 sm:flex-none sm:py-1.5"
-              >
-                篩選
-              </button>
-
-              {hasFilter && (
-                <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
-                  清除篩選
-                </a>
-              )}
-            </div>
-          </form>
+          <FilterBar
+            years={years}
+            months={months}
+            venues={venues}
+            cities={cities}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            selectedVenue={selectedVenue}
+            selectedCity={selectedCity}
+            hasFilter={hasFilter}
+          />
         )}
 
         {hasFilter && filteredShows.length === 0 && (
