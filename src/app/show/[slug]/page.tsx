@@ -19,10 +19,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const supabase = createClient();
   const { data: show } = await supabase
     .from('shows')
-    .select('title, show_date, venue')
+    .select('title, show_date, venue, cover_image_url')
     .eq('slug', params.slug)
     .eq('status', 'published')
-    .single<Pick<Show, 'title' | 'show_date' | 'venue'>>();
+    .single<Pick<Show, 'title' | 'show_date' | 'venue' | 'cover_image_url'>>();
 
   if (!show) return { title: '找不到場次｜普通隊長' };
 
@@ -32,7 +32,12 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title,
     description,
-    openGraph: { title, description, type: 'website' }
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      images: show.cover_image_url ? [show.cover_image_url] : undefined
+    }
   };
 }
 
