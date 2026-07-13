@@ -18,12 +18,12 @@ export const metadata: Metadata = {
   title: '普通隊長｜近年演出歌單全紀錄',
   description: '每場演出，都有屬於它的歌單。這裡支援線上播放，讓你重溫現場的熱情與每一段難忘的回憶。',
   icons: {
-    icon: '/favicon.png'
+    icon: '/brand/cover.png'
   },
   openGraph: {
     title: '普通隊長｜近年演出歌單全紀錄',
     description: '每場演出，都有屬於它的歌單。這裡支援線上播放，讓你重溫現場的熱情與每一段難忘的回憶。',
-    images: ['/brand/cover.jpg']
+    images: ['/brand/cover.png']
   }
 };
 

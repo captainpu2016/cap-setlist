@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Show } from '@/types/database';
 import { getSiteContent } from '@/lib/site-settings';
+import { getCity } from '@/lib/format';
 import ShowListSection from './show-list-section';
 import SiteLogo from '@/components/SiteLogo';
 
@@ -8,8 +9,15 @@ export const revalidate = 60;
 
 interface HomeSearchParams {
   year?: string;
+  month?: string;
   venue?: string;
+  city?: string;
 }
+
+const MONTH_LABELS = [
+  '1月', '2月', '3月', '4月', '5月', '6月',
+  '7月', '8月', '9月', '10月', '11月', '12月'
+];
 
 export default async function HomePage({ searchParams }: { searchParams: HomeSearchParams }) {
   const supabase = createClient();
@@ -29,17 +37,27 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   const years = Array.from(new Set(allShows.map((s) => s.show_date.slice(0, 4)))).sort((a, b) =>
     b.localeCompare(a)
   );
+  const months = Array.from(new Set(allShows.map((s) => s.show_date.slice(5, 7)))).sort((a, b) =>
+    a.localeCompare(b)
+  );
   const venues = Array.from(new Set(allShows.map((s) => s.venue).filter((v): v is string => Boolean(v)))).sort(
     (a, b) => a.localeCompare(b, 'zh-Hant')
   );
+  const cities = Array.from(
+    new Set(allShows.map((s) => getCity(s.venue)).filter((c): c is string => Boolean(c)))
+  ).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
 
   const selectedYear = searchParams.year ?? '';
+  const selectedMonth = searchParams.month ?? '';
   const selectedVenue = searchParams.venue ?? '';
-  const hasFilter = Boolean(selectedYear || selectedVenue);
+  const selectedCity = searchParams.city ?? '';
+  const hasFilter = Boolean(selectedYear || selectedMonth || selectedVenue || selectedCity);
 
   const filteredShows = allShows.filter((s) => {
     if (selectedYear && !s.show_date.startsWith(selectedYear)) return false;
+    if (selectedMonth && s.show_date.slice(5, 7) !== selectedMonth) return false;
     if (selectedVenue && s.venue !== selectedVenue) return false;
+    if (selectedCity && getCity(s.venue) !== selectedCity) return false;
     return true;
   });
 
@@ -84,42 +102,84 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
             method="get"
             className="mb-8 flex flex-col gap-3 rounded-lg border border-stage-700 bg-stage-900/60 p-4 sm:flex-row sm:flex-wrap sm:items-end"
           >
-            <div className="w-full sm:w-auto">
-              <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="year">
-                年份
-              </label>
-              <select
-                id="year"
-                name="year"
-                defaultValue={selectedYear}
-                className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
-              >
-                <option value="">全部</option>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y} 年
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-3 sm:contents">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="year">
+                  年份
+                </label>
+                <select
+                  id="year"
+                  name="year"
+                  defaultValue={selectedYear}
+                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+                >
+                  <option value="">全部年份</option>
+                  {years.map((y) => (
+                    <option key={y} value={y}>
+                      {y} 年
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="month">
+                  月份
+                </label>
+                <select
+                  id="month"
+                  name="month"
+                  defaultValue={selectedMonth}
+                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+                >
+                  <option value="">全部月份</option>
+                  {months.map((m) => (
+                    <option key={m} value={m}>
+                      {MONTH_LABELS[Number(m) - 1]}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div className="w-full sm:w-auto">
-              <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="venue">
-                場地
-              </label>
-              <select
-                id="venue"
-                name="venue"
-                defaultValue={selectedVenue}
-                className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
-              >
-                <option value="">全部</option>
-                {venues.map((v) => (
-                  <option key={v} value={v}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-3 sm:contents">
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="city">
+                  城市
+                </label>
+                <select
+                  id="city"
+                  name="city"
+                  defaultValue={selectedCity}
+                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+                >
+                  <option value="">全部城市</option>
+                  {cities.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="venue">
+                  場地
+                </label>
+                <select
+                  id="venue"
+                  name="venue"
+                  defaultValue={selectedVenue}
+                  className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
+                >
+                  <option value="">全部場地</option>
+                  {venues.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">

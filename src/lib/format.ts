@@ -16,6 +16,14 @@ export function formatShowDate(dateStr: string): string {
   return d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
 }
 
+/** 從場地欄位解析出城市，依慣例是空白鍵前的第一個詞，例如「高雄 LIVE WAREHOUSE 小庫」→「高雄」 */
+export function getCity(venue: string | null): string | null {
+  if (!venue) return null;
+  const trimmed = venue.trim();
+  if (!trimmed) return null;
+  return trimmed.split(/\s+/)[0];
+}
+
 /** 卡片用的精簡日期格式，例如 6/19（五），節省版面空間 */
 export function formatShowDateShort(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
