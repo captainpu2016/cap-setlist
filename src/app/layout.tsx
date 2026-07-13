@@ -16,15 +16,15 @@ const body = Noto_Sans_TC({
 
 export const metadata: Metadata = {
   title: '普通隊長｜演出歌單',
-  description: '普通隊長歷年演出場次與每場歌單，可一鍵生成 Spotify 播放清單。',
+  description: '【普通隊長近年演出歌單全紀錄】線上直接收聽演出歌單 d(･∀･)b',
   icons: {
     icon: '/favicon.png'
   },
   themeColor: '#170f0a',
   openGraph: {
     title: '普通隊長｜演出歌單',
-    description: '普通隊長歷年演出場次與每場歌單，可一鍵生成 Spotify 播放清單。',
-    images: ['/brand/album-cover.jpg']
+    description: '【普通隊長近年演出歌單全紀錄】線上直接收聽演出歌單 d(･∀･)b',
+    images: ['/brand/cover.jpg']
   }
 };
 
