@@ -35,14 +35,16 @@ export function parseSpotifyTrackId(url: string): string | null {
 
 /**
  * 把 Dropbox 分享連結轉成可以直接串流播放的網址。
- * Dropbox 分享連結預設 (?dl=0) 開啟的是預覽頁面，瀏覽器的 <audio> 標籤沒辦法直接播放；
- * 把參數改成 dl=1 之後，Dropbox 會直接回傳檔案本身的內容，<audio src="..."> 才播得動。
+ * 不是用 ?dl=1（那個參數會強制觸發瀏覽器的下載提示，<audio> 標籤讀不到），
+ * 而是換成 dl.dropboxusercontent.com 這個 Dropbox 官方提供、專門給網頁內嵌/
+ * 直接引用用的網域，會直接回傳檔案內容本身，才能被 <audio src="..."> 正常播放。
  */
 export function toDropboxDirectUrl(url: string): string {
   try {
     const u = new URL(url);
     if (u.hostname.includes('dropbox.com')) {
-      u.searchParams.set('dl', '1');
+      u.hostname = 'dl.dropboxusercontent.com';
+      u.searchParams.delete('dl');
     }
     return u.toString();
   } catch {
