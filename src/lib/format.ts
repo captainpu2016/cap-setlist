@@ -24,11 +24,11 @@ export function getCity(venue: string | null): string | null {
   return trimmed.split(/\s+/)[0];
 }
 
-/** 卡片用的精簡日期格式，例如 6/19（五），節省版面空間 */
+/** 卡片用的精簡日期格式，例如 2026/6/19（五），資料跨多年時不會混淆 */
 export function formatShowDateShort(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
   const weekday = d.toLocaleDateString('zh-TW', { weekday: 'short' }).replace('週', '');
-  return `${d.getMonth() + 1}/${d.getDate()}（${weekday}）`;
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（${weekday}）`;
 }
 
 /** 從 Spotify 網址（open.spotify.com/track/{id}）解析出純 track ID */
