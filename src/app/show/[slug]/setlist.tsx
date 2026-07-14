@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { formatDuration, toDropboxDirectUrl } from '@/lib/format';
+import { trackEvent } from '@/lib/analytics';
 import type { SetlistItemWithSong } from '@/types/database';
 
 export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
@@ -89,6 +90,11 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
     setCurrentItemId(item.id);
     setDuration(0);
     setCurrentTime(0);
+
+    trackEvent('dropbox_preview_play', {
+      song_title: item.song.title,
+      via_playlist: playlistMode
+    });
 
     const src = toDropboxDirectUrl(item.song.dropbox_url);
     audio.src = src;
@@ -244,6 +250,7 @@ function SongRow({
           target="_blank"
           rel="noreferrer noopener"
           title="在 Spotify 開啟"
+          onClick={() => trackEvent('streaming_link_click', { platform: 'spotify', song_title: item.song?.title ?? '' })}
           className="p-1 text-stone-500 hover:text-marquee"
         >
           <SpotifyIcon />
@@ -255,6 +262,7 @@ function SongRow({
           target="_blank"
           rel="noreferrer noopener"
           title="在 Apple Music 開啟"
+          onClick={() => trackEvent('streaming_link_click', { platform: 'apple_music', song_title: item.song?.title ?? '' })}
           className="p-1 text-stone-500 hover:text-marquee"
         >
           <AppleMusicIcon />
@@ -266,6 +274,7 @@ function SongRow({
           target="_blank"
           rel="noreferrer noopener"
           title="在 YouTube 開啟"
+          onClick={() => trackEvent('streaming_link_click', { platform: 'youtube', song_title: item.song?.title ?? '' })}
           className="p-1 text-stone-500 hover:text-marquee"
         >
           <YouTubeIcon />
