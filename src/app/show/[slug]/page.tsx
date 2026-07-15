@@ -63,8 +63,23 @@ export default async function ShowPage({ params }: { params: { slug: string } })
   const setlist = items ?? [];
   const totalSeconds = sumDuration(setlist.map((i) => i.song?.duration_seconds ?? null));
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicEvent',
+    name: show.title,
+    startDate: show.show_date,
+    url: `${siteUrl}/show/${show.slug}`,
+    ...(show.venue ? { location: { '@type': 'Place', name: show.venue } } : {}),
+    ...(show.cover_image_url ? { image: [show.cover_image_url] } : {}),
+    performer: { '@type': 'MusicGroup', name: '普通隊長' }
+  };
+
   return (
     <main className="min-h-screen bg-noise bg-halftone">
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
       {show.cover_image_url && (
         // eslint-disable-next-line @next/next/no-img-element
         <img

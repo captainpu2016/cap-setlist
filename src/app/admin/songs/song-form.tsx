@@ -111,6 +111,18 @@ export default function SongForm({ song, albums }: { song?: Song; albums: Album[
         />
       </div>
 
+      <div>
+        <label className="admin-label" htmlFor="lyrics">歌詞（選填）</label>
+        <textarea
+          id="lyrics"
+          name="lyrics"
+          defaultValue={song?.lyrics ?? ''}
+          rows={10}
+          className="admin-input font-mono text-sm"
+          placeholder={'直接貼上歌詞即可，換行會照原樣顯示在前台。'}
+        />
+      </div>
+
       <div className="flex items-center gap-3 pt-2">
         <button type="submit" disabled={isPending} className="admin-btn">
           {isPending ? '儲存中…' : isNew ? '新增歌曲' : '儲存變更'}
