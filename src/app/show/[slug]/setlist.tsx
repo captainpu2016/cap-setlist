@@ -241,9 +241,22 @@ function SongRow({
   onToggle: () => void;
 }) {
   const canPlay = !item.is_placeholder && Boolean(item.song?.dropbox_url);
+  const hasLyrics = !item.is_placeholder && Boolean(item.song?.lyrics);
+  const [showLyrics, setShowLyrics] = useState(false);
 
   const linksAndDuration = !item.is_placeholder && (
     <div className="flex shrink-0 items-center gap-3">
+      {hasLyrics && (
+        <button
+          type="button"
+          onClick={() => setShowLyrics((v) => !v)}
+          title={showLyrics ? '收起歌詞' : '顯示歌詞'}
+          aria-expanded={showLyrics}
+          className={`p-1 ${showLyrics ? 'text-marquee' : 'text-stone-500 hover:text-marquee'}`}
+        >
+          <LyricsIcon />
+        </button>
+      )}
       {item.song?.spotify_track_id && (
         <a
           href={`https://open.spotify.com/track/${item.song.spotify_track_id}`}
@@ -326,6 +339,12 @@ function SongRow({
         {/* 桌機版：同一行右側顯示 */}
         {linksAndDuration && <div className="hidden sm:block">{linksAndDuration}</div>}
       </div>
+
+      {showLyrics && item.song?.lyrics && (
+        <div className="mb-3 ml-10 whitespace-pre-line rounded-lg border border-stage-700 bg-stage-900/60 p-4 text-sm leading-relaxed text-stone-300">
+          {item.song.lyrics}
+        </div>
+      )}
     </li>
   );
 }
@@ -345,6 +364,16 @@ function PauseIcon({ small }: { small?: boolean }) {
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <rect x="6" y="5" width="4" height="14" />
       <rect x="14" y="5" width="4" height="14" />
+    </svg>
+  );
+}
+
+function LyricsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 4h16v12H7l-3 3V4z" />
+      <line x1="8" y1="9" x2="16" y2="9" />
+      <line x1="8" y1="12" x2="13" y2="12" />
     </svg>
   );
 }

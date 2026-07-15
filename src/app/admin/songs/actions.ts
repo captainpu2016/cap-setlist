@@ -26,6 +26,7 @@ export async function upsertSong(formData: FormData) {
   const dropboxUrl = (formData.get('dropbox_url') as string)?.trim() || null;
   const albumId = (formData.get('album_id') as string)?.trim() || null;
   const trackNumberRaw = formData.get('track_number') as string;
+  const lyrics = (formData.get('lyrics') as string)?.trim() || null;
 
   if (!title) throw new Error('歌名為必填');
 
@@ -37,7 +38,8 @@ export async function upsertSong(formData: FormData) {
     youtube_url: youtubeUrl,
     dropbox_url: dropboxUrl,
     album_id: albumId,
-    track_number: trackNumberRaw ? Number(trackNumberRaw) : null
+    track_number: trackNumberRaw ? Number(trackNumberRaw) : null,
+    lyrics
   };
 
   if (id && id !== 'new') {

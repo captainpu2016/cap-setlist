@@ -18,6 +18,7 @@ export type Song = {
   apple_music_url: string | null;
   youtube_url: string | null;
   dropbox_url: string | null;
+  lyrics: string | null;
   album_id: string | null;
   track_number: number | null;
   created_at: string;
