@@ -90,7 +90,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
             </p>
           )}
           
-            href="/tour"
+            <a href="/tour"
             className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-widest text-marquee hover:text-marquee/80"
           >
             查看巡演足跡地圖 →
