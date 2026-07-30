@@ -39,6 +39,8 @@ export type Show = {
   status: ShowStatus;
   spotify_playlist_url: string | null;
   cover_image_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
   created_at: string;
   updated_at: string;
 };
