@@ -89,6 +89,12 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
               共 {allShows.length} 場演出紀錄
             </p>
           )}
+          
+            href="/tour"
+            className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-widest text-marquee hover:text-marquee/80"
+          >
+            查看巡演足跡地圖 →
+          </a>
         </div>
       </header>
 

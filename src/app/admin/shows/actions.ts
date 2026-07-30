@@ -47,12 +47,23 @@ export async function updateShowInfo(formData: FormData) {
   const slug = (formData.get('slug') as string)?.trim();
   const status = formData.get('status') as 'draft' | 'published';
   const coverImageUrl = (formData.get('cover_image_url') as string)?.trim() || null;
+  
+  const latitudeRaw = formData.get('latitude') as string;
+  const longitudeRaw = formData.get('longitude') as string;
 
   if (!title || !showDate || !slug) throw new Error('場次名稱、日期、slug 為必填');
 
   const { error } = await supabase
     .from('shows')
-    .update({ title, show_date: showDate, venue, slug, status })
+    .update({
+      title,
+      show_date: showDate,
+      venue,
+      slug,
+      status,
+      cover_image_url: coverImageUrl,
+      latitude: latitudeRaw ? Number(latitudeRaw) : null,
+      longitude: longitudeRaw ? Number(longitudeRaw) : null})
     .eq('id', id);
 
   if (error) throw new Error(error.message);
