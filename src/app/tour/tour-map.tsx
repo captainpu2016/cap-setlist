@@ -1,11 +1,12 @@
 'use client';
 
 import { Fragment } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Polyline, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 export interface TourPoint {
+  label: string; // 場地名稱
   city: string;
   count: number;
   lat: number;
@@ -43,6 +44,20 @@ function arrowIcon(angleDeg: number) {
   });
 }
 
+/** 場地圖釘圖示，大小依演出次數微調（去越多次的場地，圖釘越大） */
+function venueIcon(count: number) {
+  const size = Math.min(26 + count * 3, 44);
+  return L.divIcon({
+    className: '',
+    html: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));">
+      <path d="M12 0C7.6 0 4 3.6 4 8c0 5.4 8 16 8 16s8-10.6 8-16c0-4.4-3.6-8-8-8z" fill="#e2231c" stroke="#c9a876" stroke-width="1"/>
+      <circle cx="12" cy="8" r="3.2" fill="#170f0a"/>
+    </svg>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size]
+  });
+}
+
 export default function TourMap({
   points,
   route = []
@@ -68,7 +83,7 @@ export default function TourMap({
     <div className="h-[420px] w-full overflow-hidden rounded-lg border border-stage-700">
       <MapContainer
         center={center}
-        zoom={points.length > 1 ? 5 : 8}
+        zoom={points.length > 1 ? 6 : 9}
         scrollWheelZoom={false}
         style={{ height: '100%', width: '100%', background: '#170f0a' }}
       >
@@ -96,24 +111,22 @@ export default function TourMap({
         })}
 
         {points.map((p) => (
-          <CircleMarker
-            key={p.city}
-            center={[p.lat, p.lng]}
-            radius={8 + Math.min(p.count, 10) * 2}
-            pathOptions={{ color: '#c9a876', fillColor: '#e2231c', fillOpacity: 0.75, weight: 2 }}
-          >
+          <Marker key={`${p.city}-${p.label}`} position={[p.lat, p.lng]} icon={venueIcon(p.count)}>
             <Popup>
               <div style={{ fontSize: 13 }}>
-                <strong>{p.city}</strong>
+                <strong>{p.label}</strong>
+                {p.city && <span style={{ color: '#888' }}> ・ {p.city}</span>}
                 <br />
                 {p.count} 場演出
                 <br />
-                <a href={`/?city=${encodeURIComponent(p.city)}`} style={{ color: '#e2231c' }}>
-                  查看這裡的演出 →
-                </a>
+                {p.city && (
+                  <a href={`/?city=${encodeURIComponent(p.city)}`} style={{ color: '#e2231c' }}>
+                    查看這裡的演出 →
+                  </a>
+                )}
               </div>
             </Popup>
-          </CircleMarker>
+          </Marker>
         ))}
       </MapContainer>
     </div>

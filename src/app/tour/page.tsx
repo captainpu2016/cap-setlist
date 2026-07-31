@@ -57,9 +57,13 @@ export default async function TourPage() {
     .map((show) => {
       const coords = getShowCoordinates(show, show.venue_data);
       if (!coords) return null;
+      const city = show.venue_data?.city ?? getCity(show.venue) ?? null;
+      const venueName = show.venue_data?.name ?? show.venue ?? '未知場地';
       return {
         date: show.show_date,
-        city: show.venue_data?.city ?? getCity(show.venue) ?? show.venue ?? '未知地點',
+        city: city ?? '未知地點',
+        venueName,
+        venueKey: `${city ?? ''}__${venueName}`,
         lat: coords[0],
         lng: coords[1],
         title: show.title
@@ -102,28 +106,28 @@ export default async function TourPage() {
             <div className="rounded-lg border border-stage-700 bg-stage-900/60 p-6">
               <div className="overflow-x-auto">
                 <div
-                  className="flex h-40 items-end gap-1.5"
+                  className="flex items-end gap-1.5"
                   style={{ minWidth: monthlyTimeline.length * 26 }}
                 >
                   {monthlyTimeline.map((m, i) => {
                     const [year, month] = m.yearMonth.split('-');
                     const isYearStart = month === '01' || i === 0;
                     return (
-                      <div
-                        key={m.yearMonth}
-                        title={`${year}/${Number(month)}：${m.count} 場`}
-                        className="flex w-6 shrink-0 flex-col items-center gap-1"
-                      >
-                        <span className="text-[10px] tabular-nums text-stone-500">{m.count || ''}</span>
-                        <div
-                          className="w-full rounded-t transition-all"
-                          style={{
-                            height: `${(m.count / maxMonthly) * 100}%`,
-                            minHeight: m.count > 0 ? 4 : 2,
-                            backgroundColor: m.count > 0 ? '#c9a876' : '#40291a'
-                          }}
-                        />
-                        <span className="text-[10px] text-stone-500">
+                      <div key={m.yearMonth} title={`${year}/${Number(month)}：${m.count} 場`} className="flex w-6 shrink-0 flex-col items-center">
+                        <span className="h-3 text-[10px] tabular-nums text-stone-500">{m.count || ''}</span>
+                        {/* 固定高度的長條軌道，長條本身用百分比高度才會生效（CSS 規則：
+                            百分比高度需要父層有明確的高度，不能只靠外層的 flex 撐開） */}
+                        <div className="flex h-28 w-full items-end">
+                          <div
+                            className="w-full rounded-t transition-all"
+                            style={{
+                              height: `${(m.count / maxMonthly) * 100}%`,
+                              minHeight: m.count > 0 ? 4 : 2,
+                              backgroundColor: m.count > 0 ? '#c9a876' : '#40291a'
+                            }}
+                          />
+                        </div>
+                        <span className="mt-1 text-[10px] text-stone-500">
                           {isYearStart ? year : Number(month)}
                         </span>
                       </div>
