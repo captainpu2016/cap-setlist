@@ -1,4 +1,4 @@
-import type { Show } from '@/types/database';
+import type { Show, Venue } from '@/types/database';
 import { getCity } from '@/lib/format';
 
 /**
@@ -37,17 +37,18 @@ export const CITY_COORDINATES: Record<string, [number, number]> = {
 };
 
 /**
- * 取得一場演出的座標：優先用後台手動填的精確座標，
- * 沒有的話退回用場地欄位解析出的城市去查對照表，
- * 兩者都沒有就回傳 null（該場不會顯示在地圖上）。
+ * 取得一場演出的座標：優先用該場次關聯的「場地」自己的精確座標，
+ * 場地沒有填座標的話，退回用場地／場次的城市名稱去查對照表，
+ * 都查不到就回傳 null（該場不會顯示在地圖上）。
  */
 export function getShowCoordinates(
-  show: Pick<Show, 'latitude' | 'longitude' | 'venue'>
+  show: Pick<Show, 'venue'>,
+  venue: Pick<Venue, 'latitude' | 'longitude' | 'city'> | null
 ): [number, number] | null {
-  if (show.latitude != null && show.longitude != null) {
-    return [show.latitude, show.longitude];
+  if (venue?.latitude != null && venue?.longitude != null) {
+    return [venue.latitude, venue.longitude];
   }
-  const city = getCity(show.venue);
+  const city = venue?.city ?? getCity(show.venue);
   if (city && CITY_COORDINATES[city]) {
     return CITY_COORDINATES[city];
   }

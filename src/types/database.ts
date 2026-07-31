@@ -1,5 +1,15 @@
 export type ShowStatus = 'draft' | 'published';
 
+export type Venue = {
+  id: string;
+  name: string;
+  city: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Album = {
   id: string;
   title: string;
@@ -39,6 +49,7 @@ export type Show = {
   status: ShowStatus;
   spotify_playlist_url: string | null;
   cover_image_url: string | null;
+  venue_id: string | null;
   latitude: number | null;
   longitude: number | null;
   created_at: string;
@@ -91,6 +102,12 @@ export type Database = {
         Row: { key: string; value: string | null; updated_at: string };
         Insert: { key: string; value: string | null };
         Update: { value: string | null };
+        Relationships: [];
+      };
+      venues: {
+        Row: Venue;
+        Insert: Partial<Venue> & { name: string };
+        Update: Partial<Venue>;
         Relationships: [];
       };
       site_settings: {

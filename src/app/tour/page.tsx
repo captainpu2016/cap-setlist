@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Show } from '@/types/database';
+import type { Show, Venue } from '@/types/database';
 import { getCity } from '@/lib/format';
 import { getShowCoordinates } from '@/lib/geo';
 import TourExplorer from './tour-explorer';
@@ -11,6 +11,8 @@ export const metadata = {
   title: '巡演足跡｜普通隊長',
   description: '普通隊長歷年演出地點地圖、移動路線，以及逐月演出場次趨勢。'
 };
+
+type ShowWithVenue = Show & { venue_data: Venue | null };
 
 /** 從最早一場到最新一場，逐月排開，沒有演出的月份也會列出（計數 0），才看得出巡演節奏跟空窗期 */
 function buildMonthlyTimeline(shows: Show[]): { yearMonth: string; count: number }[] {
@@ -44,20 +46,20 @@ export default async function TourPage() {
   const supabase = createClient();
   const { data: shows } = await supabase
     .from('shows')
-    .select('*')
+    .select('*, venue_data:venues(*)')
     .eq('status', 'published')
-    .returns<Show[]>();
+    .returns<ShowWithVenue[]>();
 
   const allShows = shows ?? [];
 
-  // 依日期排序，轉成地圖用的定位點資料
+  // 依日期排序，轉成地圖用的定位點資料（優先用場地自己的經緯度）
   const datedPoints: DatedPoint[] = allShows
     .map((show) => {
-      const coords = getShowCoordinates(show);
+      const coords = getShowCoordinates(show, show.venue_data);
       if (!coords) return null;
       return {
         date: show.show_date,
-        city: getCity(show.venue) ?? show.venue ?? '未知地點',
+        city: show.venue_data?.city ?? getCity(show.venue) ?? show.venue ?? '未知地點',
         lat: coords[0],
         lng: coords[1],
         title: show.title

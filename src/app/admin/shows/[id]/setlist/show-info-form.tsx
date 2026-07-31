@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { updateShowInfo, deleteShow } from '../../actions';
-import type { Show } from '@/types/database';
+import type { Show, Venue } from '@/types/database';
 
 type SaveState = 'idle' | 'saved' | 'error';
 
-export default function ShowInfoForm({ show }: { show: Show }) {
+export default function ShowInfoForm({ show, venues }: { show: Show; venues: Venue[] }) {
   const [status, setStatus] = useState(show.status);
   const [isPending, startTransition] = useTransition();
   const [saveState, setSaveState] = useState<SaveState>('idle');
@@ -39,8 +39,18 @@ export default function ShowInfoForm({ show }: { show: Show }) {
       </div>
 
       <div>
-        <label className="admin-label" htmlFor="venue">場地</label>
-        <input id="venue" name="venue" defaultValue={show.venue ?? ''} className="admin-input" />
+        <label className="admin-label" htmlFor="venue_id">場地</label>
+        <select id="venue_id" name="venue_id" defaultValue={show.venue_id ?? ''} className="admin-input">
+          <option value="">未指定</option>
+          {venues.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.city ? `${v.city} ${v.name}` : v.name}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-stone-400">
+          找不到想要的場地？<a href="/admin/venues/new" className="underline hover:text-stone-600">先去新增一個場地</a>，回來這裡重新整理就會出現在選單裡。
+        </p>
       </div>
 
       <div>
@@ -68,35 +78,6 @@ export default function ShowInfoForm({ show }: { show: Show }) {
             className="mt-3 h-32 w-full rounded-md border border-stone-200 object-cover"
           />
         )}
-      </div>
-
-      <div>
-        <label className="admin-label" htmlFor="latitude">精確緯度（選填）</label>
-        <input
-          id="latitude"
-          name="latitude"
-          type="number"
-          step="any"
-          defaultValue={show.latitude ?? ''}
-          className="admin-input"
-          placeholder="例：22.6273"
-        />
-      </div>
-
-      <div>
-        <label className="admin-label" htmlFor="longitude">精確經度（選填）</label>
-        <input
-          id="longitude"
-          name="longitude"
-          type="number"
-          step="any"
-          defaultValue={show.longitude ?? ''}
-          className="admin-input"
-          placeholder="例：120.3014"
-        />
-        <p className="mt-1 text-xs text-stone-400">
-          不填的話，「巡演足跡」地圖會自動依場地欄位裡的城市名稱定位；只有想精確標示同城市的不同場館時才需要填這兩格。
-        </p>
       </div>
 
       <div className="sm:col-span-2">
