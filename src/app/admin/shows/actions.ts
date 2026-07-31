@@ -19,15 +19,21 @@ export async function createShow(formData: FormData) {
 
   const title = (formData.get('title') as string)?.trim();
   const showDate = formData.get('show_date') as string;
-  const venue = (formData.get('venue') as string)?.trim() || null;
+  const venueId = (formData.get('venue_id') as string)?.trim() || null;
   let slug = (formData.get('slug') as string)?.trim();
 
   if (!title || !showDate) throw new Error('場次名稱與日期為必填');
   if (!slug) slug = slugify(title);
 
+  let venueText: string | null = null;
+  if (venueId) {
+    const { data: venueRow } = await supabase.from('venues').select('name, city').eq('id', venueId).single();
+    if (venueRow) venueText = venueRow.city ? `${venueRow.city} ${venueRow.name}` : venueRow.name;
+  }
+
   const { data, error } = await supabase
     .from('shows')
-    .insert({ title, show_date: showDate, venue, slug, status: 'draft' })
+    .insert({ title, show_date: showDate, venue: venueText, venue_id: venueId, slug, status: 'draft' })
     .select('id')
     .single();
 
@@ -43,27 +49,30 @@ export async function updateShowInfo(formData: FormData) {
   const id = formData.get('id') as string;
   const title = (formData.get('title') as string)?.trim();
   const showDate = formData.get('show_date') as string;
-  const venue = (formData.get('venue') as string)?.trim() || null;
+  const venueId = (formData.get('venue_id') as string)?.trim() || null;
   const slug = (formData.get('slug') as string)?.trim();
   const status = formData.get('status') as 'draft' | 'published';
   const coverImageUrl = (formData.get('cover_image_url') as string)?.trim() || null;
-  
-  const latitudeRaw = formData.get('latitude') as string;
-  const longitudeRaw = formData.get('longitude') as string;
 
   if (!title || !showDate || !slug) throw new Error('場次名稱、日期、slug 為必填');
+
+  let venueText: string | null = null;
+  if (venueId) {
+    const { data: venueRow } = await supabase.from('venues').select('name, city').eq('id', venueId).single();
+    if (venueRow) venueText = venueRow.city ? `${venueRow.city} ${venueRow.name}` : venueRow.name;
+  }
 
   const { error } = await supabase
     .from('shows')
     .update({
       title,
       show_date: showDate,
-      venue,
+      venue: venueText,
+      venue_id: venueId,
       slug,
       status,
-      cover_image_url: coverImageUrl,
-      latitude: latitudeRaw ? Number(latitudeRaw) : null,
-      longitude: longitudeRaw ? Number(longitudeRaw) : null})
+      cover_image_url: coverImageUrl
+    })
     .eq('id', id);
 
   if (error) throw new Error(error.message);
@@ -71,6 +80,7 @@ export async function updateShowInfo(formData: FormData) {
   revalidatePath('/admin/shows');
   revalidatePath(`/admin/shows/${id}/setlist`);
   revalidatePath(`/show/${slug}`);
+  revalidatePath('/tour');
 }
 
 export async function deleteShow(formData: FormData) {

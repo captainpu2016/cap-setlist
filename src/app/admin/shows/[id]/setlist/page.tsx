@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import ShowInfoForm from './show-info-form';
 import SetlistEditor from './setlist-editor';
-import type { Show, Song, SetlistItemWithSong } from '@/types/database';
+import type { Show, Song, SetlistItemWithSong, Venue } from '@/types/database';
 
 type SongWithUsage = Song & { setlist_items: { count: number }[] };
 
@@ -16,18 +16,16 @@ export default async function SetlistEditorPage({ params }: { params: { id: stri
     .single<Show>();
   if (!show) notFound();
 
-  const { data: items } = await supabase
-    .from('setlist_items')
-    .select('*, song:songs(*)')
-    .eq('show_id', show.id)
-    .order('position', { ascending: true })
-    .returns<SetlistItemWithSong[]>();
-
-  const { data: songs } = await supabase
-    .from('songs')
-    .select('*, setlist_items(count)')
-    .order('title')
-    .returns<SongWithUsage[]>();
+  const [{ data: items }, { data: songs }, { data: venues }] = await Promise.all([
+    supabase
+      .from('setlist_items')
+      .select('*, song:songs(*)')
+      .eq('show_id', show.id)
+      .order('position', { ascending: true })
+      .returns<SetlistItemWithSong[]>(),
+    supabase.from('songs').select('*, setlist_items(count)').order('title').returns<SongWithUsage[]>(),
+    supabase.from('venues').select('*').order('city').returns<Venue[]>()
+  ]);
 
   const songLibrary = (songs ?? []).map((s) => ({
     ...s,
@@ -40,7 +38,7 @@ export default async function SetlistEditorPage({ params }: { params: { id: stri
       <p className="mt-1 text-sm text-stone-500">歌單編輯器</p>
 
       <div className="mt-6">
-        <ShowInfoForm show={show} />
+        <ShowInfoForm show={show} venues={venues ?? []} />
       </div>
 
       <SetlistEditor

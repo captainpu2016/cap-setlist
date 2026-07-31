@@ -1,6 +1,11 @@
+import { createClient } from '@/lib/supabase/server';
 import { createShow } from '../actions';
+import type { Venue } from '@/types/database';
 
-export default function NewShowPage() {
+export default async function NewShowPage() {
+  const supabase = createClient();
+  const { data: venues } = await supabase.from('venues').select('*').order('city').returns<Venue[]>();
+
   return (
     <div className="max-w-lg">
       <h1 className="font-display text-2xl font-bold text-stone-900">新增場次</h1>
@@ -20,8 +25,18 @@ export default function NewShowPage() {
         </div>
 
         <div>
-          <label className="admin-label" htmlFor="venue">場地</label>
-          <input id="venue" name="venue" className="admin-input" placeholder="例：Legacy Taipei" />
+          <label className="admin-label" htmlFor="venue_id">場地</label>
+          <select id="venue_id" name="venue_id" className="admin-input" defaultValue="">
+            <option value="">未指定</option>
+            {(venues ?? []).map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.city ? `${v.city} ${v.name}` : v.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-stone-400">
+            找不到想要的場地？<a href="/admin/venues/new" className="underline hover:text-stone-600">先去新增一個場地</a>。
+          </p>
         </div>
 
         <div>
