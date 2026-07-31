@@ -95,6 +95,12 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
           >
             查看巡演足跡地圖 →
           </a>
+          
+          <a href="/search"
+              className="inline-flex items-center gap-1 text-xs uppercase tracking-widest text-stone-400 hover:text-marquee"
+            >
+              搜尋歌曲 →
+            </a>
         </div>
       </header>
 

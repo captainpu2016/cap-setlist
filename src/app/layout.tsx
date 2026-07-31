@@ -40,8 +40,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="zh-Hant">
-      <body className={`${display.variable} ${body.variable} font-body bg-stage-950`}>
+<body className={`${display.variable} ${body.variable} font-body bg-stage-950`}>
         {children}
+        <footer className="border-t border-stage-800 px-6 py-8 text-center text-xs text-stone-500 sm:px-10">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <a href="/tour" className="hover:text-marquee">巡演足跡</a>
+            <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
+            <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
+          </div>
+          <p className="mt-3">© {new Date().getFullYear()} 普通隊長</p>
+        </footer>
       </body>
       {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
