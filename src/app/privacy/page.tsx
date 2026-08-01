@@ -1,3 +1,6 @@
+import PageHeader from '@/components/PageHeader';
+import BackLink from '@/components/BackLink';
+
 export const metadata = {
   title: '隱私權說明｜普通隊長',
   description: '普通隊長網站的隱私權與資料蒐集說明。'
@@ -7,14 +10,13 @@ export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <div className="mx-auto max-w-2xl">
-        <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
-          ← 返回場次列表
-        </a>
+        <BackLink />
 
-        <p className="mt-6 text-xs uppercase tracking-[0.3em] text-marquee">Privacy</p>
-        <h1 className="mt-2 font-display text-3xl font-black text-paper sm:text-5xl">隱私權說明</h1>
+        <div className="mt-6">
+          <PageHeader eyebrow="Privacy" title="隱私權說明" />
+        </div>
 
-        <div className="mt-8 space-y-6 text-sm leading-relaxed text-stone-300">
+        <div className="mt-8 space-y-6 text-sm leading-relaxed text-stone-400">
           <section>
             <h2 className="mb-2 font-display text-base font-bold text-paper">我們蒐集什麼</h2>
             <p>

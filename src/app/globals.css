@@ -49,3 +49,14 @@ body {
   @apply inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium
     text-white transition hover:bg-red-500;
 }
+
+/* 全站鍵盤 Tab 鍵焦點樣式，深色背景上瀏覽器預設外框太不明顯 */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #c9a876;
+  outline-offset: 2px;
+  border-radius: 2px;
+}

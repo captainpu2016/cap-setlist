@@ -4,6 +4,8 @@ import { getCity } from '@/lib/format';
 import { getShowCoordinates } from '@/lib/geo';
 import TourExplorer from './tour-explorer';
 import type { DatedPoint } from './tour-explorer';
+import PageHeader from '@/components/PageHeader';
+import BackLink from '@/components/BackLink';
 
 export const revalidate = 3600;
 
@@ -80,17 +82,17 @@ export default async function TourPage() {
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <div className="mx-auto max-w-3xl">
-        <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
-          ← 返回場次列表
-        </a>
+        <BackLink />
 
-        <p className="mt-6 text-xs uppercase tracking-[0.3em] text-marquee">Tour Archive</p>
-        <h1 className="mt-2 font-display text-3xl font-black text-paper sm:text-5xl">巡演足跡</h1>
-        <p className="mt-3 text-stone-400">
-          {allShows.length} 場演出，走過{' '}
-          {new Set(datedPoints.map((p) => p.city)).size} 個城市
-          {uncounted > 0 && `（另有 ${uncounted} 場還沒有定位資料，不會顯示在地圖上）`}
-        </p>
+        <div className="mt-6">
+          <PageHeader
+            eyebrow="Tour Archive"
+            title="巡演足跡"
+            description={`${allShows.length} 場演出，走過 ${new Set(datedPoints.map((p) => p.city)).size} 個城市${
+              uncounted > 0 ? `（另有 ${uncounted} 場還沒有定位資料，不會顯示在地圖上）` : ''
+            }`}
+          />
+        </div>
 
         <section className="mt-10">
           <div className="mb-3 flex items-baseline justify-between">
@@ -135,7 +137,10 @@ export default async function TourPage() {
                   })}
                 </div>
               </div>
-              <p className="mt-3 text-xs text-stone-500">滑鼠移到長條上可以看該月確切場次數。</p>
+              <p className="mt-3 text-xs text-stone-500">
+                滑鼠移到長條上可以看該月確切場次數。
+                {monthlyTimeline.length > 14 && '　可以左右滑動查看更早期的資料。'}
+              </p>
             </div>
           ) : (
             <p className="text-sm text-stone-500">還沒有演出資料。</p>

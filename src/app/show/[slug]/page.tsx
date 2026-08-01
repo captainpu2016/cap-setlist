@@ -6,6 +6,7 @@ import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
 import Setlist from './setlist';
+import BackLink from '@/components/BackLink';
 
 // 生成 Spotify 播放清單的功能先隱藏（Spotify Development Mode 限制，見對話紀錄）。
 // 後端邏輯都還在 src/app/api/shows/[id]/generate-playlist/、
@@ -91,9 +92,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
 
       <div className="px-6 py-14 sm:px-10">
         <div className="mx-auto max-w-2xl">
-          <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
-            ← 返回場次列表
-          </a>
+        <BackLink />
 
           <div className="mt-6 flex items-start gap-4">
             <CaptainBadge size={56} rotate={-4} className="mt-1 shrink-0" />
