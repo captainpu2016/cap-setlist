@@ -1,7 +1,7 @@
 'use client';
 
-import { Fragment } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { Fragment, useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -58,6 +58,24 @@ function venueIcon(count: number) {
   });
 }
 
+/** 依 locked 狀態切換地圖的拖曳/縮放互動，手機上避免滑頁面時被地圖攔截手勢 */
+function InteractionToggle({ locked }: { locked: boolean }) {
+  const map = useMap();
+
+  if (locked) {
+    map.dragging.disable();
+    map.touchZoom.disable();
+    map.doubleClickZoom.disable();
+    map.scrollWheelZoom.disable();
+  } else {
+    map.dragging.enable();
+    map.touchZoom.enable();
+    map.doubleClickZoom.enable();
+  }
+
+  return null;
+}
+
 export default function TourMap({
   points,
   route = []
@@ -79,14 +97,27 @@ export default function TourMap({
     segments.push({ from: route[i], to: route[i + 1] });
   }
 
+  // 只有觸控裝置（手機/平板）才預設鎖定，滑鼠裝置一開始就可以正常拖曳/滾輪縮放
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      setLocked(true);
+    }
+  }, []);
+
   return (
-    <div className="h-[420px] w-full overflow-hidden rounded-lg border border-stage-700">
+    <div className="relative h-[420px] w-full overflow-hidden rounded-lg border border-stage-700">
       <MapContainer
         center={center}
         zoom={points.length > 1 ? 6 : 9}
+        dragging={!locked}
+        touchZoom={!locked}
+        doubleClickZoom={!locked}
         scrollWheelZoom={false}
         style={{ height: '100%', width: '100%', background: '#170f0a' }}
       >
+        <InteractionToggle locked={locked} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -129,6 +160,16 @@ export default function TourMap({
           </Marker>
         ))}
       </MapContainer>
+
+      {locked && (
+        <button
+          type="button"
+          onClick={() => setLocked(false)}
+          className="absolute inset-0 flex items-center justify-center bg-stage-950/20 text-xs text-paper backdrop-blur-[1px] transition hover:bg-stage-950/10"
+        >
+          <span className="rounded-full bg-stage-950/80 px-4 py-2">輕觸以操作地圖</span>
+        </button>
+      )}
     </div>
   );
 }
