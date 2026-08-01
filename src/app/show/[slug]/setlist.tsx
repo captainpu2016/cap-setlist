@@ -223,6 +223,38 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
           />
         ))}
       </ol>
+
+      {/* 手機版貼底迷你播放列：滑到哪裡都看得到目前播放狀態，可以直接暫停/繼續 */}
+      {currentPlayingItem?.song && (
+        <>
+          <div aria-hidden className="h-16 sm:hidden" />
+          <div
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-stage-700 bg-stage-950/95 backdrop-blur sm:hidden"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="h-1 w-full bg-stage-800">
+              <div
+                className="h-full bg-marquee transition-[width]"
+                style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+              />
+            </div>
+            <div className="flex items-center gap-3 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => handleTitleToggle(currentPlayingItem)}
+                aria-label={isPlaying ? '暫停' : '播放'}
+                className="shrink-0 text-marquee"
+              >
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </button>
+              <p className="min-w-0 flex-1 truncate text-sm text-paper">{currentPlayingItem.song.title}</p>
+              <span className="shrink-0 text-xs tabular-nums text-stone-500">
+                {formatDuration(Math.floor(currentTime)) ?? '0:00'}
+              </span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
