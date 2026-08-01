@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { formatShowDateShort } from '@/lib/format';
 import type { Show, Song } from '@/types/database';
+import PageHeader from '@/components/PageHeader';
+import BackLink from '@/components/BackLink';
 
 export const metadata = {
   title: '搜尋歌曲｜普通隊長',
@@ -35,13 +37,11 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <div className="mx-auto max-w-2xl">
-        <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
-          ← 返回場次列表
-        </a>
+        <BackLink />
 
-        <p className="mt-6 text-xs uppercase tracking-[0.3em] text-marquee">Search</p>
-        <h1 className="mt-2 font-display text-3xl font-black text-paper sm:text-5xl">搜尋歌曲</h1>
-        <p className="mt-3 text-stone-400">找找看某首歌在哪些場次唱過。</p>
+        <div className="mt-6">
+          <PageHeader eyebrow="Search" title="搜尋歌曲" description="找找看某首歌在哪些場次唱過。" />
+        </div>
 
         <form method="get" className="mt-8 flex gap-2">
           <input
