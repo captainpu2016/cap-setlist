@@ -49,6 +49,7 @@ export type Show = {
   status: ShowStatus;
   spotify_playlist_url: string | null;
   cover_image_url: string | null;
+  setlist_reveal_at: string | null;
   venue_id: string | null;
   latitude: number | null;
   longitude: number | null;
