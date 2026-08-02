@@ -6,6 +6,7 @@ import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
 import AddToCalendarButton from '@/components/AddToCalendarButton';
+import ShareCardButton from '@/components/ShareCardButton';
 import BackLink from '@/components/BackLink';
 import Setlist from './setlist';
 
@@ -136,6 +137,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <ShareButton title={show.title} />
             <AddToCalendarButton title={show.title} dateStr={show.show_date} venue={show.venue} url={showUrl} />
+            <ShareCardButton slug={show.slug} title={show.title} />
           </div>
 
           <div className="mt-10">
