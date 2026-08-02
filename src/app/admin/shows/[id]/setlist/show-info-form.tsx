@@ -6,6 +6,14 @@ import type { Show, Venue } from '@/types/database';
 
 type SaveState = 'idle' | 'saved' | 'error';
 
+/** 把資料庫存的 ISO 時間字串轉成 <input type="datetime-local"> 要的本地時間格式 */
+function toDatetimeLocalValue(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function ShowInfoForm({ show, venues }: { show: Show; venues: Venue[] }) {
   const [status, setStatus] = useState(show.status);
   const [isPending, startTransition] = useTransition();
@@ -78,6 +86,21 @@ export default function ShowInfoForm({ show, venues }: { show: Show; venues: Ven
             className="mt-3 h-32 w-full rounded-md border border-stone-200 object-cover"
           />
         )}
+      </div>
+
+      <div className="sm:col-span-2">
+        <label className="admin-label" htmlFor="setlist_reveal_at">歌單公開時間（選填）</label>
+        <input
+          id="setlist_reveal_at"
+          name="setlist_reveal_at"
+          type="datetime-local"
+          defaultValue={toDatetimeLocalValue(show.setlist_reveal_at)}
+          className="admin-input"
+        />
+        <p className="mt-1 text-xs text-stone-400">
+          留空＝場次一上架，歌單就會立刻顯示。設定時間的話，場次頁在那之前會先顯示「敬請期待」，
+          不會提前曝光歌單內容（例如避免下一場的曲目被提前看到）。
+        </p>
       </div>
 
       <div className="sm:col-span-2">

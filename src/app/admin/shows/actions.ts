@@ -53,6 +53,8 @@ export async function updateShowInfo(formData: FormData) {
   const slug = (formData.get('slug') as string)?.trim();
   const status = formData.get('status') as 'draft' | 'published';
   const coverImageUrl = (formData.get('cover_image_url') as string)?.trim() || null;
+  const setlistRevealRaw = (formData.get('setlist_reveal_at') as string)?.trim();
+  const setlistRevealAt = setlistRevealRaw ? new Date(setlistRevealRaw).toISOString() : null;
 
   if (!title || !showDate || !slug) throw new Error('場次名稱、日期、slug 為必填');
 
@@ -71,7 +73,8 @@ export async function updateShowInfo(formData: FormData) {
       venue_id: venueId,
       slug,
       status,
-      cover_image_url: coverImageUrl
+      cover_image_url: coverImageUrl,
+      setlist_reveal_at: setlistRevealAt
     })
     .eq('id', id);
 
