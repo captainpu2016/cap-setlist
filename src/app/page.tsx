@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Show } from '@/types/database';
+import Image from 'next/image';
 import { getSiteContent } from '@/lib/site-settings';
 import { getCity } from '@/lib/format';
 import ShowListSection from './show-list-section';
@@ -66,12 +67,14 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
       <header className="relative border-b border-stage-700/60 px-6 py-14 sm:px-10">
         {content.bgImageUrl && (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={content.bgImageUrl}
               alt=""
               aria-hidden
-              className="absolute inset-0 h-full w-full object-cover opacity-55"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover opacity-55"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-stage-950 via-stage-950/60 to-stage-950/10" />
           </>
@@ -89,18 +92,21 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
               共 {allShows.length} 場演出紀錄
             </p>
           )}
-          
-            <a href="/tour"
-            className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-widest text-marquee hover:text-marquee/80"
-          >
-            查看巡演足跡地圖 →
-          </a>
-          
-          <a href="/search"
+
+          <div className="mt-4 flex flex-wrap items-center gap-4">
+            <a
+              href="/tour"
+              className="inline-flex items-center gap-1 text-xs uppercase tracking-widest text-marquee hover:text-marquee/80"
+            >
+              查看巡演足跡地圖 →
+            </a>
+            <a
+              href="/search"
               className="inline-flex items-center gap-1 text-xs uppercase tracking-widest text-stone-400 hover:text-marquee"
             >
               搜尋歌曲 →
             </a>
+          </div>
         </div>
       </header>
 
