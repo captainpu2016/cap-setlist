@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { formatShowDateShort } from '@/lib/format';
 import type { Show } from '@/types/database';
 
@@ -37,31 +38,39 @@ export default function ShowListSection({
           <li key={show.id}>
             <Link
               href={`/show/${show.slug}`}
-              className={`group flex h-full flex-col rounded-lg border p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30 ${
+              className={`group flex h-full flex-col overflow-hidden rounded-lg border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/30 ${
                 accent
                   ? 'border-marquee/40 bg-stage-900 hover:border-marquee'
                   : 'border-stage-700 bg-stage-900/60 hover:border-stone-500'
               }`}
             >
-              <p className="text-xs uppercase tracking-widest text-stone-500">
-                {formatShowDateShort(show.show_date)}
-              </p>
-              <h3 className="mt-2 font-display text-xl font-bold text-paper group-hover:text-marquee">
-                {show.title}
-              </h3>
-              {show.venue && <p className="mt-1 text-sm text-stone-400">{show.venue}</p>}
+              {show.cover_image_url && (
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden">
+                  <Image
+                    src={show.cover_image_url}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-stage-950/70 via-transparent to-transparent" />
+                </div>
+              )}
 
-              <div className="mt-auto flex items-center justify-between pt-4">
-                {show.spotify_playlist_url ? (
-                  <span className="inline-block rounded-full bg-signal/20 px-3 py-1 text-xs text-signal">
-                    已有播放清單
+              <div className="flex flex-1 flex-col p-5">
+                <p className="text-xs uppercase tracking-widest text-stone-500">
+                  {formatShowDateShort(show.show_date)}
+                </p>
+                <h3 className="mt-2 font-display text-xl font-bold text-paper group-hover:text-marquee">
+                  {show.title}
+                </h3>
+                {show.venue && <p className="mt-1 text-sm text-stone-400">{show.venue}</p>}
+
+                <div className="mt-auto flex items-center justify-end pt-4">
+                  <span className="text-stone-600 transition group-hover:translate-x-0.5 group-hover:text-marquee">
+                    →
                   </span>
-                ) : (
-                  <span />
-                )}
-                <span className="text-stone-600 transition group-hover:translate-x-0.5 group-hover:text-marquee">
-                  →
-                </span>
+                </div>
               </div>
             </Link>
           </li>
