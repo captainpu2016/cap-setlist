@@ -7,6 +7,7 @@ import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
 import AddToCalendarButton from '@/components/AddToCalendarButton';
 import ShareCardButton from '@/components/ShareCardButton';
+import Image from 'next/image';
 import BackLink from '@/components/BackLink';
 import Setlist from './setlist';
 
@@ -105,14 +106,18 @@ export default async function ShowPage({ params }: { params: { slug: string } })
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      {show.cover_image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={show.cover_image_url}
-          alt={`${show.title} 演出照片`}
-          className="h-[36vh] w-full object-cover sm:h-[46vh]"
-        />
-      )}
+{show.cover_image_url && (
+  <div className="relative h-[36vh] w-full sm:h-[46vh]">
+    <Image
+      src={show.cover_image_url}
+      alt={`${show.title} 演出照片`}
+      fill
+      priority
+      sizes="100vw"
+      className="object-cover"
+    />
+  </div>
+)}
 
       <div className="px-6 py-14 sm:px-10">
         <div className="mx-auto max-w-2xl">
