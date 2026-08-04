@@ -19,6 +19,13 @@ export type Album = {
   updated_at: string;
 };
 
+export type ShowAttendance = {
+  id: string;
+  show_id: string;
+  device_id: string;
+  created_at: string;
+};
+
 export type Song = {
   id: string;
   title: string;
@@ -109,6 +116,12 @@ export type Database = {
         Row: Venue;
         Insert: Partial<Venue> & { name: string };
         Update: Partial<Venue>;
+        Relationships: [];
+      };
+      show_attendances: {
+        Row: ShowAttendance;
+        Insert: Partial<ShowAttendance> & { show_id: string; device_id: string };
+        Update: Partial<ShowAttendance>;
         Relationships: [];
       };
       site_settings: {

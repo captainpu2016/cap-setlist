@@ -1,13 +1,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { formatDuration, formatShowDate, sumDuration } from '@/lib/format';
 import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
 import AddToCalendarButton from '@/components/AddToCalendarButton';
 import ShareCardButton from '@/components/ShareCardButton';
-import Image from 'next/image';
+import AttendButton from '@/components/AttendButton';
 import BackLink from '@/components/BackLink';
 import Setlist from './setlist';
 
@@ -57,7 +59,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
 
   if (!show) notFound();
 
-  const [{ data: items }, { data: prevShow }, { data: nextShow }] = await Promise.all([
+  const [{ data: items }, { data: prevShow }, { data: nextShow }, attendanceCount] = await Promise.all([
     supabase
       .from('setlist_items')
       .select('*, song:songs(*)')
@@ -79,7 +81,12 @@ export default async function ShowPage({ params }: { params: { slug: string } })
       .gt('show_date', show.show_date)
       .order('show_date', { ascending: true })
       .limit(1)
-      .maybeSingle<Pick<Show, 'slug' | 'title'>>()
+      .maybeSingle<Pick<Show, 'slug' | 'title'>>(),
+    createAdminClient()
+      .from('show_attendances')
+      .select('*', { count: 'exact', head: true })
+      .eq('show_id', show.id)
+      .then(({ count }) => count ?? 0)
   ]);
 
   const setlist = items ?? [];
@@ -106,18 +113,18 @@ export default async function ShowPage({ params }: { params: { slug: string } })
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-{show.cover_image_url && (
-  <div className="relative h-[36vh] w-full sm:h-[46vh]">
-    <Image
-      src={show.cover_image_url}
-      alt={`${show.title} 演出照片`}
-      fill
-      priority
-      sizes="100vw"
-      className="object-cover"
-    />
-  </div>
-)}
+      {show.cover_image_url && (
+        <div className="relative h-[36vh] w-full sm:h-[46vh]">
+          <Image
+            src={show.cover_image_url}
+            alt={`${show.title} 演出照片`}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
 
       <div className="px-6 py-14 sm:px-10">
         <div className="mx-auto max-w-2xl">
@@ -140,6 +147,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
           )}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
+            <AttendButton showId={show.id} initialCount={attendanceCount} />
             <ShareButton title={show.title} />
             <AddToCalendarButton title={show.title} dateStr={show.show_date} venue={show.venue} url={showUrl} />
             <ShareCardButton slug={show.slug} title={show.title} />

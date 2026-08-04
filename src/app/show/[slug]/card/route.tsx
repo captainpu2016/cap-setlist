@@ -7,7 +7,18 @@ export const revalidate = 0;
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
-const MAX_SONGS = 14;
+// 極端情況（超長歌單）還是要有一個保底上限，避免字小到完全看不清楚；
+// 一般龐克演出歌單很少會超過這個數字，實務上幾乎不會被截斷
+const HARD_CAP = 40;
+
+/** 依歌曲數量算出合適的字級／行距，數量越多字越小、行距越緊，讓整份歌單都能塞進同一張圖 */
+function getSongRowMetrics(count: number) {
+  if (count <= 12) return { fontSize: 32, numberSize: 26, padding: '14px 20px' };
+  if (count <= 18) return { fontSize: 27, numberSize: 22, padding: '10px 20px' };
+  if (count <= 24) return { fontSize: 23, numberSize: 19, padding: '7px 20px' };
+  if (count <= 32) return { fontSize: 19, numberSize: 16, padding: '5px 20px' };
+  return { fontSize: 16, numberSize: 14, padding: '3px 20px' };
+}
 
 // 跟網站 Logo／favicon 同一份星芒座標，維持品牌一致
 const STARBURST_POINTS =
@@ -63,8 +74,9 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
 
     const isRevealed = !show.setlist_reveal_at || new Date(show.setlist_reveal_at) <= new Date();
     const setlist = isRevealed ? items ?? [] : [];
-    const displaySongs = setlist.slice(0, MAX_SONGS);
+    const displaySongs = setlist.slice(0, HARD_CAP);
     const remaining = setlist.length - displaySongs.length;
+    const metrics = getSongRowMetrics(setlist.length);
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
     const domainText = siteUrl.replace(/^https?:\/\//, '');
@@ -150,14 +162,14 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
                       display: 'flex',
                       alignItems: 'center',
                       gap: 20,
-                      padding: '14px 20px',
+                      padding: metrics.padding,
                       backgroundColor: idx % 2 === 0 ? 'rgba(201,168,118,0.08)' : 'transparent'
                     }}
                   >
-                    <span style={{ color: '#c9a876', fontSize: 26, width: 44 }}>
+                    <span style={{ color: '#c9a876', fontSize: metrics.numberSize, width: 44 }}>
                       {String(idx + 1).padStart(2, '0')}
                     </span>
-                    <span style={{ color: item.is_placeholder ? '#78716c' : '#f2ece0', fontSize: 32 }}>
+                    <span style={{ color: item.is_placeholder ? '#78716c' : '#f2ece0', fontSize: metrics.fontSize }}>
                       {item.is_placeholder ? '敬請期待' : item.song?.title}
                     </span>
                   </div>
@@ -165,7 +177,7 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
               )}
               {remaining > 0 && (
                 <span style={{ color: '#78716c', fontSize: 26, padding: '10px 20px' }}>
-                  ⋯ 等共 {setlist.length} 首
+                  ⋯ 等共 {setlist.length} 首（歌單過長，圖卡放不下，完整版請點連結）
                 </span>
               )}
             </div>
