@@ -229,7 +229,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
         <>
           <div aria-hidden className="h-16 sm:hidden" />
           <div
-            className="fixed inset-x-0 bottom-0 z-40 border-t border-stage-700 bg-stage-950/95 backdrop-blur sm:hidden"
+            className="fixed inset-x-0 bottom-14 z-40 border-t border-stage-700 bg-stage-950/95 backdrop-blur sm:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             <div className="h-1 w-full bg-stage-800">
