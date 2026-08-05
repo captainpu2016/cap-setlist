@@ -60,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="flex flex-col items-center gap-2 text-xs text-stone-500 sm:items-end">
               <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
                 <a href="/" className="hover:text-marquee">首頁</a>
+                <a href="/shows" className="hover:text-marquee">全部場次</a>
                 <a href="/tour" className="hover:text-marquee">巡演足跡</a>
                 <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
                 <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
