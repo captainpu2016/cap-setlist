@@ -13,12 +13,17 @@ export const metadata = {
 
 export default async function ShowsListPage() {
   const supabase = createClient();
-  const { data: shows } = await supabase
+  const { data: shows, error } = await supabase
     .from('shows')
     .select('*')
     .eq('status', 'published')
     .order('show_date', { ascending: false })
     .returns<Show[]>();
+
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error('[shows list] 查詢失敗', error);
+  }
 
   const allShows = shows ?? [];
 
@@ -66,7 +71,13 @@ export default async function ShowsListPage() {
             </section>
           ))}
 
-          {allShows.length === 0 && (
+          {error && (
+            <p className="text-sm text-signal">
+              讀取場次時發生錯誤：{error.message}
+            </p>
+          )}
+
+          {!error && allShows.length === 0 && (
             <p className="text-sm text-stone-500">還沒有上架的場次。</p>
           )}
         </div>
