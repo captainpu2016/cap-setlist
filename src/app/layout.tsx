@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Noto_Serif_TC, Noto_Sans_TC } from 'next/font/google';
+import CaptainBadge from '@/components/CaptainBadge';
+import BottomNav from '@/components/BottomNav';
 import './globals.css';
 
 const display = Noto_Serif_TC({
@@ -40,16 +42,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="zh-Hant">
-<body className={`${display.variable} ${body.variable} font-body bg-stage-950`}>
+      <body className={`${display.variable} ${body.variable} font-body bg-stage-950 pb-14 sm:pb-0`}>
         {children}
-        <footer className="border-t border-stage-800 px-6 py-8 text-center text-xs text-stone-500 sm:px-10">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <a href="/tour" className="hover:text-marquee">巡演足跡</a>
-            <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
-            <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
+
+        <footer className="border-t border-stage-800 px-6 py-10 sm:px-10">
+          <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:justify-between sm:text-left">
+            <div className="flex flex-col items-center gap-3 sm:items-start">
+              <CaptainBadge size={40} rotate={-4} />
+              <div>
+                <p className="font-display text-sm font-bold text-paper">普通隊長</p>
+                <p className="mt-1 max-w-xs text-xs text-stone-500">
+                  近年演出歌單全紀錄，支援線上播放，重溫每一場現場的熱情。
+                </p>
+              </div>
+            </div>
+
+            <nav className="flex flex-col items-center gap-2 text-xs text-stone-500 sm:items-end">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-end">
+                <a href="/" className="hover:text-marquee">首頁</a>
+                <a href="/tour" className="hover:text-marquee">巡演足跡</a>
+                <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
+                <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
+              </div>
+              <p className="mt-2 text-stone-600">© {new Date().getFullYear()} 普通隊長</p>
+            </nav>
           </div>
-          <p className="mt-3">© {new Date().getFullYear()} 普通隊長</p>
         </footer>
+
+        <BottomNav />
       </body>
       {gaId && <GoogleAnalytics gaId={gaId} />}
     </html>
