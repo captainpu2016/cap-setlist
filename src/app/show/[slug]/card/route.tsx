@@ -50,6 +50,19 @@ async function loadFont(text: string, weight: number): Promise<ArrayBuffer | nul
   }
 }
 
+/** 確認自訂徽章圖片網址真的能抓到，抓不到就不要在卡片裡引用它，直接退回預設圖案 */
+async function verifyImageUrl(url: string | null): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    return res.ok ? url : null;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('[card] 自訂徽章圖片抓取失敗', err);
+    return null;
+  }
+}
+
 export async function GET(_request: Request, { params }: { params: { slug: string } }) {
   try {
     const supabase = createClient();
@@ -71,6 +84,14 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
       .eq('show_id', show.id)
       .order('position', { ascending: true })
       .returns<SetlistItemWithSong[]>();
+
+    const { data: settingsRows } = await supabase
+      .from('site_settings')
+      .select('key, value')
+      .eq('key', 'card_badge_image_url')
+      .returns<{ key: string; value: string | null }[]>();
+
+    const badgeImageUrl = await verifyImageUrl(settingsRows?.[0]?.value ?? null);
 
     const isRevealed = !show.setlist_reveal_at || new Date(show.setlist_reveal_at) <= new Date();
     const setlist = isRevealed ? items ?? [] : [];
@@ -123,11 +144,27 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-              <div style={{ display: 'flex', transform: 'rotate(-8deg)' }}>
-                <svg width="104" height="104" viewBox="0 0 100 100">
-                  <polygon points={STARBURST_POINTS} fill="#e2231c" stroke="#c9a876" strokeWidth="2" />
-                </svg>
-              </div>
+              {badgeImageUrl ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    width: 104,
+                    height: 104,
+                    borderRadius: 9999,
+                    overflow: 'hidden',
+                    border: '3px solid #c9a876'
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={badgeImageUrl} width={104} height={104} style={{ objectFit: 'cover' }} />
+                </div>
+              ) : (
+                <div style={{ display: 'flex', transform: 'rotate(-8deg)' }}>
+                  <svg width="104" height="104" viewBox="0 0 100 100">
+                    <polygon points={STARBURST_POINTS} fill="#e2231c" stroke="#c9a876" strokeWidth="2" />
+                  </svg>
+                </div>
+              )}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#c9a876', fontSize: 26, letterSpacing: 6 }}>SETLIST</span>
                 <span style={{ color: '#f2ece0', fontSize: 42, fontWeight: 900 }}>普通隊長</span>

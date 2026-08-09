@@ -63,6 +63,29 @@ export default function SiteContentForm({ content }: { content: SiteContent }) {
         )}
       </div>
 
+      <div className="border-t border-stone-200 pt-5">
+        <label className="admin-label" htmlFor="card_badge_image_url">分享歌單卡片的徽章圖片（選填）</label>
+        <input
+          id="card_badge_image_url"
+          name="card_badge_image_url"
+          defaultValue={content.cardBadgeImageUrl ?? ''}
+          className="admin-input"
+          placeholder="https://xxxxxxxxxxxx.supabase.co/storage/v1/object/public/..."
+        />
+        <p className="mt-1 text-xs text-stone-400">
+          場次頁「分享歌單卡片」產生的直式圖片，左上角原本是星芒圖案，貼這裡的網址可以換成你自己的圖片（例如樂團 Logo）。
+          留空則維持原本的星芒圖案。所有場次的卡片會一起套用同一張圖，沒有分場次設定的選項。
+        </p>
+        {content.cardBadgeImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={content.cardBadgeImageUrl}
+            alt="目前的卡片徽章圖片預覽"
+            className="mt-3 h-24 w-24 rounded-full border border-stone-200 object-cover"
+          />
+        )}
+      </div>
+
       <div className="flex items-center gap-3">
         <button type="submit" disabled={isPending} className="admin-btn">
           {isPending ? '儲存中…' : '儲存文案'}
