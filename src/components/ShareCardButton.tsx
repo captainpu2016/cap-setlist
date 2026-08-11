@@ -15,9 +15,23 @@ export default function ShareCardButton({ slug, title }: { slug: string; title: 
       const blob = await res.blob();
       const file = new File([blob], `${title}-setlist.png`, { type: 'image/png' });
 
+      let shared = false;
+
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${title} 歌單` });
-      } else {
+        try {
+          await navigator.share({ files: [file], title: `${title} 歌單` });
+          shared = true;
+        } catch (shareErr) {
+          // 使用者自己把系統分享視窗取消掉，不算錯誤，也不用再跳出下載
+          if (shareErr instanceof Error && shareErr.name === 'AbortError') {
+            shared = true;
+          }
+          // 其他分享失敗的原因（常見於桌機瀏覽器對檔案分享支援不完整），
+          // 不當作硬性錯誤，往下走下載備援即可
+        }
+      }
+
+      if (!shared) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
