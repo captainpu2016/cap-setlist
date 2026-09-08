@@ -32,11 +32,11 @@ function bearing(lat1: number, lng1: number, lat2: number, lng2: number): number
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
-/** 用一個會依方位角旋轉的三角形當箭頭圖示，不需要額外的圖檔資源 */
+/** 用一個會依方位角旋轉的三角形當箭頭圖示，不需要額外的圖檔資源，加上脈動動畫更有生命力 */
 function arrowIcon(angleDeg: number) {
   return L.divIcon({
     className: '',
-    html: `<div style="transform: rotate(${angleDeg}deg); width:16px; height:16px;">
+    html: `<div class="route-arrow-pulse" style="transform: rotate(${angleDeg}deg); width:16px; height:16px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="#e2231c"><path d="M12 2 L20 21 L12 16 L4 21 Z"/></svg>
     </div>`,
     iconSize: [16, 16],
@@ -134,7 +134,13 @@ export default function TourMap({
                   [seg.from.lat, seg.from.lng],
                   [seg.to.lat, seg.to.lng]
                 ]}
-                pathOptions={{ color: '#c9a876', weight: 2, opacity: 0.6, dashArray: '4 6' }}
+                pathOptions={{
+                  color: '#c9a876',
+                  weight: 3,
+                  opacity: 0.75,
+                  dashArray: '10 8',
+                  className: 'route-flow-line'
+                }}
               />
               <Marker position={mid} icon={arrowIcon(angle)} />
             </Fragment>

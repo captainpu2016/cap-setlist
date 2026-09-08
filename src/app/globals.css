@@ -60,3 +60,29 @@ textarea:focus-visible {
   outline-offset: 2px;
   border-radius: 2px;
 }
+
+/* 巡演足跡地圖：路徑虛線持續流動，呈現「正在移動」的動態感（俗稱 marching ants） */
+.route-flow-line {
+  animation: route-flow-dash 1s linear infinite;
+}
+@keyframes route-flow-dash {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+/* 巡演足跡地圖：路徑箭頭輕微脈動，增加生命力 */
+.route-arrow-pulse {
+  animation: route-arrow-pulse 1.6s ease-in-out infinite;
+}
+@keyframes route-arrow-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0 rgba(226, 35, 28, 0));
+  }
+  50% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 4px rgba(226, 35, 28, 0.8));
+  }
+}
