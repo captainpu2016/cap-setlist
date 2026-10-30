@@ -1,56 +1,54 @@
 import { createPublicClient } from '@/lib/supabase/public';
-import { formatShowDateShort } from '@/lib/format';
-import type { Show, Song } from '@/types/database';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
+import SongSearch, { type SearchSong } from './song-search';
 
 export const metadata = {
   title: '搜尋歌曲｜普通隊長',
   description: '搜尋普通隊長的歌曲，找出在哪些場次唱過。'
 };
 
-interface SetlistItemJoined {
+interface SongRow {
   id: string;
-  is_placeholder: boolean;
-  show: Show | null;
-}
-
-interface SongResult extends Song {
-  setlist_items: SetlistItemJoined[];
+  title: string;
+  album: { title: string } | null;
+  setlist_items: {
+    is_placeholder: boolean;
+    show: {
+      id: string;
+      slug: string;
+      title: string;
+      show_date: string;
+      venue: string | null;
+      status: string;
+      setlist_reveal_at: string | null;
+    } | null;
+  }[];
 }
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
-  const q = searchParams.q?.trim() ?? '';
   const supabase = createPublicClient();
+  const { data } = await supabase
+    .from('songs')
+    .select(
+      'id, title, album:albums(title), setlist_items(is_placeholder, show:shows(id, slug, title, show_date, venue, status, setlist_reveal_at))'
+    )
+    .returns<SongRow[]>();
 
-  let results: SongResult[] = [];
-  if (q) {
-    const { data } = await supabase
-      .from('songs')
-      .select('*, setlist_items(id, is_placeholder, show:shows(*))')
-      .ilike('title', `%${q}%`)
-      .order('title')
-      .returns<SongResult[]>();
-    results = data ?? [];
-  }
+  const now = new Date();
 
-  // 尚未輸入關鍵字時，列出唱過最多場的歌曲，讓人直接點選
-  let suggestions: { id: string; title: string; count: number }[] = [];
-  if (!q) {
-    const { data } = await supabase
-      .from('songs')
-      .select('*, setlist_items(id, is_placeholder, show:shows(*))')
-      .returns<SongResult[]>();
-    suggestions = (data ?? [])
-      .map((song) => ({
-        id: song.id,
-        title: song.title,
-        count: (song.setlist_items ?? []).filter((i) => !i.is_placeholder && i.show).length
-      }))
-      .filter((song) => song.count > 0)
-      .sort((a, b) => b.count - a.count || a.title.localeCompare(b.title))
-      .slice(0, 20);
-  }
+  // 在伺服器端整理好，只把公開、已揭曉歌單的場次交給前端，避免提早洩漏尚未公開的歌單
+  const songs: SearchSong[] = (data ?? [])
+    .map((song) => {
+      const shows = song.setlist_items
+        .filter((i) => !i.is_placeholder && i.show)
+        .map((i) => i.show!)
+        .filter((s) => s.status === 'published' && (!s.setlist_reveal_at || new Date(s.setlist_reveal_at) <= now))
+        .sort((a, b) => b.show_date.localeCompare(a.show_date))
+        .map((s) => ({ id: s.id, slug: s.slug, title: s.title, date: s.show_date, venue: s.venue }));
+      return { id: song.id, title: song.title, album: song.album?.title ?? null, shows };
+    })
+    .filter((song) => song.shows.length > 0);
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
@@ -61,88 +59,8 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
           <PageHeader eyebrow="Search" title="搜尋歌曲" description="找找看某首歌在哪些場次唱過。" />
         </div>
 
-        <form method="get" className="mt-8 flex gap-2">
-          <input
-            type="text"
-            name="q"
-            defaultValue={q}
-            placeholder="輸入歌名關鍵字…"
-            autoFocus
-            className="flex-1 rounded-md border border-stage-700 bg-stage-900/60 px-4 py-2.5 text-sm text-paper placeholder:text-stone-600 focus:border-marquee focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="rounded-md bg-marquee px-5 py-2.5 text-sm font-bold text-stage-950 transition hover:bg-marquee/80"
-          >
-            搜尋
-          </button>
-        </form>
-
-        <div className="mt-10">
-          {!q && (
-            <>
-              <p className="text-sm text-stone-500">輸入歌名開始搜尋，或從下面挑一首。</p>
-              {suggestions.length > 0 && (
-                <>
-                  <h2 className="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-stone-500">
-                    常唱歌曲
-                  </h2>
-                  <ul className="divide-y divide-stage-700 rounded-lg border border-stage-700 bg-stage-900/60">
-                    {suggestions.map((song) => (
-                      <li key={song.id}>
-                        <a
-                          href={`/search?q=${encodeURIComponent(song.title)}`}
-                          className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-stage-800/60"
-                        >
-                          <span className="text-paper">{song.title}</span>
-                          <span className="text-xs text-stone-500">{song.count} 場</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </>
-          )}
-
-          {q && results.every((song) => !hasVisibleShows(song)) && (
-            <p className="text-sm text-stone-500">沒有找到符合「{q}」的歌曲。</p>
-          )}
-
-          {results.map((song) => {
-            const shows = (song.setlist_items ?? [])
-              .filter((i) => !i.is_placeholder && i.show)
-              .map((i) => i.show as Show)
-              .sort((a, b) => b.show_date.localeCompare(a.show_date));
-
-            if (shows.length === 0) return null;
-
-            return (
-              <div key={song.id} className="mb-8">
-                <h2 className="font-display text-lg font-bold text-paper">{song.title}</h2>
-                <p className="mb-2 text-xs text-stone-500">在 {shows.length} 場演出中唱過</p>
-                <ul className="divide-y divide-stage-700 rounded-lg border border-stage-700 bg-stage-900/60">
-                  {shows.map((show) => (
-                    <li key={show.id}>
-                      <a
-                        href={`/show/${show.slug}`}
-                        className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-stage-800/60"
-                      >
-                        <span className="text-paper">{show.title}</span>
-                        <span className="text-xs text-stone-500">{formatShowDateShort(show.show_date)}</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
+        <SongSearch songs={songs} initialQuery={searchParams.q?.trim() ?? ''} />
       </div>
     </main>
   );
-}
-
-function hasVisibleShows(song: SongResult): boolean {
-  return (song.setlist_items ?? []).some((i) => !i.is_placeholder && i.show);
 }
