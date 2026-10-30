@@ -1,48 +1,55 @@
 import { ImageResponse } from 'next/og';
-import { createClient } from '@/lib/supabase/server';
+import qrcode from 'qrcode-generator';
+import { createPublicClient } from '@/lib/supabase/public';
 import { formatShowDate } from '@/lib/format';
+import { starsPolygons } from '@/lib/stars';
 import type { Show, SetlistItemWithSong } from '@/types/database';
-
-export const revalidate = 0;
 
 const WIDTH = 1080;
 const HEIGHT = 1920;
-// 極端情況（超長歌單）還是要有一個保底上限，避免字小到完全看不清楚；
-// 一般龐克演出歌單很少會超過這個數字，實務上幾乎不會被截斷
-const HARD_CAP = 40;
 
-/** 依歌曲數量算出合適的字級／行距，數量越多字越小、行距越緊，讓整份歌單都能塞進同一張圖 */
-function getSongRowMetrics(count: number) {
-  if (count <= 12) return { fontSize: 32, numberSize: 26, padding: '14px 20px' };
-  if (count <= 18) return { fontSize: 27, numberSize: 22, padding: '10px 20px' };
-  if (count <= 24) return { fontSize: 23, numberSize: 19, padding: '7px 20px' };
-  if (count <= 32) return { fontSize: 19, numberSize: 16, padding: '5px 20px' };
-  return { fontSize: 16, numberSize: 14, padding: '3px 20px' };
+// 歌單再長也要有保底上限，避免字小到看不清楚；兩欄排版下 48 首大約是極限
+const HARD_CAP = 48;
+
+const BG = '#0b0908';
+const PAPER = '#f4efe6';
+const GOLD = '#d4b27a';
+const RED = '#e2231c';
+const LINE = '#302a27';
+
+const FOOTER_H = 230;
+
+/** 快取：同一個伺服器實例內，字型與品牌圖不用每次重抓 */
+const fontCache = new Map<string, ArrayBuffer>();
+const imageCache = new Map<string, string>();
+
+function hash(text: string) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return `${text.length}-${h}`;
 }
 
-// 跟網站 Logo／favicon 同一份星芒座標，維持品牌一致
-const STARBURST_POINTS =
-  '50,4 57,14.7 67.6,7.5 70,20.1 82.5,17.5 79.9,30 92.5,32.4 85.3,43 96,50 85.3,57 92.5,67.6 79.9,70 82.5,82.5 70,79.9 67.6,92.5 57,85.3 50,96 43,85.3 32.4,92.5 30,79.9 17.5,82.5 20.1,70 7.5,67.6 14.7,57 4,50 14.7,43 7.5,32.4 20.1,30 17.5,17.5 30,20.1 32.4,7.5 43,14.7';
-
 /**
- * 跟 Google Fonts 要「只含這張卡片實際會用到的字」的字型檔（用 text 參數做子集化，
- * 檔案才不會太大）。不特別假裝舊瀏覽器 UA，直接吃 Google 回傳的格式（現在的 Satori
- * 版本可以處理 woff2），regex 也放寬，避免格式稍有出入就整個抓空。
+ * 跟 Google Fonts 要「只含卡片實際用到的字」的字型子集（用 text 參數），檔案才不會太大。
+ * 結果依「字重＋文字內容」快取，重複產生同一場卡片時不用再連線。
  */
 async function loadFont(text: string, weight: number): Promise<ArrayBuffer | null> {
+  const key = `${weight}:${hash(text)}`;
+  const cached = fontCache.get(key);
+  if (cached) return cached;
   try {
     const css = await (
-      await fetch(
-        `https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@${weight}&text=${encodeURIComponent(text)}`
-      )
+      await fetch(`https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@${weight}&text=${encodeURIComponent(text)}`, {
+        next: { revalidate: 86400 }
+      })
     ).text();
-
     const match = css.match(/src:\s*url\(([^)]+)\)/);
     if (!match) return null;
-
-    const fontRes = await fetch(match[1]);
-    if (!fontRes.ok) return null;
-    return await fontRes.arrayBuffer();
+    const res = await fetch(match[1], { next: { revalidate: 86400 } });
+    if (!res.ok) return null;
+    const data = await res.arrayBuffer();
+    fontCache.set(key, data);
+    return data;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[card] 字型載入失敗', err);
@@ -50,22 +57,53 @@ async function loadFont(text: string, weight: number): Promise<ArrayBuffer | nul
   }
 }
 
-/** 確認自訂徽章圖片網址真的能抓到，抓不到就不要在卡片裡引用它，直接退回預設圖案 */
-async function verifyImageUrl(url: string | null): Promise<string | null> {
+/**
+ * 把圖片抓下來轉成 data URI 直接嵌進卡片：只抓一次、有逾時與大小上限，
+ * 抓不到（或格式 Satori 不支援）就回傳 null，由呼叫端退回沒有圖的版面。
+ */
+async function toDataUri(url: string | null, opts: { maxBytes: number; timeoutMs: number; cache?: boolean }) {
   if (!url) return null;
+  if (opts.cache && imageCache.has(url)) return imageCache.get(url)!;
   try {
-    const res = await fetch(url);
-    return res.ok ? url : null;
+    const res = await fetch(url, { signal: AbortSignal.timeout(opts.timeoutMs) });
+    if (!res.ok) return null;
+    const type = res.headers.get('content-type')?.split(';')[0] ?? '';
+    if (!/^image\/(png|jpeg)$/.test(type)) return null;
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength > opts.maxBytes) return null;
+    const uri = `data:${type};base64,${Buffer.from(buf).toString('base64')}`;
+    if (opts.cache) imageCache.set(url, uri);
+    return uri;
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[card] 自訂徽章圖片抓取失敗', err);
+    console.error('[card] 圖片抓取失敗', url, err);
     return null;
   }
 }
 
-export async function GET(_request: Request, { params }: { params: { slug: string } }) {
+/** 把網址做成 QR code 的 SVG 路徑（每個深色格子一小段） */
+function qrPath(text: string): { d: string; size: number } {
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  const n = qr.getModuleCount();
+  let d = '';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`;
+    }
+  }
+  return { d, size: n };
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
+
+export async function GET(request: Request, { params }: { params: { slug: string } }) {
   try {
-    const supabase = createClient();
+    const supabase = createPublicClient();
+    const origin = new URL(request.url).origin;
 
     const { data: show } = await supabase
       .from('shows')
@@ -74,50 +112,60 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
       .eq('status', 'published')
       .single<Show>();
 
-    if (!show) {
-      return new Response('Not found', { status: 404 });
-    }
+    if (!show) return new Response('Not found', { status: 404 });
 
-    const { data: items } = await supabase
-      .from('setlist_items')
-      .select('*, song:songs(*)')
-      .eq('show_id', show.id)
-      .order('position', { ascending: true })
-      .returns<SetlistItemWithSong[]>();
-
-    const { data: settingsRows } = await supabase
-      .from('site_settings')
-      .select('key, value')
-      .eq('key', 'card_badge_image_url')
-      .returns<{ key: string; value: string | null }[]>();
-
-    const badgeImageUrl = await verifyImageUrl(settingsRows?.[0]?.value ?? null);
+    const [{ data: items }, logo, mascot, cover] = await Promise.all([
+      supabase
+        .from('setlist_items')
+        .select('*, song:songs(*)')
+        .eq('show_id', show.id)
+        .order('position', { ascending: true })
+        .returns<SetlistItemWithSong[]>(),
+      toDataUri(`${origin}/brand/logo-horizontal-white.png`, { maxBytes: 400_000, timeoutMs: 4000, cache: true }),
+      toDataUri(`${origin}/brand/mascot-head.png`, { maxBytes: 400_000, timeoutMs: 4000, cache: true }),
+      toDataUri(show.cover_image_url, { maxBytes: 3_000_000, timeoutMs: 5000 })
+    ]);
 
     const isRevealed = !show.setlist_reveal_at || new Date(show.setlist_reveal_at) <= new Date();
     const setlist = isRevealed ? items ?? [] : [];
-    const displaySongs = setlist.slice(0, HARD_CAP);
-    const remaining = setlist.length - displaySongs.length;
-    const metrics = getSongRowMetrics(setlist.length);
+    const songs = setlist.slice(0, HARD_CAP);
+    const remaining = setlist.length - songs.length;
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
-    const domainText = siteUrl.replace(/^https?:\/\//, '');
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? origin;
+    const showUrl = `${siteUrl}/show/${show.slug}`;
+    const domainText = showUrl.replace(/^https?:\/\//, '');
+    const qr = qrPath(showUrl);
 
+    const titles = songs.map((i) => (i.is_placeholder ? '敬請期待' : i.song?.title ?? ''));
     const allText = [
-      '普通隊長',
-      'SETLIST',
       show.title,
       formatShowDate(show.show_date),
       show.venue ?? '',
       '歌單敬請期待',
-      '點擊連結聽完整播放',
+      '掃描或點連結，聽完整歌單',
+      'SETLIST',
+      `0123456789 ${setlist.length} 首歌 · ⋯… 等共首，完整版請看網站`,
       domainText,
-      ...displaySongs.map((i) => (i.is_placeholder ? '敬請期待' : i.song?.title ?? '')),
-      remaining > 0 ? `等共 ${setlist.length} 首` : ''
+      ...titles
     ].join('');
 
     const [fontRegular, fontBold] = await Promise.all([loadFont(allText, 400), loadFont(allText, 900)]);
 
-    return new ImageResponse(
+    // ── 版面計算：照片區高度、一欄或兩欄、依剩餘高度決定行高與字級 ──
+    const heroH = cover ? 640 : 440;
+    const cols = songs.length <= 14 ? 1 : 2;
+    const rowsPerCol = Math.max(1, Math.ceil(songs.length / cols));
+    const listH = HEIGHT - heroH - 10 - FOOTER_H - 56 - 56 - (remaining > 0 ? 44 : 0);
+    const rowH = clamp(Math.floor(listH / rowsPerCol), 36, 78);
+    const fontSize = clamp(Math.round(rowH * 0.46), 20, 36);
+
+    const columns: { item: (typeof songs)[number]; index: number }[][] = Array.from({ length: cols }, () => []);
+    songs.forEach((item, index) => columns[Math.floor(index / rowsPerCol)].push({ item, index }));
+
+    const stars = starsPolygons();
+    const titleSize = show.title.length > 28 ? 56 : 68;
+
+    const image = new ImageResponse(
       (
         <div
           style={{
@@ -125,115 +173,181 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
             height: HEIGHT,
             display: 'flex',
             flexDirection: 'column',
-            backgroundColor: '#170f0a',
-            backgroundImage: 'radial-gradient(circle, rgba(201,168,118,0.5) 3px, transparent 3.6px)',
-            backgroundSize: '36px 36px',
+            backgroundColor: BG,
+            color: PAPER,
             fontFamily: fontRegular ? 'Noto Sans TC' : undefined
           }}
         >
-          {/* 外框留白 + 細金框，營造海報邊框感 */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: 1,
-              margin: 28,
-              border: '2px solid rgba(201,168,118,0.55)',
-              borderRadius: 12,
-              padding: '64px 64px 56px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-              {badgeImageUrl ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    width: 104,
-                    height: 104,
-                    borderRadius: 9999,
-                    overflow: 'hidden',
-                    border: '3px solid #c9a876'
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={badgeImageUrl} width={104} height={104} style={{ objectFit: 'cover' }} />
-                </div>
-              ) : (
-                <div style={{ display: 'flex', transform: 'rotate(-8deg)' }}>
-                  <svg width="104" height="104" viewBox="0 0 100 100">
-                    <polygon points={STARBURST_POINTS} fill="#e2231c" stroke="#c9a876" strokeWidth="2" />
-                  </svg>
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#c9a876', fontSize: 26, letterSpacing: 6 }}>SETLIST</span>
-                <span style={{ color: '#f2ece0', fontSize: 42, fontWeight: 900 }}>普通隊長</span>
-              </div>
-            </div>
+          {/* 上半：演出照片 + 由下往上的暗色漸層，文字壓在照片上 */}
+          <div style={{ display: 'flex', position: 'relative', width: WIDTH, height: heroH, backgroundColor: '#1d1917' }}>
+            {cover && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cover}
+                width={WIDTH}
+                height={heroH}
+                style={{ position: 'absolute', top: 0, left: 0, width: WIDTH, height: heroH, objectFit: 'cover' }}
+              />
+            )}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: WIDTH,
+                height: heroH,
+                display: 'flex',
+                backgroundImage: `linear-gradient(to top, ${BG} 4%, rgba(11,9,8,0.6) 45%, rgba(11,9,8,0.25) 100%)`
+              }}
+            />
 
-            <div style={{ display: 'flex', flexDirection: 'column', marginTop: 60 }}>
-              <span style={{ color: '#c9a876', fontSize: 28 }}>{formatShowDate(show.show_date)}</span>
-              <span style={{ color: '#f2ece0', fontSize: 54, fontWeight: 900, marginTop: 12, lineHeight: 1.25 }}>
-                {show.title}
-              </span>
-              {show.venue && <span style={{ color: '#a8a29e', fontSize: 30, marginTop: 12 }}>{show.venue}</span>}
+            <div
+              style={{
+                position: 'absolute',
+                top: 52,
+                left: 64,
+                right: 64,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              {logo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logo} width={171} height={96} style={{ marginLeft: -20 }} />
+              ) : (
+                <span style={{ fontSize: 44, fontWeight: 900 }}>普通隊長</span>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+                <svg width={(34 * stars.width) / stars.height} height={34} viewBox={`0 0 ${stars.width} ${stars.height}`}>
+                  {stars.polygons.map((points, i) => (
+                    <polygon key={i} points={points} fill={RED} />
+                  ))}
+                </svg>
+                <span style={{ fontSize: 28, fontWeight: 900, color: GOLD, letterSpacing: 8 }}>SETLIST</span>
+              </div>
             </div>
 
             <div
               style={{
+                position: 'absolute',
+                left: 64,
+                right: 64,
+                bottom: 36,
                 display: 'flex',
-                flexDirection: 'column',
-                marginTop: 48,
-                flex: 1,
-                borderRadius: 10,
-                overflow: 'hidden'
+                flexDirection: 'column'
               }}
             >
-              {displaySongs.length === 0 ? (
-                <span style={{ color: '#78716c', fontSize: 32, padding: '24px 4px' }}>歌單敬請期待</span>
-              ) : (
-                displaySongs.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 20,
-                      padding: metrics.padding,
-                      backgroundColor: idx % 2 === 0 ? 'rgba(201,168,118,0.08)' : 'transparent'
-                    }}
-                  >
-                    <span style={{ color: '#c9a876', fontSize: metrics.numberSize, width: 44 }}>
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <span style={{ color: item.is_placeholder ? '#78716c' : '#f2ece0', fontSize: metrics.fontSize }}>
-                      {item.is_placeholder ? '敬請期待' : item.song?.title}
-                    </span>
-                  </div>
-                ))
-              )}
-              {remaining > 0 && (
-                <span style={{ color: '#78716c', fontSize: 26, padding: '10px 20px' }}>
-                  ⋯ 等共 {setlist.length} 首（歌單過長，圖卡放不下，完整版請點連結）
-                </span>
-              )}
+              <span style={{ fontSize: 30, fontWeight: 900, color: GOLD }}>{formatShowDate(show.show_date)}</span>
+              <span style={{ fontSize: titleSize, fontWeight: 900, lineHeight: 1.2, marginTop: 10 }}>{show.title}</span>
+              {show.venue && <span style={{ fontSize: 30, color: '#d6d3d1', marginTop: 12 }}>{show.venue}</span>}
             </div>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 32 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  backgroundColor: '#e2231c',
-                  borderRadius: 999,
-                  padding: '18px 40px'
-                }}
-              >
-                <span style={{ color: '#f2ece0', fontSize: 30, fontWeight: 900 }}>點擊連結聽完整播放</span>
+          {/* 紅色粗線，跟網站首頁頁首底線一致 */}
+          <div style={{ display: 'flex', width: WIDTH, height: 10, backgroundColor: RED }} />
+
+          {/* 歌單：一欄或兩欄，行距依歌曲數量自動縮放 */}
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '40px 64px 16px' }}>
+            {songs.length === 0 ? (
+              <span style={{ fontSize: 40, fontWeight: 900, color: '#78716c', marginTop: 40 }}>歌單敬請期待</span>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    width: '100%',
+                    height: 56,
+                    flexShrink: 0,
+                    borderBottom: `3px solid ${PAPER}`
+                  }}
+                >
+                  <span style={{ fontSize: 26, fontWeight: 900 }}>歌單</span>
+                  <span style={{ fontSize: 24, color: GOLD }}>{setlist.length} 首歌</span>
+                </div>
+                <div style={{ display: 'flex', flex: 1, gap: 40 }}>
+                  {columns.map((col, ci) => (
+                    <div key={ci} style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                      {col.map(({ item, index }) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            height: rowH,
+                            gap: 16,
+                            borderBottom: `1px solid ${LINE}`
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: Math.round(fontSize * 1.7),
+                              fontSize: Math.round(fontSize * 0.85),
+                              fontWeight: 900,
+                              color: RED
+                            }}
+                          >
+                            {String(index + 1).padStart(2, '0')}
+                          </span>
+                          <span
+                            style={{
+                              flex: 1,
+                              minWidth: 0,
+                              fontSize,
+                              fontWeight: 900,
+                              color: item.is_placeholder ? '#78716c' : PAPER,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {item.is_placeholder ? '敬請期待' : item.song?.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                {remaining > 0 && (
+                  <span style={{ fontSize: 24, color: '#78716c', marginTop: 14 }}>
+                    ⋯ 等共 {setlist.length} 首，完整版請看網站
+                  </span>
+                )}
               </div>
-              <span style={{ color: '#78716c', fontSize: 24, marginTop: 18 }}>
-                {domainText}/show/{show.slug}
-              </span>
+            )}
+          </div>
+
+          {/* 頁尾：QR code、導引文字、吉祥物 */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              height: FOOTER_H,
+              padding: '0 64px',
+              gap: 36,
+              borderTop: `2px solid ${LINE}`
+            }}
+          >
+            <div style={{ display: 'flex', padding: 14, backgroundColor: PAPER }}>
+              <svg
+                width={150}
+                height={150}
+                viewBox={`0 0 ${qr.size} ${qr.size}`}
+                shapeRendering="crispEdges"
+              >
+                <path d={qr.d} fill={BG} />
+              </svg>
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 36, fontWeight: 900 }}>掃描或點連結，聽完整歌單</span>
+              <span style={{ fontSize: 24, color: GOLD, marginTop: 14 }}>{domainText}</span>
+            </div>
+            {mascot && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={mascot} width={130} height={130} />
+            )}
           </div>
         </div>
       ),
@@ -245,14 +359,15 @@ export async function GET(_request: Request, { params }: { params: { slug: strin
               { name: 'Noto Sans TC', data: fontRegular, weight: 400, style: 'normal' } as const,
               ...(fontBold ? [{ name: 'Noto Sans TC', data: fontBold, weight: 900, style: 'normal' } as const] : [])
             ]
-          : []
+          : [],
+        // 歌單改動不頻繁：瀏覽器快取 5 分鐘、CDN 快取 5 分鐘，過期後先給舊圖再背景更新
+        headers: { 'Cache-Control': 'public, max-age=300, s-maxage=300, stale-while-revalidate=86400' }
       }
     );
+    return image;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[card] 產生圖片失敗', err);
-    return new Response(`產生圖片失敗：${err instanceof Error ? err.message : 'unknown error'}`, {
-      status: 500
-    });
+    return new Response(`產生圖片失敗：${err instanceof Error ? err.message : 'unknown error'}`, { status: 500 });
   }
 }

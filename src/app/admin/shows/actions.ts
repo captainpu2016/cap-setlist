@@ -83,6 +83,7 @@ export async function updateShowInfo(formData: FormData) {
   revalidatePath('/admin/shows');
   revalidatePath(`/admin/shows/${id}/setlist`);
   revalidatePath(`/show/${slug}`);
+  revalidatePath(`/show/${slug}/card`);
   revalidatePath('/tour');
 }
 

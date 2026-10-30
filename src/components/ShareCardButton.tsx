@@ -1,18 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export default function ShareCardButton({ slug, title }: { slug: string; title: string }) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 滑鼠移上去／手指按下時就先開始產生圖片，等真的點下去時通常已經好了
+  const pending = useRef<Promise<Blob> | null>(null);
+
+  function fetchCard(): Promise<Blob> {
+    if (!pending.current) {
+      pending.current = fetch(`/show/${slug}/card`)
+        .then((res) => {
+          if (!res.ok) throw new Error('產生圖片失敗');
+          return res.blob();
+        })
+        .catch((err) => {
+          // 失敗就清掉，下次點擊才會重試
+          pending.current = null;
+          throw err;
+        });
+    }
+    return pending.current;
+  }
 
   async function handleClick() {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch(`/show/${slug}/card`);
-      if (!res.ok) throw new Error('產生圖片失敗');
-      const blob = await res.blob();
+      const blob = await fetchCard();
       const file = new File([blob], `${title}-setlist.png`, { type: 'image/png' });
 
       let shared = false;
@@ -55,6 +71,8 @@ export default function ShareCardButton({ slug, title }: { slug: string; title: 
       <button
         type="button"
         onClick={handleClick}
+        onPointerEnter={() => void fetchCard().catch(() => {})}
+        onFocus={() => void fetchCard().catch(() => {})}
         disabled={loading}
         className="btn-ghost"
       >
