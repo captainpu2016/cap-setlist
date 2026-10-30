@@ -6,6 +6,14 @@ export type ArchiveStats = {
   showsWithSetlist: number;
   totalSlots: number;
   avgLength: number;
+  /** 原創與翻唱分開算：每場平均各幾首、不同的歌各幾首 */
+  avgOriginal: number;
+  avgCover: number;
+  originalSongCount: number;
+  coverSongCount: number;
+  originalPlays: number;
+  coverPlays: number;
+  topCovers: RankedSong[];
   longest: { show: ArchiveShow; length: number } | null;
   shortest: { show: ArchiveShow; length: number } | null;
   topSongs: RankedSong[];
@@ -27,7 +35,8 @@ export function computeStats(shows: ArchiveShow[]): ArchiveStats {
   const played = shows.filter((s) => s.songs.length > 0);
   const totalSlots = played.reduce((sum, s) => sum + s.songs.length, 0);
 
-  const plays = new Map<string, RankedSong>();
+  const plays = new Map<string, RankedSong>(); // 只放原創歌
+  const coverPlays = new Map<string, RankedSong>();
   const openers = new Map<string, RankedSong>();
   const closers = new Map<string, RankedSong>();
   const lastPlayed = new Map<string, { title: string; date: string; index: number }>();
@@ -37,6 +46,12 @@ export function computeStats(shows: ArchiveShow[]): ArchiveStats {
   const chronological = [...played].reverse();
   chronological.forEach((show, idx) => {
     show.songs.forEach((song, i) => {
+      if (song.isCover) {
+        const c = coverPlays.get(song.id) ?? { id: song.id, title: song.title, count: 0 };
+        c.count += 1;
+        coverPlays.set(song.id, c);
+        return;
+      }
       const entry = plays.get(song.id) ?? { id: song.id, title: song.title, count: 0 };
       entry.count += 1;
       plays.set(song.id, entry);
@@ -64,6 +79,9 @@ export function computeStats(shows: ArchiveShow[]): ArchiveStats {
     null
   );
 
+  const originalPlays = Array.from(plays.values()).reduce((n, p) => n + p.count, 0);
+  const coverPlaysTotal = Array.from(coverPlays.values()).reduce((n, p) => n + p.count, 0);
+
   const years = new Map<string, ArchiveShow[]>();
   for (const s of played) {
     const y = s.date.slice(0, 4);
@@ -75,7 +93,7 @@ export function computeStats(shows: ArchiveShow[]): ArchiveStats {
       year,
       shows: list.length,
       avgLength: list.reduce((n, s) => n + s.songs.length, 0) / list.length,
-      distinctSongs: new Set(list.flatMap((s) => s.songs.map((x) => x.id))).size
+      distinctSongs: new Set(list.flatMap((s) => s.songs.filter((x) => !x.isCover).map((x) => x.id))).size
     }));
 
   const oneTimers = Array.from(plays.values())
@@ -103,6 +121,13 @@ export function computeStats(shows: ArchiveShow[]): ArchiveStats {
     showsWithSetlist: played.length,
     totalSlots,
     avgLength: played.length ? totalSlots / played.length : 0,
+    avgOriginal: played.length ? originalPlays / played.length : 0,
+    avgCover: played.length ? coverPlaysTotal / played.length : 0,
+    originalSongCount: plays.size,
+    coverSongCount: coverPlays.size,
+    originalPlays,
+    coverPlays: coverPlaysTotal,
+    topCovers: rank(coverPlays, 10),
     longest,
     shortest,
     topSongs: rank(plays, 12),

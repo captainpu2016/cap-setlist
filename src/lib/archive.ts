@@ -10,7 +10,7 @@ export type ArchiveShow = {
   venue: string | null;
   coverImageUrl: string | null;
   updatedAt: string;
-  songs: { id: string; title: string; durationSeconds: number | null }[];
+  songs: { id: string; title: string; durationSeconds: number | null; isCover: boolean }[];
   /** 歌單是否已公開（未公開時 songs 是空的，避免提早洩漏） */
   revealed: boolean;
 };
@@ -18,6 +18,7 @@ export type ArchiveShow = {
 export type ArchiveSong = {
   id: string;
   title: string;
+  isCover: boolean;
   shows: { slug: string; title: string; date: string; venue: string | null }[];
 };
 
@@ -33,8 +34,18 @@ interface Row {
   setlist_items: {
     position: number;
     is_placeholder: boolean;
-    song: { id: string; title: string; duration_seconds: number | null } | null;
+    song: { id: string; title: string; duration_seconds: number | null; album: { is_cover: boolean } | null } | null;
   }[];
+}
+
+/** 翻唱歌：專輯標記為翻唱專輯，或歌名以「(Cover)」開頭（後台沒歸到翻唱專輯時的備援） */
+export function isCoverSong(title: string, albumIsCover: boolean | null | undefined): boolean {
+  return albumIsCover === true || /^\s*[(（]cover[)）]/i.test(title);
+}
+
+/** 顯示用歌名：去掉開頭的「(Cover) 」標記 */
+export function displaySongTitle(title: string): string {
+  return title.replace(/^\s*[(（]cover[)）]\s*/i, '');
 }
 
 /**
@@ -46,7 +57,7 @@ export const getArchive = cache(async () => {
   const { data } = await supabase
     .from('shows')
     .select(
-      'id, slug, title, show_date, venue, cover_image_url, setlist_reveal_at, updated_at, setlist_items(position, is_placeholder, song:songs(id, title, duration_seconds))'
+      'id, slug, title, show_date, venue, cover_image_url, setlist_reveal_at, updated_at, setlist_items(position, is_placeholder, song:songs(id, title, duration_seconds, album:albums(is_cover)))'
     )
     .eq('status', 'published')
     .order('show_date', { ascending: false })
@@ -59,7 +70,12 @@ export const getArchive = cache(async () => {
       ? [...row.setlist_items]
           .sort((a, b) => a.position - b.position)
           .filter((i) => !i.is_placeholder && i.song)
-          .map((i) => ({ id: i.song!.id, title: i.song!.title, durationSeconds: i.song!.duration_seconds }))
+          .map((i) => ({
+            id: i.song!.id,
+            title: i.song!.title,
+            durationSeconds: i.song!.duration_seconds,
+            isCover: isCoverSong(i.song!.title, i.song!.album?.is_cover)
+          }))
       : [];
     return {
       id: row.id,
@@ -77,7 +93,7 @@ export const getArchive = cache(async () => {
   const songMap = new Map<string, ArchiveSong>();
   for (const show of shows) {
     for (const s of show.songs) {
-      const entry = songMap.get(s.id) ?? { id: s.id, title: s.title, shows: [] };
+      const entry = songMap.get(s.id) ?? { id: s.id, title: s.title, isCover: s.isCover, shows: [] };
       if (!entry.shows.some((x) => x.slug === show.slug)) {
         entry.shows.push({ slug: show.slug, title: show.title, date: show.date, venue: show.venue });
       }
