@@ -32,12 +32,15 @@ export default function ShowListSection({
   title,
   shows,
   accent,
-  collapsible
+  collapsible,
+  action
 }: {
   title: string;
   shows: Show[];
   accent?: boolean;
   collapsible?: boolean;
+  /** 標題列右側的小連結（例如「訂閱行事曆」） */
+  action?: React.ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -50,7 +53,10 @@ export default function ShowListSection({
     <div className="mb-14">
       <div className="mb-5 flex items-baseline justify-between gap-4 border-t-2 border-paper pt-3">
         <h2 className="text-2xl font-black text-paper">{title}</h2>
-        <span className="font-accent text-sm tracking-widest text-stone-500">{shows.length}</span>
+        <span className="flex items-baseline gap-4">
+          {action}
+          <span className="font-accent text-sm tracking-widest text-stone-500">{shows.length}</span>
+        </span>
       </div>
 
       <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-3">

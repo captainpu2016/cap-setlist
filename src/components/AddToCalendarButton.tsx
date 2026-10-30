@@ -1,60 +1,36 @@
 'use client';
 
-/** RFC 5545 要求的欄位跳脫：逗號、分號、反斜線、換行都要處理 */
-function escapeIcsText(text: string): string {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\\;')
-    .replace(/,/g, '\\,')
-    .replace(/\n/g, '\\n');
-}
-
-function toIcsDate(dateStr: string): string {
-  // show_date 是 YYYY-MM-DD，行事曆事件用全天事件表示（DATE 格式：YYYYMMDD）
-  return dateStr.replace(/-/g, '');
-}
+import { buildCalendar } from '@/lib/ics';
 
 export default function AddToCalendarButton({
   title,
   dateStr,
   venue,
-  url
+  url,
+  startTime,
+  ticketUrl
 }: {
   title: string;
   dateStr: string;
   venue: string | null;
   url: string;
+  startTime?: string | null;
+  ticketUrl?: string | null;
 }) {
   function handleClick() {
-    const start = toIcsDate(dateStr);
-    // 全天事件的 DTEND 要是隔天（RFC 5545 全天事件區間是不含結束日當天）
-    const endDate = new Date(dateStr + 'T00:00:00');
-    endDate.setDate(endDate.getDate() + 1);
-    const end = `${endDate.getFullYear()}${String(endDate.getMonth() + 1).padStart(2, '0')}${String(
-      endDate.getDate()
-    ).padStart(2, '0')}`;
+    const ics = buildCalendar(title, [
+      {
+        uid: `${dateStr}-${title}@normalcaptain`.replace(/\s+/g, '-'),
+        title,
+        date: dateStr,
+        startTime,
+        venue,
+        description: [ticketUrl ? `購票：${ticketUrl}` : null, `演出資訊與歌單：${url}`].filter(Boolean).join('\n'),
+        url
+      }
+    ]);
 
-    const now = new Date();
-    const stamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-
-    const lines = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Normal Captain//Setlist Archive//TW',
-      'BEGIN:VEVENT',
-      `UID:${stamp}-${Math.random().toString(36).slice(2)}@normalcaptain`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${start}`,
-      `DTEND;VALUE=DATE:${end}`,
-      `SUMMARY:${escapeIcsText(title)}`,
-      venue ? `LOCATION:${escapeIcsText(venue)}` : '',
-      `DESCRIPTION:${escapeIcsText(`演出歌單：${url}`)}`,
-      `URL:${url}`,
-      'END:VEVENT',
-      'END:VCALENDAR'
-    ].filter(Boolean);
-
-    const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;

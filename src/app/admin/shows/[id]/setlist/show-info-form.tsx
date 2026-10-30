@@ -59,6 +59,37 @@ export default function ShowInfoForm({ show, venues }: { show: Show; venues: Ven
         <input id="slug" name="slug" defaultValue={show.slug} required className="admin-input" />
       </div>
 
+      {/* 這兩個欄位要等資料庫執行過 0003_show_ticket_time.sql 才存在；還沒執行就不顯示，避免儲存失敗 */}
+      {'ticket_url' in show && (
+        <>
+          <div>
+            <label className="admin-label" htmlFor="start_time">開演時間（選填，台灣時間）</label>
+            <input
+              id="start_time"
+              name="start_time"
+              type="time"
+              defaultValue={show.start_time?.slice(0, 5) ?? ''}
+              className="admin-input"
+            />
+            <p className="mt-1 text-xs text-stone-400">
+              填了之後，前台會顯示開演時間與倒數，行事曆也會是有時間的活動；留空則是全天事件。
+            </p>
+          </div>
+          <div>
+            <label className="admin-label" htmlFor="ticket_url">售票連結（選填）</label>
+            <input
+              id="ticket_url"
+              name="ticket_url"
+              type="url"
+              defaultValue={show.ticket_url ?? ''}
+              className="admin-input"
+              placeholder="https://..."
+            />
+            <p className="mt-1 text-xs text-stone-400">只在演出開始前顯示「購票」按鈕，演出結束後自動隱藏。</p>
+          </div>
+        </>
+      )}
+
       <div className="sm:col-span-2">
         <label className="admin-label" htmlFor="cover_image_url">封面圖片網址（選填）</label>
         <input

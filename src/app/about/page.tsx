@@ -53,6 +53,10 @@ export default async function AboutPage() {
       a: '單場頁有「分享歌單卡片」按鈕，會產生一張帶有演出照片、完整歌單與 QR code 的圖片，可以直接傳到社群或通訊軟體。'
     },
     {
+      q: '怎麼把演出加進我的行事曆？',
+      a: '單場頁的「加入行事曆」可以下載單場活動；想一次追蹤所有場次，可以用首頁「近期場次」旁的「訂閱行事曆」，或直接在行事曆 App 加入訂閱網址 /calendar.ics，之後新增與更動的場次會自動同步。'
+    },
+    {
       q: '這個網站是官方網站嗎？',
       a: '本站是整理演出歌單的資料庫，內容以公開演出資訊為準。若發現歌單有誤，歡迎透過首頁上的聯絡方式告訴我們。'
     }
@@ -137,7 +141,8 @@ export default async function AboutPage() {
           <p className="mt-2 leading-relaxed">
             本站提供純文字的資料入口：<a className="text-marquee underline" href="/llms.txt">/llms.txt</a>（網站導覽）與{' '}
             <a className="text-marquee underline" href="/llms-full.txt">/llms-full.txt</a>（所有場次的完整歌單），
-            每個頁面也附有 schema.org 結構化資料。
+            每個頁面也附有 schema.org 結構化資料；演出行事曆訂閱網址是{' '}
+            <a className="text-marquee underline" href="/calendar.ics">/calendar.ics</a>。
           </p>
         </section>
       </div>

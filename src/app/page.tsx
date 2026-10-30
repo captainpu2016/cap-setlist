@@ -7,7 +7,7 @@ import ShowListSection from './show-list-section';
 import SiteLogo from '@/components/SiteLogo';
 import Stars from '@/components/Stars';
 import JsonLd from '@/components/JsonLd';
-import { musicGroupJsonLd, websiteJsonLd } from '@/lib/seo';
+import { getSiteUrl, musicGroupJsonLd, websiteJsonLd } from '@/lib/seo';
 import FilterBar from './filter-bar';
 
 export const revalidate = 60;
@@ -79,6 +79,8 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   const nextShow = [...allShows].reverse().find((s) => s.show_date >= today) ?? null;
   const latestShow = playedShows[0] ?? null;
   const featured = nextShow ?? latestShow;
+  const daysUntil = nextShow ? Math.round((Date.parse(nextShow.show_date) - Date.parse(today)) / 86_400_000) : null;
+  const webcalUrl = `${getSiteUrl().replace(/^https?:/, 'webcal:')}/calendar.ics`;
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
@@ -135,7 +137,9 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
                   <p className="mt-1.5 truncate font-black text-paper group-hover:text-marquee">{featured.title}</p>
                   <p className="truncate text-xs text-stone-400">
                     {featured.show_date.replace(/-/g, '.')}
+                    {nextShow?.start_time ? ` ${nextShow.start_time.slice(0, 5)}` : ''}
                     {featured.venue ? `・${featured.venue}` : ''}
+                    {daysUntil !== null && (daysUntil === 0 ? '・就是今天' : `・${daysUntil} 天後`)}
                   </p>
                 </div>
                 <span aria-hidden className="shrink-0 font-accent text-xl text-signal">→</span>
@@ -165,7 +169,16 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
           <p className="py-16 text-center text-stone-500">沒有符合篩選條件的場次。</p>
         )}
 
-        {upcoming.length > 0 && <ShowListSection title="近期場次" shows={upcoming} accent />}
+        {upcoming.length > 0 && <ShowListSection
+            title="近期場次"
+            shows={upcoming}
+            accent
+            action={
+              <a href={webcalUrl} className="font-accent text-xs uppercase tracking-[0.2em] text-stone-400 hover:text-marquee">
+                訂閱行事曆 +
+              </a>
+            }
+          />}
         {(!hasFilter || past.length > 0) && <ShowListSection title="歷史場次" shows={past} collapsible={!hasFilter} />}
 
         {allShows.length === 0 && (

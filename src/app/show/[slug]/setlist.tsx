@@ -4,8 +4,27 @@ import { useEffect, useRef, useState } from 'react';
 import { formatDuration, toDropboxDirectUrl } from '@/lib/format';
 import { trackEvent } from '@/lib/analytics';
 import type { SetlistItemWithSong } from '@/types/database';
+import type { SongLabel } from '@/lib/song-insights';
 
-export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
+/** 歌名旁的看點小標籤：首次登場 / 睽違 / 稀有 */
+function LabelTag({ label }: { label?: SongLabel }) {
+  if (!label) return null;
+  const tone =
+    label.kind === 'first' ? 'bg-signal text-paper' : label.kind === 'return' ? 'bg-marquee text-stage-950' : 'border border-marquee/60 text-marquee';
+  return (
+    <span className={`shrink-0 whitespace-nowrap px-1.5 py-0.5 font-accent text-[10px] font-semibold uppercase tracking-wider ${tone}`}>
+      {label.text}
+    </span>
+  );
+}
+
+export default function Setlist({
+  items,
+  labels = {}
+}: {
+  items: SetlistItemWithSong[];
+  labels?: Record<string, SongLabel>;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [currentItemId, setCurrentItemId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -216,6 +235,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
           <SongRow
             key={item.id}
             item={item}
+            label={item.song_id ? labels[item.song_id] : undefined}
             index={idx}
             isActive={currentItemId === item.id}
             isPlaying={currentItemId === item.id && isPlaying}
@@ -261,12 +281,14 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
 
 function SongRow({
   item,
+  label,
   index,
   isActive,
   isPlaying,
   onToggle
 }: {
   item: SetlistItemWithSong;
+  label?: SongLabel;
   index: number;
   isActive: boolean;
   isPlaying: boolean;
@@ -358,9 +380,13 @@ function SongRow({
               >
                 {item.song?.title}
               </span>
+              <LabelTag label={label} />
             </button>
           ) : (
-            <p className="truncate py-2 font-medium text-paper sm:py-0">{item.song?.title}</p>
+            <p className="flex items-center gap-2 py-2 font-medium text-paper sm:py-0">
+              <span className="truncate">{item.song?.title}</span>
+              <LabelTag label={label} />
+            </p>
           )}
           {item.notes && <p className="mt-0.5 text-xs text-stone-500">{item.notes}</p>}
 

@@ -64,6 +64,19 @@ export async function updateShowInfo(formData: FormData) {
     if (venueRow) venueText = venueRow.city ? `${venueRow.city} ${venueRow.name}` : venueRow.name;
   }
 
+  // 售票連結與開演時間：只有表單帶了這兩個欄位（資料庫已有欄位）才更新
+  const extra: { ticket_url?: string | null; start_time?: string | null } = {};
+  if (formData.has('ticket_url')) {
+    const raw = (formData.get('ticket_url') as string)?.trim();
+    if (raw && !/^https?:\/\//i.test(raw)) throw new Error('售票連結必須是 http 或 https 開頭的網址');
+    extra.ticket_url = raw || null;
+  }
+  if (formData.has('start_time')) {
+    const raw = (formData.get('start_time') as string)?.trim();
+    if (raw && !/^\d{2}:\d{2}$/.test(raw)) throw new Error('開演時間格式不正確');
+    extra.start_time = raw || null;
+  }
+
   const { error } = await supabase
     .from('shows')
     .update({
@@ -74,7 +87,8 @@ export async function updateShowInfo(formData: FormData) {
       slug,
       status,
       cover_image_url: coverImageUrl,
-      setlist_reveal_at: setlistRevealAt
+      setlist_reveal_at: setlistRevealAt,
+      ...extra
     })
     .eq('id', id);
 
@@ -85,6 +99,8 @@ export async function updateShowInfo(formData: FormData) {
   revalidatePath(`/show/${slug}`);
   revalidatePath(`/show/${slug}/card`);
   revalidatePath('/tour');
+  revalidatePath('/');
+  revalidatePath('/calendar.ics');
 }
 
 export async function deleteShow(formData: FormData) {

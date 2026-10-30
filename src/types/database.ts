@@ -68,6 +68,9 @@ export type Show = {
   spotify_playlist_url: string | null;
   cover_image_url: string | null;
   setlist_reveal_at: string | null;
+  /** 0003_show_ticket_time.sql 執行之前資料庫沒有這兩個欄位，所以是 optional */
+  ticket_url?: string | null;
+  start_time?: string | null; // 'HH:MM:SS'
   venue_id: string | null;
   latitude: number | null;
   longitude: number | null;

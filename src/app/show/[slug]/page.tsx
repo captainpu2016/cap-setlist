@@ -4,7 +4,8 @@ import Image from 'next/image';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { formatDateTimeTW, formatDuration, formatShowDate, getCity, sumDuration, todayTaipei } from '@/lib/format';
-import { getArchive } from '@/lib/archive';
+import { displaySongTitle, getArchive } from '@/lib/archive';
+import { getShowLabels } from '@/lib/song-insights';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
 import type { Show, SetlistItemWithSong } from '@/types/database';
@@ -16,6 +17,7 @@ import AttendButton from '@/components/AttendButton';
 import BackLink from '@/components/BackLink';
 import Setlist from './setlist';
 import ShowComments, { type CommentItem } from './show-comments';
+import UpcomingInfo from './upcoming-info';
 
 // 生成 Spotify 播放清單的功能先隱藏（Spotify Development Mode 限制，見對話紀錄）。
 // 後端邏輯都還在 src/app/api/shows/[id]/generate-playlist/、
@@ -112,6 +114,8 @@ export default async function ShowPage({ params }: { params: { slug: string } })
   const commentTotal = commentsResult.count ?? comments.length;
 
   const setlist = items ?? [];
+  const { shows: archiveShows } = await getArchive();
+  const labels = getShowLabels(archiveShows, show.slug);
   const totalSeconds = sumDuration(setlist.map((i) => i.song?.duration_seconds ?? null));
 
   // 歌單有沒有公開：沒設定公開時間就直接顯示；有設定的話，要等時間到了才顯示
@@ -127,7 +131,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
     '@id': showUrl,
     name: show.title,
     description: `${formatShowDate(show.show_date)}${show.venue ? ` @ ${show.venue}` : ''} 普通隊長演出`,
-    startDate: show.show_date,
+    startDate: show.start_time ? `${show.show_date}T${show.start_time.slice(0, 5)}:00+08:00` : show.show_date,
     url: showUrl,
     inLanguage: 'zh-Hant-TW',
     eventStatus: 'https://schema.org/EventScheduled',
@@ -146,6 +150,9 @@ export default async function ShowPage({ params }: { params: { slug: string } })
         }
       : {}),
     ...(show.cover_image_url ? { image: [show.cover_image_url] } : {}),
+    ...(show.ticket_url && show.show_date >= todayTaipei()
+      ? { offers: { '@type': 'Offer', url: show.ticket_url, availability: 'https://schema.org/InStock' } }
+      : {}),
     performer: { '@id': `${siteUrl}/#band` },
     organizer: { '@id': `${siteUrl}/#band` },
     // 歌單：每首歌都連到歌曲專屬頁，AI 與搜尋引擎能把「這場演出」和「這首歌」串起來
@@ -164,6 +171,25 @@ export default async function ShowPage({ params }: { params: { slug: string } })
     { name: '全部場次', path: '/shows' },
     { name: show.title, path: `/show/${show.slug}` }
   ]);
+
+  // 本場看點：把有標籤的歌依類型整理成幾行文字
+  const highlightKinds: { kind: 'first' | 'return' | 'rare'; title: string }[] = [
+    { kind: 'first', title: '首次登場' },
+    { kind: 'return', title: '睽違再度登場' },
+    { kind: 'rare', title: '稀有曲目' }
+  ];
+  const highlights = highlightKinds
+    .map(({ kind, title }) => ({
+      title,
+      songs: playedSongs
+        .filter((i) => i.song && labels[i.song.id]?.kind === kind)
+        .map((i) => ({
+          id: i.song!.id,
+          title: i.song!.title,
+          note: kind === 'first' ? null : labels[i.song!.id].text
+        }))
+    }))
+    .filter((h) => h.songs.length > 0);
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
@@ -227,18 +253,55 @@ export default async function ShowPage({ params }: { params: { slug: string } })
             </a>
           )}
 
+          {show.show_date >= todayTaipei() && (
+            <UpcomingInfo
+              date={show.show_date}
+              startTime={show.start_time ?? null}
+              ticketUrl={show.ticket_url ?? null}
+              webcalUrl={`${siteUrl.replace(/^https?:/, 'webcal:')}/calendar.ics`}
+            />
+          )}
+
           <div className="mt-6 flex flex-wrap items-center gap-2">
             {show.show_date <= todayTaipei() && <AttendButton showId={show.id} initialCount={attendanceCount} />}
             <ShareButton title={show.title} />
-            <AddToCalendarButton title={show.title} dateStr={show.show_date} venue={show.venue} url={showUrl} />
+            <AddToCalendarButton
+              title={show.title}
+              dateStr={show.show_date}
+              venue={show.venue}
+              url={showUrl}
+              startTime={show.start_time}
+              ticketUrl={show.ticket_url}
+            />
             <ShareCardButton slug={show.slug} title={show.title} />
           </div>
 
           <div className="mt-10">
             <h2 className="section-title mb-4 text-2xl">歌單</h2>
+            {isRevealed && highlights.length > 0 && (
+              <div className="mb-6 border-2 border-stage-700 bg-stage-900 p-4">
+                <p className="font-accent text-xs uppercase tracking-[0.25em] text-signal">Highlights</p>
+                <ul className="mt-3 space-y-2 text-sm">
+                  {highlights.map((h) => (
+                    <li key={h.title} className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="font-black text-paper">{h.title}</span>
+                      {h.songs.map((s, i) => (
+                        <span key={s.id}>
+                          {i > 0 && <span className="mr-2 text-stone-600">、</span>}
+                          <a href={`/song/${s.id}`} className="text-stone-300 underline decoration-stage-700 underline-offset-4 hover:text-marquee">
+                            {displaySongTitle(s.title)}
+                          </a>
+                          {s.note && <span className="ml-1 text-stone-500">（{s.note}）</span>}
+                        </span>
+                      ))}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {isRevealed ? (
               setlist.length > 0 ? (
-                <Setlist items={setlist} />
+                <Setlist items={setlist} labels={labels} />
               ) : (
                 <p className="text-center text-stone-500">歌單準備中，敬請期待。</p>
               )
