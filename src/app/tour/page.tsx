@@ -1,12 +1,13 @@
 import { createPublicClient } from '@/lib/supabase/public';
 import type { Show, Venue } from '@/types/database';
-import { getCity } from '@/lib/format';
+import { getCity, todayTaipei } from '@/lib/format';
 import { getShowCoordinates } from '@/lib/geo';
 import TourExplorer from './tour-explorer';
 import type { DatedPoint } from './tour-explorer';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
 import JsonLd from '@/components/JsonLd';
+import MonthlyHeatmap from './monthly-heatmap';
 import { breadcrumbJsonLd } from '@/lib/seo';
 
 export const revalidate = 3600;
@@ -80,7 +81,6 @@ export default async function TourPage() {
   const uncounted = allShows.length - datedPoints.length;
 
   const monthlyTimeline = buildMonthlyTimeline(allShows);
-  const maxMonthly = Math.max(...monthlyTimeline.map((m) => m.count), 1);
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
@@ -109,43 +109,7 @@ export default async function TourPage() {
         <section className="mt-10">
           <h2 className="section-title mb-4 text-xl">逐月演出趨勢</h2>
           {monthlyTimeline.length > 0 ? (
-            <div className="border-2 border-stage-700 bg-stage-900 p-6">
-              <div className="overflow-x-auto">
-                <div
-                  className="flex items-end gap-1.5"
-                  style={{ minWidth: monthlyTimeline.length * 26 }}
-                >
-                  {monthlyTimeline.map((m, i) => {
-                    const [year, month] = m.yearMonth.split('-');
-                    const isYearStart = month === '01' || i === 0;
-                    return (
-                      <div key={m.yearMonth} title={`${year}/${Number(month)}：${m.count} 場`} className="flex w-6 shrink-0 flex-col items-center">
-                        <span className="h-3 text-[10px] tabular-nums text-stone-500">{m.count || ''}</span>
-                        {/* 固定高度的長條軌道，長條本身用百分比高度才會生效（CSS 規則：
-                            百分比高度需要父層有明確的高度，不能只靠外層的 flex 撐開） */}
-                        <div className="flex h-28 w-full items-end">
-                          <div
-                            className="w-full rounded-t-[1px] transition-all"
-                            style={{
-                              height: `${(m.count / maxMonthly) * 100}%`,
-                              minHeight: m.count > 0 ? 4 : 2,
-                              backgroundColor: m.count > 0 ? '#e2231c' : '#302a27'
-                            }}
-                          />
-                        </div>
-                        <span className="mt-1 text-[10px] text-stone-500">
-                          {isYearStart ? year : Number(month)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <p className="mt-3 text-xs text-stone-500">
-                滑鼠移到長條上可以看該月確切場次數。
-                {monthlyTimeline.length > 14 && '　可以左右滑動查看更早期的資料。'}
-              </p>
-            </div>
+            <MonthlyHeatmap timeline={monthlyTimeline} currentYearMonth={todayTaipei().slice(0, 7)} />
           ) : (
             <p className="text-sm text-stone-500">還沒有演出資料。</p>
           )}
