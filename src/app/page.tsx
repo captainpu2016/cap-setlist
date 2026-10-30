@@ -5,7 +5,6 @@ import { getSiteContent } from '@/lib/site-settings';
 import { getCity } from '@/lib/format';
 import ShowListSection from './show-list-section';
 import SiteLogo from '@/components/SiteLogo';
-import CaptainBadge from '@/components/CaptainBadge';
 import Stars from '@/components/Stars';
 import FilterBar from './filter-bar';
 
@@ -66,60 +65,52 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
-      <header className="relative overflow-hidden border-b-4 border-signal">
+      <header className="relative flex min-h-[520px] items-end overflow-hidden border-b-4 border-signal sm:min-h-[600px]">
         {content.bgImageUrl && (
-          <>
-            <Image
-              src={content.bgImageUrl}
-              alt=""
-              aria-hidden
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover opacity-40"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-stage-950 via-stage-950/80 to-stage-950/30" />
-          </>
+          <Image
+            src={content.bgImageUrl}
+            alt=""
+            aria-hidden
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
         )}
-        <div className="relative mx-auto grid max-w-5xl items-center gap-8 px-6 py-14 sm:grid-cols-[1fr_320px] sm:px-10 sm:py-20">
+        {/* 只在文字所在的左下角壓暗，讓照片本身保持明亮 */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stage-950 via-stage-950/40 to-stage-950/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-stage-950/95 via-stage-950/60 to-transparent" />
+
+        <div className="relative mx-auto flex w-full max-w-5xl items-end justify-between gap-8 px-6 pb-10 pt-32 sm:px-10 sm:pb-14">
           <div>
             <div className="flex items-center gap-3">
               <Stars size={16} className="text-signal" />
               <p className="tag-slash">{content.eyebrow}</p>
             </div>
-            <h1 className="mt-5">
+            <h1 className="mt-4">
               <span className="sr-only">普通隊長</span>
               <SiteLogo height={120} className="-ml-3 sm:!h-40" />
             </h1>
-            <p className="mt-5 max-w-lg text-sm leading-relaxed text-stone-300 sm:text-base">{content.tagline}</p>
+            <p className="mt-4 max-w-lg text-sm leading-relaxed text-stone-200 sm:text-base">{content.tagline}</p>
 
             {allShows.length > 0 && (
-              <p className="mt-8 font-accent text-2xl font-semibold text-paper">
+              <p className="mt-6 font-accent text-2xl font-semibold text-paper">
                 <span className="text-5xl font-bold text-marquee">{allShows.length}</span> 場演出
-                <span className="mx-3 text-stone-600">/</span>
+                <span className="mx-3 text-stone-500">/</span>
                 <span className="text-5xl font-bold text-marquee">{cities.length}</span> 座城市
               </p>
             )}
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="mt-7 flex flex-wrap items-center gap-4">
               <a href="/tour" className="btn-primary">
                 巡演足跡地圖 →
               </a>
-              <a href="/search" className="btn-ghost !px-5 !py-3 !font-bold">
+              <a href="/search" className="btn-ghost !border-paper/60 !px-5 !py-3 !text-paper hover:!bg-paper hover:!text-stage-950">
                 搜尋歌曲
               </a>
             </div>
           </div>
 
-          {/* 紅色斜切色塊從這一欄往右延伸到畫面邊緣，頭盔固定在色塊正中央，不論螢幕多寬都對得齊 */}
-          <div className="relative hidden h-full items-center justify-center sm:flex">
-            <div
-              aria-hidden
-              className="absolute -bottom-20 -top-20 left-0 w-[2000px] -skew-x-12 bg-signal"
-            />
-            <div aria-hidden className="absolute -bottom-20 -top-20 -left-3 w-2 -skew-x-12 bg-marquee" />
-            <CaptainBadge size={260} rotate={0} className="relative" />
-          </div>
         </div>
       </header>
 
