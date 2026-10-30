@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { formatDuration, formatShowDate, sumDuration } from '@/lib/format';
+import { formatDateTimeTW, formatDuration, formatShowDate, sumDuration } from '@/lib/format';
 import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
@@ -165,13 +165,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
                 <p className="font-display text-lg text-paper">歌單敬請期待</p>
                 <p className="mt-2 text-sm text-stone-500">
                   這場的歌單將於{' '}
-                  {new Date(show.setlist_reveal_at as string).toLocaleString('zh-TW', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}{' '}
+                  {formatDateTimeTW(show.setlist_reveal_at as string)}{' '}
                   公開，先加入行事曆別錯過吧。
                 </p>
               </div>

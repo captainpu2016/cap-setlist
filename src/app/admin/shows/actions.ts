@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { slugify } from '@/lib/format';
+import { slugify, taipeiInputToIso } from '@/lib/format';
 
 async function requireSession() {
   const supabase = createClient();
@@ -54,7 +54,7 @@ export async function updateShowInfo(formData: FormData) {
   const status = formData.get('status') as 'draft' | 'published';
   const coverImageUrl = (formData.get('cover_image_url') as string)?.trim() || null;
   const setlistRevealRaw = (formData.get('setlist_reveal_at') as string)?.trim();
-  const setlistRevealAt = setlistRevealRaw ? new Date(setlistRevealRaw).toISOString() : null;
+  const setlistRevealAt = setlistRevealRaw ? taipeiInputToIso(setlistRevealRaw) : null;
 
   if (!title || !showDate || !slug) throw new Error('場次名稱、日期、slug 為必填');
 

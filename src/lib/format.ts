@@ -69,3 +69,44 @@ export function slugify(input: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 }
+
+
+/** 網站所有「幾點幾分」一律以台灣時間為準，避免伺服器（UTC）和瀏覽器時區不同造成時間跑掉 */
+export const SITE_TIME_ZONE = 'Asia/Taipei';
+
+/** 顯示用：例如 2026年10月30日 20:00（台灣時間） */
+export function formatDateTimeTW(iso: string): string {
+  return new Date(iso).toLocaleString('zh-TW', {
+    timeZone: SITE_TIME_ZONE,
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
+}
+
+/** 把 ISO 時間轉成 <input type="datetime-local"> 要的格式，內容是台灣時間 */
+export function toTaipeiInputValue(iso: string | null): string {
+  if (!iso) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SITE_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}
+
+/** 把 datetime-local 的輸入（視為台灣時間，UTC+8，無夏令時間）轉成 ISO 字串 */
+export function taipeiInputToIso(value: string): string | null {
+  const m = value.trim().match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  if (!m) return null;
+  const d = new Date(`${m[1]}T${m[2]}:00+08:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}

@@ -3,16 +3,9 @@
 import { useState, useTransition } from 'react';
 import { updateShowInfo, deleteShow } from '../../actions';
 import type { Show, Venue } from '@/types/database';
+import { toTaipeiInputValue } from '@/lib/format';
 
 type SaveState = 'idle' | 'saved' | 'error';
-
-/** 把資料庫存的 ISO 時間字串轉成 <input type="datetime-local"> 要的本地時間格式 */
-function toDatetimeLocalValue(iso: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
 export default function ShowInfoForm({ show, venues }: { show: Show; venues: Venue[] }) {
   const [status, setStatus] = useState(show.status);
@@ -94,7 +87,7 @@ export default function ShowInfoForm({ show, venues }: { show: Show; venues: Ven
           id="setlist_reveal_at"
           name="setlist_reveal_at"
           type="datetime-local"
-          defaultValue={toDatetimeLocalValue(show.setlist_reveal_at)}
+          defaultValue={toTaipeiInputValue(show.setlist_reveal_at)}
           className="admin-input"
         />
         <p className="mt-1 text-xs text-stone-400">

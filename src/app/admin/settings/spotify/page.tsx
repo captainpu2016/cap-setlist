@@ -36,7 +36,7 @@ export default async function SpotifySettingsPage({
         </p>
         {data?.updated_at && (
           <p className="mt-2 text-xs text-stone-400">
-            最後更新：{new Date(data.updated_at).toLocaleString('zh-TW')}
+            最後更新：{new Date(data.updated_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}
           </p>
         )}
 
