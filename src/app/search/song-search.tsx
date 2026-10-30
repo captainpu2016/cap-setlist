@@ -201,6 +201,14 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
               </button>
 
               {isOpen && (
+                <a
+                  href={`/song/${song.id}`}
+                  className="block border-t border-stage-700 bg-stage-950/60 px-4 py-2 text-xs text-stone-400 transition-colors hover:text-marquee"
+                >
+                  查看「{song.title}」的專屬頁面 →
+                </a>
+              )}
+              {isOpen && (
                 <ul id={panelId} className="max-h-80 divide-y divide-stage-700/70 overflow-y-auto border-t border-stage-700 bg-stage-950/40">
                   {song.shows.map((show) => (
                     <li key={show.id}>

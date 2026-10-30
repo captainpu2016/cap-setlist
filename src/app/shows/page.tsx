@@ -3,10 +3,13 @@ import type { Show } from '@/types/database';
 import { formatShowDateShort } from '@/lib/format';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
+import JsonLd from '@/components/JsonLd';
+import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
 
 export const revalidate = 60;
 
 export const metadata = {
+  alternates: { canonical: '/shows' },
   title: '全部場次｜普通隊長',
   description: '普通隊長歷年演出場次列表，依年份整理。'
 };
@@ -35,8 +38,28 @@ export default async function ShowsListPage() {
   }
   const years = Array.from(groups.keys()).sort((a, b) => b.localeCompare(a));
 
+  const url = getSiteUrl();
+  const listJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: '普通隊長 全部演出場次',
+    url: `${url}/shows`,
+    inLanguage: 'zh-Hant-TW',
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: allShows.length,
+      itemListElement: allShows.map((show, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${url}/show/${show.slug}`,
+        name: show.title
+      }))
+    }
+  };
+
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
+      <JsonLd data={[listJsonLd, breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '全部場次', path: '/shows' }])]} />
       <div className="mx-auto max-w-2xl">
         <BackLink />
 

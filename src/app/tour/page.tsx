@@ -6,10 +6,13 @@ import TourExplorer from './tour-explorer';
 import type { DatedPoint } from './tour-explorer';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
+import JsonLd from '@/components/JsonLd';
+import { breadcrumbJsonLd } from '@/lib/seo';
 
 export const revalidate = 3600;
 
 export const metadata = {
+  alternates: { canonical: '/tour' },
   title: '巡演足跡｜普通隊長',
   description: '普通隊長歷年演出地點地圖、移動路線，以及逐月演出場次趨勢。'
 };
@@ -81,6 +84,7 @@ export default async function TourPage() {
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
+      <JsonLd data={breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '巡演足跡', path: '/tour' }])} />
       <div className="mx-auto max-w-3xl">
         <BackLink />
 

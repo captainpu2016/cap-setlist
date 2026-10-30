@@ -23,14 +23,27 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000'),
   title: '普通隊長｜近年演出歌單全紀錄',
   description: '每場演出，都有屬於它的歌單。這裡支援線上播放，讓你重溫現場的熱情與每一段難忘的回憶。',
+  applicationName: '普通隊長 歌單全紀錄',
+  keywords: ['普通隊長', 'Captain Ordinary', '演出歌單', 'setlist', '樂團', '巡演'],
+  alternates: { canonical: '/' },
   icons: {
     icon: '/brand/cover.png'
   },
   openGraph: {
     title: '普通隊長｜近年演出歌單全紀錄',
     description: '每場演出，都有屬於它的歌單。這裡支援線上播放，讓你重溫現場的熱情與每一段難忘的回憶。',
+    siteName: '普通隊長 歌單全紀錄',
+    locale: 'zh_TW',
+    type: 'website',
     images: ['/brand/cover.png']
-  }
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '普通隊長｜近年演出歌單全紀錄',
+    description: '每場演出，都有屬於它的歌單。',
+    images: ['/brand/cover.png']
+  },
+  robots: { index: true, follow: true, googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 } }
 };
 
 export const viewport: Viewport = {
@@ -55,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="/shows" className="hover:text-marquee">全部場次</a>
             <a href="/tour" className="hover:text-marquee">巡演足跡</a>
             <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
+            <a href="/about" className="hover:text-marquee">關於本站</a>
             <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
           </div>
           <p className="mt-4 font-accent text-[11px] uppercase tracking-[0.25em] text-stone-600">

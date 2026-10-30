@@ -2,6 +2,7 @@ import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
 
 export const metadata = {
+  alternates: { canonical: '/privacy' },
   title: '隱私權說明｜普通隊長',
   description: '普通隊長網站的隱私權與資料蒐集說明。'
 };

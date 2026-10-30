@@ -6,6 +6,8 @@ import { getCity } from '@/lib/format';
 import ShowListSection from './show-list-section';
 import SiteLogo from '@/components/SiteLogo';
 import Stars from '@/components/Stars';
+import JsonLd from '@/components/JsonLd';
+import { musicGroupJsonLd, websiteJsonLd } from '@/lib/seo';
 import FilterBar from './filter-bar';
 
 export const revalidate = 60;
@@ -65,6 +67,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
+      <JsonLd data={[musicGroupJsonLd(), websiteJsonLd()]} />
       <header className="relative flex min-h-[520px] items-end overflow-hidden border-b-4 border-signal sm:min-h-[600px]">
         {content.bgImageUrl && (
           <Image

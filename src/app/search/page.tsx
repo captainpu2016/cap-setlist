@@ -1,9 +1,12 @@
 import { createPublicClient } from '@/lib/supabase/public';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
+import JsonLd from '@/components/JsonLd';
+import { breadcrumbJsonLd } from '@/lib/seo';
 import SongSearch, { type SearchSong } from './song-search';
 
 export const metadata = {
+  alternates: { canonical: '/search' },
   title: '搜尋歌曲｜普通隊長',
   description: '搜尋普通隊長的歌曲，找出在哪些場次唱過。'
 };
@@ -52,6 +55,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
+      <JsonLd data={breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '搜尋歌曲', path: '/search' }])} />
       <div className="mx-auto max-w-2xl">
         <BackLink />
 

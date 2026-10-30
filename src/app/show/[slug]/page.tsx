@@ -3,7 +3,10 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { formatDateTimeTW, formatDuration, formatShowDate, sumDuration } from '@/lib/format';
+import { formatDateTimeTW, formatDuration, formatShowDate, getCity, sumDuration } from '@/lib/format';
+import { getArchive } from '@/lib/archive';
+import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
+import JsonLd from '@/components/JsonLd';
 import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
@@ -22,27 +25,33 @@ import Setlist from './setlist';
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const supabase = createPublicClient();
-  const { data: show } = await supabase
-    .from('shows')
-    .select('title, show_date, venue, cover_image_url')
-    .eq('slug', params.slug)
-    .eq('status', 'published')
-    .single<Pick<Show, 'title' | 'show_date' | 'venue' | 'cover_image_url'>>();
+  const { shows } = await getArchive();
+  const show = shows.find((s) => s.slug === params.slug);
 
   if (!show) return { title: '找不到場次｜普通隊長' };
 
   const title = `${show.title}｜普通隊長`;
-  const description = `${formatShowDate(show.show_date)}${show.venue ? ` @ ${show.venue}` : ''} 演出歌單`;
+  const base = `${formatShowDate(show.date)}${show.venue ? ` @ ${show.venue}` : ''} 普通隊長演出歌單`;
+  // 歌單已公開時，把歌名放進描述：搜尋結果與 AI 摘要才有東西可以直接引用
+  const setlistText = show.songs.length > 0 ? `，共 ${show.songs.length} 首：${show.songs.map((s) => s.title).join('、')}` : '';
+  const description = (base + setlistText).slice(0, 160);
 
   return {
     title,
     description,
+    alternates: { canonical: `/show/${show.slug}` },
     openGraph: {
       title,
       description,
       type: 'website',
-      images: show.cover_image_url ? [show.cover_image_url] : undefined
+      locale: 'zh_TW',
+      images: show.coverImageUrl ? [show.coverImageUrl] : undefined
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: show.coverImageUrl ? [show.coverImageUrl] : undefined
     }
   };
 }
@@ -95,23 +104,67 @@ export default async function ShowPage({ params }: { params: { slug: string } })
   // 歌單有沒有公開：沒設定公開時間就直接顯示；有設定的話，要等時間到了才顯示
   const isRevealed = !show.setlist_reveal_at || new Date(show.setlist_reveal_at) <= new Date();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
+  const siteUrl = getSiteUrl();
   const showUrl = `${siteUrl}/show/${show.slug}`;
+  const city = getCity(show.venue);
+  const playedSongs = setlist.filter((i) => !i.is_placeholder && i.song);
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicEvent',
+    '@id': showUrl,
     name: show.title,
+    description: `${formatShowDate(show.show_date)}${show.venue ? ` @ ${show.venue}` : ''} 普通隊長演出`,
     startDate: show.show_date,
     url: showUrl,
-    ...(show.venue ? { location: { '@type': 'Place', name: show.venue } } : {}),
+    inLanguage: 'zh-Hant-TW',
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    ...(show.venue
+      ? {
+          location: {
+            '@type': 'Place',
+            name: show.venue,
+            address: {
+              '@type': 'PostalAddress',
+              ...(city ? { addressLocality: city } : {}),
+              addressCountry: 'TW'
+            }
+          }
+        }
+      : {}),
     ...(show.cover_image_url ? { image: [show.cover_image_url] } : {}),
-    performer: { '@type': 'MusicGroup', name: '普通隊長' }
+    performer: { '@id': `${siteUrl}/#band` },
+    organizer: { '@id': `${siteUrl}/#band` },
+    // 歌單：每首歌都連到歌曲專屬頁，AI 與搜尋引擎能把「這場演出」和「這首歌」串起來
+    ...(isRevealed && playedSongs.length > 0
+      ? {
+          workPerformed: playedSongs.map((i) => ({
+            '@type': 'MusicComposition',
+            name: i.song!.title,
+            url: `${siteUrl}/song/${i.song!.id}`
+          }))
+        }
+      : {})
   };
+  const breadcrumb = breadcrumbJsonLd([
+    { name: '首頁', path: '/' },
+    { name: '全部場次', path: '/shows' },
+    { name: show.title, path: `/show/${show.slug}` }
+  ]);
+
+  // 給讀者也給 AI 的一句話摘要，全部從資料算出來，不寫死
+  const firstSong = playedSongs[0]?.song?.title;
+  const lastSong = playedSongs[playedSongs.length - 1]?.song?.title;
+  const summary =
+    isRevealed && playedSongs.length > 0
+      ? `普通隊長於 ${formatShowDate(show.show_date)}${show.venue ? `在 ${show.venue}` : ''}演出，共演出 ${playedSongs.length} 首歌` +
+        (totalSeconds > 0 ? `，全場約 ${formatDuration(totalSeconds)}` : '') +
+        (firstSong && lastSong && playedSongs.length > 1 ? `，以〈${firstSong}〉開場，〈${lastSong}〉作結。` : '。')
+      : null;
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
-      {/* eslint-disable-next-line react/no-danger */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={[jsonLd, breadcrumb]} />
 
       {show.cover_image_url && (
         <div className="relative h-[38vh] w-full sm:h-[50vh]">
@@ -165,6 +218,8 @@ export default async function ShowPage({ params }: { params: { slug: string } })
             </dl>
           )}
 
+          {summary && <p className="mt-5 leading-relaxed text-stone-300">{summary}</p>}
+
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <AttendButton showId={show.id} initialCount={attendanceCount} />
             <ShareButton title={show.title} />
@@ -173,6 +228,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
           </div>
 
           <div className="mt-10">
+            <h2 className="section-title mb-4 text-2xl">歌單</h2>
             {isRevealed ? (
               setlist.length > 0 ? (
                 <Setlist items={setlist} />
