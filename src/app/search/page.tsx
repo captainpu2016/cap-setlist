@@ -34,6 +34,24 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
     results = data ?? [];
   }
 
+  // 尚未輸入關鍵字時，列出唱過最多場的歌曲，讓人直接點選
+  let suggestions: { id: string; title: string; count: number }[] = [];
+  if (!q) {
+    const { data } = await supabase
+      .from('songs')
+      .select('*, setlist_items(id, is_placeholder, show:shows(*))')
+      .returns<SongResult[]>();
+    suggestions = (data ?? [])
+      .map((song) => ({
+        id: song.id,
+        title: song.title,
+        count: (song.setlist_items ?? []).filter((i) => !i.is_placeholder && i.show).length
+      }))
+      .filter((song) => song.count > 0)
+      .sort((a, b) => b.count - a.count || a.title.localeCompare(b.title))
+      .slice(0, 20);
+  }
+
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <div className="mx-auto max-w-2xl">
@@ -61,7 +79,31 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         </form>
 
         <div className="mt-10">
-          {!q && <p className="text-sm text-stone-500">輸入歌名開始搜尋。</p>}
+          {!q && (
+            <>
+              <p className="text-sm text-stone-500">輸入歌名開始搜尋，或從下面挑一首。</p>
+              {suggestions.length > 0 && (
+                <>
+                  <h2 className="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-stone-500">
+                    常唱歌曲
+                  </h2>
+                  <ul className="divide-y divide-stage-700 rounded-lg border border-stage-700 bg-stage-900/60">
+                    {suggestions.map((song) => (
+                      <li key={song.id}>
+                        <a
+                          href={`/search?q=${encodeURIComponent(song.title)}`}
+                          className="flex items-center justify-between px-4 py-3 text-sm transition-colors hover:bg-stage-800/60"
+                        >
+                          <span className="text-paper">{song.title}</span>
+                          <span className="text-xs text-stone-500">{song.count} 場</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </>
+          )}
 
           {q && results.every((song) => !hasVisibleShows(song)) && (
             <p className="text-sm text-stone-500">沒有找到符合「{q}」的歌曲。</p>
