@@ -142,7 +142,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
       formatShowDate(show.show_date),
       show.venue ?? '',
       '歌單敬請期待',
-      '掃描或點連結，聽完整歌單',
+      '掃描 QR code，看完整歌單',
       'SETLIST',
       `0123456789 ${setlist.length} 首歌 · ⋯… 等共首，完整版請看網站`,
       domainText,
@@ -341,7 +341,7 @@ export async function GET(request: Request, { params }: { params: { slug: string
               </svg>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-              <span style={{ fontSize: 36, fontWeight: 900 }}>掃描或點連結，聽完整歌單</span>
+              <span style={{ fontSize: 36, fontWeight: 900 }}>掃描 QR code，看完整歌單</span>
               <span style={{ fontSize: 24, color: GOLD, marginTop: 14 }}>{domainText}</span>
             </div>
             {mascot && (

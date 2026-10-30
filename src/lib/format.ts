@@ -110,3 +110,8 @@ export function taipeiInputToIso(value: string): string | null {
   const d = new Date(`${m[1]}T${m[2]}:00+08:00`);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+/** 台灣時間的今天，格式 YYYY-MM-DD（跟 shows.show_date 直接比較大小） */
+export function todayTaipei(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: SITE_TIME_ZONE });
+}

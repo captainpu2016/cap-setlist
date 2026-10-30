@@ -67,7 +67,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="/" className="hover:text-marquee">首頁</a>
             <a href="/shows" className="hover:text-marquee">全部場次</a>
             <a href="/tour" className="hover:text-marquee">巡演足跡</a>
+            <a href="/stats" className="hover:text-marquee">歌單統計</a>
             <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
+            <a href="/me" className="hover:text-marquee">我的紀錄</a>
             <a href="/about" className="hover:text-marquee">關於本站</a>
             <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
           </div>

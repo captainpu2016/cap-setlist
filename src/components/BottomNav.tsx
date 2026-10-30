@@ -6,7 +6,9 @@ import { usePathname } from 'next/navigation';
 const ITEMS = [
   { href: '/', label: '場次', icon: HomeIcon },
   { href: '/search', label: '搜尋', icon: SearchIcon },
-  { href: '/tour', label: '巡演', icon: MapIcon }
+  { href: '/tour', label: '巡演', icon: MapIcon },
+  { href: '/stats', label: '統計', icon: StatsIcon },
+  { href: '/me', label: '我的', icon: UserIcon }
 ];
 
 export default function BottomNav() {
@@ -52,6 +54,25 @@ function SearchIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function StatsIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <line x1="6" y1="20" x2="6" y2="11" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="18" y1="20" x2="18" y2="14" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
     </svg>
   );
 }

@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { formatDateTimeTW, formatDuration, formatShowDate, getCity, sumDuration } from '@/lib/format';
+import { formatDateTimeTW, formatDuration, formatShowDate, getCity, sumDuration, todayTaipei } from '@/lib/format';
 import { getArchive } from '@/lib/archive';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
@@ -221,7 +221,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
           {summary && <p className="mt-5 leading-relaxed text-stone-300">{summary}</p>}
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
-            <AttendButton showId={show.id} initialCount={attendanceCount} />
+            {show.show_date <= todayTaipei() && <AttendButton showId={show.id} initialCount={attendanceCount} />}
             <ShareButton title={show.title} />
             <AddToCalendarButton title={show.title} dateStr={show.show_date} venue={show.venue} url={showUrl} />
             <ShareCardButton slug={show.slug} title={show.title} />

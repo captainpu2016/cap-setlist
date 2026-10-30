@@ -65,6 +65,15 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="mt-10">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">資料備份</h2>
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-white p-4">
+          <p className="mr-auto text-sm text-stone-600">匯出全部場次與歌單（含草稿），建議定期備份一份。</p>
+          <a href="/admin/export?format=csv" className="admin-btn-secondary">下載 CSV</a>
+          <a href="/admin/export?format=json" className="admin-btn-secondary">下載 JSON</a>
+        </div>
+      </section>
+
+      <section className="mt-10">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">
           待補串流連結提醒
         </h2>
