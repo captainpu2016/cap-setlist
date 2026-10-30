@@ -100,10 +100,10 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
         <div className="absolute inset-0 bg-gradient-to-r from-stage-950/95 via-stage-950/60 to-transparent" />
 
         <div className="relative mx-auto flex w-full max-w-5xl items-end justify-between gap-8 px-6 pb-10 pt-32 sm:px-10 sm:pb-14">
-          <div>
-            <div className="flex items-center gap-3">
-              <Stars size={16} className="text-signal" />
-              <p className="tag-slash">{content.eyebrow}</p>
+          <div className="min-w-0 max-w-full">
+            <div className="flex min-w-0 items-center gap-3">
+              <Stars size={16} className="shrink-0 text-signal" />
+              <p className="tag-slash min-w-0 break-words !text-marquee !text-xs !tracking-[0.18em] sm:!text-sm sm:!tracking-[0.3em]">{content.eyebrow}</p>
             </div>
             <h1 className="mt-4">
               <span className="sr-only">普通隊長</span>

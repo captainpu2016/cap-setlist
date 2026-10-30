@@ -53,7 +53,7 @@ export default function ShowListSection({
         <span className="font-accent text-sm tracking-widest text-stone-500">{shows.length}</span>
       </div>
 
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleShows.map((show, i) => (
           <li key={show.id}>
             <Link href={`/show/${show.slug}`} className="card-bar group flex h-full flex-col overflow-hidden">
@@ -77,7 +77,7 @@ export default function ShowListSection({
                   {accent && i === 0 && !show.cover_image_url && (
                     <span className="tag-solid mb-2 self-start">Next</span>
                   )}
-                  <h3 className="text-base font-black leading-snug text-paper transition-colors group-hover:text-marquee">
+                  <h3 className="break-words text-base font-black leading-snug text-paper transition-colors group-hover:text-marquee">
                     {show.title}
                   </h3>
                   {show.venue && (
