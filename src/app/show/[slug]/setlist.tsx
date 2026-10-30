@@ -185,7 +185,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
           </div>
 
           {currentPlayingItem?.song && (
-            <div className="mt-3 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 px-4 py-3">
+            <div className="mt-3 border-2 border-stage-700 bg-stage-900 px-4 py-3">
               <p className="truncate text-sm font-medium text-paper">{currentPlayingItem.song.title}</p>
               <div className="mt-2 flex items-center gap-3">
                 <span className="w-9 shrink-0 text-right text-xs tabular-nums text-stone-500">
@@ -373,7 +373,7 @@ function SongRow({
       </div>
 
       {showLyrics && item.song?.lyrics && (
-        <div className="mb-3 ml-10 whitespace-pre-line rounded-sm border border-stage-700 bg-stage-900 p-4 text-sm leading-relaxed text-stone-300">
+        <div className="mb-3 ml-10 whitespace-pre-line border-2 border-stage-700 bg-stage-900 p-4 text-sm leading-relaxed text-stone-300">
           {item.song.lyrics}
         </div>
       )}

@@ -9,10 +9,9 @@ export default function PageHeader({
 }) {
   return (
     <div>
-      <span className="tag-slash">{eyebrow}</span>
-      <h1 className="mt-4 text-4xl font-black leading-tight tracking-tight text-paper sm:text-6xl">{title}</h1>
-      <div className="mt-4 h-1 w-16 bg-marquee" />
-      {description && <p className="mt-4 text-stone-400">{description}</p>}
+      <p className="tag-slash">{eyebrow}</p>
+      <h1 className="mt-2 text-5xl font-black leading-none tracking-tight text-paper sm:text-7xl">{title}</h1>
+      {description && <p className="mt-5 max-w-lg text-stone-400">{description}</p>}
     </div>
   );
 }

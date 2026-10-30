@@ -80,7 +80,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
 
   return (
     <div>
-      <div className="mb-4 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 p-4">
+      <div className="mb-4 border-2 border-stage-700 bg-stage-900 p-4">
         <div className="flex items-center justify-between text-xs text-stone-400">
           <span>起始：{formatMonthKey(rangeStart)}</span>
           <span>結束：{formatMonthKey(rangeEnd)}</span>

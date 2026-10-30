@@ -105,7 +105,7 @@ export default async function TourPage() {
         <section className="mt-10">
           <h2 className="section-title mb-4 text-xl">逐月演出趨勢</h2>
           {monthlyTimeline.length > 0 ? (
-            <div className="rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 p-6">
+            <div className="border-2 border-stage-700 bg-stage-900 p-6">
               <div className="overflow-x-auto">
                 <div
                   className="flex items-end gap-1.5"

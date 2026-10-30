@@ -7,7 +7,7 @@ import Image from 'next/image';
  */
 export default function CaptainBadge({
   size = 96,
-  rotate = -6,
+  rotate = 0,
   className = ''
 }: {
   size?: number;

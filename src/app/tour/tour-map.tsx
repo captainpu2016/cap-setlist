@@ -153,7 +153,7 @@ export default function TourMap({
   }, []);
 
   return (
-    <div className="relative h-[420px] w-full overflow-hidden rounded-sm border border-stage-700">
+    <div className="relative h-[420px] w-full overflow-hidden border-2 border-stage-700">
       <MapContainer
         center={center}
         zoom={points.length > 1 ? 6 : 9}

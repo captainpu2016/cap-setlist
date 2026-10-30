@@ -3,6 +3,7 @@ import { GoogleAnalytics } from '@next/third-parties/google';
 import { Noto_Sans_TC, Oswald } from 'next/font/google';
 import BottomNav from '@/components/BottomNav';
 import SiteHeader from '@/components/SiteHeader';
+import Stars from '@/components/Stars';
 import './globals.css';
 
 const body = Noto_Sans_TC({
@@ -48,9 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
 
         <footer className="border-t border-stage-700 px-6 py-12 text-center sm:px-10">
-          <div className="star-rule mx-auto max-w-xs" aria-hidden>
-            ★★★
-          </div>
+          <Stars size={18} className="mx-auto text-signal" />
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-accent text-xs uppercase tracking-[0.2em] text-stone-400">
             <a href="/" className="hover:text-marquee">首頁</a>
             <a href="/shows" className="hover:text-marquee">全部場次</a>

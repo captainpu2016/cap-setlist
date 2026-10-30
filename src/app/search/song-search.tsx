@@ -134,7 +134,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
             </>
           )}
         </p>
-        <div className="flex gap-1 rounded-sm border border-stage-700 bg-stage-900 p-1" role="group" aria-label="排序">
+        <div className="flex gap-1 border-2 border-stage-700 bg-stage-900 p-1" role="group" aria-label="排序">
           {SORTS.map((s) => (
             <button
               key={s.key}

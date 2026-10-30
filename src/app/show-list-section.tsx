@@ -48,15 +48,15 @@ export default function ShowListSection({
 
   return (
     <div className="mb-14">
-      <div className="mb-5 flex items-center gap-4">
-        <h2 className="section-title flex-1 text-xl">{title}</h2>
-        <span className="font-accent text-sm tracking-widest text-stone-500">{shows.length} SHOWS</span>
+      <div className="mb-5 flex items-baseline justify-between gap-4 border-t-2 border-paper pt-3">
+        <h2 className="text-2xl font-black text-paper">{title}</h2>
+        <span className="font-accent text-sm tracking-widest text-stone-500">{shows.length}</span>
       </div>
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleShows.map((show, i) => (
           <li key={show.id}>
-            <Link href={`/show/${show.slug}`} className="card-bar group flex h-full flex-col overflow-hidden pl-1">
+            <Link href={`/show/${show.slug}`} className="card-bar group flex h-full flex-col overflow-hidden">
               {show.cover_image_url && (
                 <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden">
                   <Image
@@ -67,7 +67,7 @@ export default function ShowListSection({
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-stage-900 via-transparent to-transparent" />
-                  {accent && i === 0 && <span className="tag-slash absolute left-3 top-3">Next</span>}
+                  {accent && i === 0 && <span className="tag-solid absolute left-3 top-3">Next</span>}
                 </div>
               )}
 
@@ -75,7 +75,7 @@ export default function ShowListSection({
                 <DateBlock date={show.show_date} accent={accent} />
                 <div className="flex min-w-0 flex-1 flex-col justify-center p-4">
                   {accent && i === 0 && !show.cover_image_url && (
-                    <span className="tag-slash mb-2 self-start">Next</span>
+                    <span className="tag-solid mb-2 self-start">Next</span>
                   )}
                   <h3 className="text-base font-black leading-snug text-paper transition-colors group-hover:text-marquee">
                     {show.title}

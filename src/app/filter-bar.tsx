@@ -33,7 +33,7 @@ export default function FilterBar({
   return (
     <form
       method="get"
-      className="mb-10 flex flex-col gap-3 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 p-4 sm:flex-row sm:flex-wrap sm:items-end"
+      className="mb-10 flex flex-col gap-3 border-2 border-stage-700 bg-stage-900 p-4 sm:flex-row sm:flex-wrap sm:items-end"
     >
       <div className="grid grid-cols-2 gap-3 sm:contents">
         <div>
@@ -45,7 +45,7 @@ export default function FilterBar({
             name="year"
             defaultValue={selectedYear}
             onChange={handleChange}
-            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+            className="w-full border-2 border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">全部年份</option>
             {years.map((y) => (
@@ -65,7 +65,7 @@ export default function FilterBar({
             name="month"
             defaultValue={selectedMonth}
             onChange={handleChange}
-            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+            className="w-full border-2 border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">全部月份</option>
             {months.map((m) => (
@@ -87,7 +87,7 @@ export default function FilterBar({
             name="city"
             defaultValue={selectedCity}
             onChange={handleChange}
-            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+            className="w-full border-2 border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">全部城市</option>
             {cities.map((c) => (
@@ -107,7 +107,7 @@ export default function FilterBar({
             name="venue"
             defaultValue={selectedVenue}
             onChange={handleChange}
-            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
+            className="w-full border-2 border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
           >
             <option value="">全部場地</option>
             {venues.map((v) => (

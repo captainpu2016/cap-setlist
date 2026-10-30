@@ -52,7 +52,7 @@ export default async function ShowsListPage() {
           {years.map((year) => (
             <section key={year}>
               <h2 className="section-title mb-3 font-accent text-2xl tracking-wider">{year}</h2>
-              <ul className="divide-y divide-stage-700 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900">
+              <ul className="divide-y divide-stage-700 border-2 border-stage-700 bg-stage-900">
                 {(groups.get(year) ?? []).map((show) => (
                   <li key={show.id}>
                     <a

@@ -124,7 +124,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
             className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stage-950 via-stage-950/20 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-signal" />
+          
         </div>
       )}
 
@@ -134,7 +134,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
 
           <div className="mt-6 flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <span className="tag-slash">{formatShowDate(show.show_date)}</span>
+              <p className="tag-slash">{formatShowDate(show.show_date)}</p>
               <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight text-paper sm:text-5xl">
                 {show.title}
               </h1>
@@ -147,11 +147,11 @@ export default async function ShowPage({ params }: { params: { slug: string } })
                 </p>
               )}
             </div>
-            <CaptainBadge size={64} rotate={6} className="hidden shrink-0 sm:block" />
+            <CaptainBadge size={64} rotate={0} className="hidden shrink-0 sm:block" />
           </div>
 
           {isRevealed && (
-            <dl className="mt-6 flex gap-8 border-y border-stage-700 py-4 font-accent">
+            <dl className="mt-6 flex gap-10 border-y-2 border-paper py-4 font-accent">
               <div>
                 <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">Songs</dt>
                 <dd className="text-2xl font-bold leading-none text-paper">{setlist.length}</dd>
@@ -181,7 +181,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
               )
             ) : (
               <div className="rounded-sm border border-dashed border-marquee/40 bg-stage-900 p-10 text-center">
-                <span className="tag-slash">Coming Soon</span>
+                <span className="tag-solid">Coming Soon</span>
                 <p className="mt-4 text-xl font-black text-paper">歌單敬請期待</p>
                 <p className="mt-2 text-sm text-stone-500">
                   這場的歌單將於{' '}

@@ -7,8 +7,8 @@ export const metadata = {
 export default function NotFound() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-noise bg-halftone px-6 text-center">
-      <CaptainBadge size={120} rotate={-4} className="mb-6" />
-      <span className="tag-slash">Error 404</span>
+      <CaptainBadge size={120} rotate={0} className="mb-6" />
+      <p className="tag-slash">404</p>
       <h1 className="mt-5 text-4xl font-black text-paper sm:text-5xl">這裡沒有歌單</h1>
       <p className="mt-3 max-w-sm text-sm text-stone-400">
         你要找的頁面不存在，可能是網址打錯了，或這場演出還沒上架。
