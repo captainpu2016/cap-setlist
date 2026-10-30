@@ -15,6 +15,7 @@ import ShareCardButton from '@/components/ShareCardButton';
 import AttendButton from '@/components/AttendButton';
 import BackLink from '@/components/BackLink';
 import Setlist from './setlist';
+import ShowComments, { type CommentItem } from './show-comments';
 
 // 生成 Spotify 播放清單的功能先隱藏（Spotify Development Mode 限制，見對話紀錄）。
 // 後端邏輯都還在 src/app/api/shows/[id]/generate-playlist/、
@@ -68,7 +69,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
 
   if (!show) notFound();
 
-  const [{ data: items }, { data: prevShow }, { data: nextShow }, attendanceCount] = await Promise.all([
+  const [{ data: items }, { data: prevShow }, { data: nextShow }, attendanceCount, commentsResult] = await Promise.all([
     supabase
       .from('setlist_items')
       .select('*, song:songs(*)')
@@ -95,8 +96,20 @@ export default async function ShowPage({ params }: { params: { slug: string } })
       .from('show_attendances')
       .select('*', { count: 'exact', head: true })
       .eq('show_id', show.id)
-      .then(({ count }) => count ?? 0)
+      .then(({ count }) => count ?? 0),
+    supabase
+      .from('show_comments')
+      .select('id, nickname, body, created_at', { count: 'exact' })
+      .eq('show_id', show.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .returns<CommentItem[]>()
   ]);
+
+  // 留言資料表還沒建立（沒執行 0002_show_comments.sql）時 error 不是 null，這時整個留言區都不顯示
+  const commentsEnabled = !commentsResult.error;
+  const comments = commentsResult.data ?? [];
+  const commentTotal = commentsResult.count ?? comments.length;
 
   const setlist = items ?? [];
   const totalSeconds = sumDuration(setlist.map((i) => i.song?.duration_seconds ?? null));
@@ -151,16 +164,6 @@ export default async function ShowPage({ params }: { params: { slug: string } })
     { name: '全部場次', path: '/shows' },
     { name: show.title, path: `/show/${show.slug}` }
   ]);
-
-  // 給讀者也給 AI 的一句話摘要，全部從資料算出來，不寫死
-  const firstSong = playedSongs[0]?.song?.title;
-  const lastSong = playedSongs[playedSongs.length - 1]?.song?.title;
-  const summary =
-    isRevealed && playedSongs.length > 0
-      ? `普通隊長於 ${formatShowDate(show.show_date)}${show.venue ? `在 ${show.venue}` : ''}演出，共演出 ${playedSongs.length} 首歌` +
-        (totalSeconds > 0 ? `，全場約 ${formatDuration(totalSeconds)}` : '') +
-        (firstSong && lastSong && playedSongs.length > 1 ? `，以〈${firstSong}〉開場，〈${lastSong}〉作結。` : '。')
-      : null;
 
   return (
     <main className="min-h-screen bg-noise bg-halftone">
@@ -218,7 +221,11 @@ export default async function ShowPage({ params }: { params: { slug: string } })
             </dl>
           )}
 
-          {summary && <p className="mt-5 leading-relaxed text-stone-300">{summary}</p>}
+          {commentsEnabled && commentTotal > 0 && (
+            <a href="#comments" className="mt-4 inline-block text-sm text-stone-400 transition hover:text-marquee">
+              {commentTotal} 則現場留言 ↓
+            </a>
+          )}
 
           <div className="mt-6 flex flex-wrap items-center gap-2">
             {show.show_date <= todayTaipei() && <AttendButton showId={show.id} initialCount={attendanceCount} />}
@@ -247,6 +254,15 @@ export default async function ShowPage({ params }: { params: { slug: string } })
               </div>
             )}
           </div>
+
+          {commentsEnabled && (
+            <ShowComments
+              showId={show.id}
+              initialComments={comments}
+              total={commentTotal}
+              canComment={show.show_date <= todayTaipei()}
+            />
+          )}
 
           {(prevShow || nextShow) && (
             <div className="mt-14 flex items-center justify-between gap-6 border-t border-stage-700 pt-6 text-sm">

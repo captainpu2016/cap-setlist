@@ -47,6 +47,17 @@ export type SongWithAlbum = Song & {
   album: Album | null;
 };
 
+export type ShowComment = {
+  id: string;
+  show_id: string;
+  nickname: string;
+  body: string;
+  device_hash: string;
+  status: 'visible' | 'hidden';
+  report_count: number;
+  created_at: string;
+};
+
 export type Show = {
   id: string;
   slug: string;
@@ -122,6 +133,18 @@ export type Database = {
         Row: ShowAttendance;
         Insert: Partial<ShowAttendance> & { show_id: string; device_id: string };
         Update: Partial<ShowAttendance>;
+        Relationships: [];
+      };
+      show_comments: {
+        Row: ShowComment;
+        Insert: Partial<ShowComment> & { show_id: string; body: string; device_hash: string };
+        Update: Partial<ShowComment>;
+        Relationships: [];
+      };
+      show_comment_reports: {
+        Row: { comment_id: string; device_hash: string; created_at: string };
+        Insert: { comment_id: string; device_hash: string };
+        Update: Partial<{ comment_id: string; device_hash: string }>;
         Relationships: [];
       };
       site_settings: {

@@ -22,6 +22,14 @@ export default async function AdminDashboardPage() {
     .limit(8)
     .returns<SongMissingLink[]>();
 
+  // 留言資料表還沒建立時查詢會出錯，這時就不顯示留言提醒
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const [recentComments, reportedComments] = await Promise.all([
+    supabase.from('show_comments').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo),
+    supabase.from('show_comments').select('*', { count: 'exact', head: true }).gt('report_count', 0)
+  ]);
+  const commentsReady = !recentComments.error;
+
   return (
     <div className="max-w-5xl">
       <h1 className="font-display text-2xl font-bold text-stone-900">後台總覽</h1>
@@ -63,6 +71,24 @@ export default async function AdminDashboardPage() {
           </ul>
         </div>
       </section>
+
+      {commentsReady && (
+        <section className="mt-10">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">留言</h2>
+          <Link
+            href="/admin/comments"
+            className="flex items-center justify-between rounded-lg border border-stone-200 bg-white p-4 hover:bg-stone-50"
+          >
+            <span className="text-sm text-stone-700">
+              近 7 天新增 <strong>{recentComments.count ?? 0}</strong> 則留言
+              {(reportedComments.count ?? 0) > 0 && (
+                <span className="ml-2 rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">{reportedComments.count} 則被檢舉</span>
+              )}
+            </span>
+            <span className="text-sm text-stone-500">前往管理 →</span>
+          </Link>
+        </section>
+      )}
 
       <section className="mt-10">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-stone-500">資料備份</h2>
