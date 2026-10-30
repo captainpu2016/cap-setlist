@@ -32,12 +32,39 @@ function bearing(lat1: number, lng1: number, lat2: number, lng2: number): number
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
+/** 兩點之間的二次貝茲弧線，控制點往行進方向的左側偏移；來回路線因方向相反，弧線會自然分在兩側 */
+function curvePoints(a: RoutePoint, b: RoutePoint, steps = 32): [number, number][] {
+  const dLat = b.lat - a.lat;
+  const dLng = b.lng - a.lng;
+  const bend = 0.18;
+  const cLat = (a.lat + b.lat) / 2 + dLng * bend;
+  const cLng = (a.lng + b.lng) / 2 - dLat * bend;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const u = 1 - t;
+    pts.push([
+      u * u * a.lat + 2 * u * t * cLat + t * t * b.lat,
+      u * u * a.lng + 2 * u * t * cLng + t * t * b.lng
+    ]);
+  }
+  return pts;
+}
+
+/** 依巡迴先後在暗金色 → 紅色之間漸變，t 為 0~1 */
+function routeColor(t: number): string {
+  const from = [138, 109, 59];
+  const to = [226, 35, 28];
+  const c = from.map((f, i) => Math.round(f + (to[i] - f) * t));
+  return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+}
+
 /** 用一個會依方位角旋轉的三角形當箭頭圖示，不需要額外的圖檔資源，加上脈動動畫更有生命力 */
-function arrowIcon(angleDeg: number) {
+function arrowIcon(angleDeg: number, color: string) {
   return L.divIcon({
     className: '',
     html: `<div class="route-arrow-pulse" style="transform: rotate(${angleDeg}deg); width:16px; height:16px;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#e2231c"><path d="M12 2 L20 21 L12 16 L4 21 Z"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="${color}"><path d="M12 2 L20 21 L12 16 L4 21 Z"/></svg>
     </div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8]
@@ -125,24 +152,32 @@ export default function TourMap({
 
         {segments.map((seg, i) => {
           if (seg.from.lat === seg.to.lat && seg.from.lng === seg.to.lng) return null;
-          const mid: [number, number] = [(seg.from.lat + seg.to.lat) / 2, (seg.from.lng + seg.to.lng) / 2];
-          const angle = bearing(seg.from.lat, seg.from.lng, seg.to.lat, seg.to.lng);
+          const curve = curvePoints(seg.from, seg.to);
+          const midIdx = Math.floor(curve.length / 2);
+          const angle = bearing(curve[midIdx - 1][0], curve[midIdx - 1][1], curve[midIdx + 1][0], curve[midIdx + 1][1]);
+          const t = segments.length > 1 ? i / (segments.length - 1) : 1;
+          const color = routeColor(t);
+          const isLatest = i === segments.length - 1;
           return (
             <Fragment key={`${seg.from.date}-${i}`}>
+              {/* 外發光 */}
               <Polyline
-                positions={[
-                  [seg.from.lat, seg.from.lng],
-                  [seg.to.lat, seg.to.lng]
-                ]}
+                positions={curve}
+                pathOptions={{ color, weight: 9, opacity: 0.18, lineCap: 'round', interactive: false }}
+              />
+              {/* 主線：最新一段持續流動，其餘為實線 */}
+              <Polyline
+                positions={curve}
                 pathOptions={{
-                  color: '#c9a876',
+                  color,
                   weight: 3,
-                  opacity: 0.75,
-                  dashArray: '10 8',
-                  className: 'route-flow-line'
+                  opacity: 0.9,
+                  lineCap: 'round',
+                  interactive: false,
+                  ...(isLatest ? { dashArray: '10 8', className: 'route-flow-line' } : {})
                 }}
               />
-              <Marker position={mid} icon={arrowIcon(angle)} />
+              <Marker position={curve[midIdx]} icon={arrowIcon(angle, color)} interactive={false} />
             </Fragment>
           );
         })}
