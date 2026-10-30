@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import type { Show, Venue } from '@/types/database';
 import { getCity } from '@/lib/format';
 import { getShowCoordinates } from '@/lib/geo';
@@ -45,7 +45,7 @@ function buildMonthlyTimeline(shows: Show[]): { yearMonth: string; count: number
 }
 
 export default async function TourPage() {
-  const supabase = createClient();
+  const supabase = createPublicClient();
   const { data: shows } = await supabase
     .from('shows')
     .select('*, venue_data:venues(*)')

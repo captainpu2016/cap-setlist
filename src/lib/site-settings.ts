@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 
 export type SiteContent = {
   eyebrow: string;
@@ -16,7 +16,7 @@ const DEFAULTS: SiteContent = {
 };
 
 export async function getSiteContent(): Promise<SiteContent> {
-  const supabase = createClient();
+  const supabase = createPublicClient();
   const { data } = await supabase
     .from('site_settings')
     .select('key, value')

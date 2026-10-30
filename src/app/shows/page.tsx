@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import type { Show } from '@/types/database';
 import { formatShowDateShort } from '@/lib/format';
 import PageHeader from '@/components/PageHeader';
@@ -12,7 +12,7 @@ export const metadata = {
 };
 
 export default async function ShowsListPage() {
-  const supabase = createClient();
+  const supabase = createPublicClient();
   const { data: shows, error } = await supabase
     .from('shows')
     .select('*')

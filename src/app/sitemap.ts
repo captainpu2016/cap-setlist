@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://127.0.0.1:3000';
-  const supabase = createClient();
+  const supabase = createPublicClient();
 
   const { data: shows } = await supabase
     .from('shows')

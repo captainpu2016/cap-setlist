@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { formatDuration, formatShowDate, sumDuration } from '@/lib/format';
 import type { Show, SetlistItemWithSong } from '@/types/database';
@@ -19,10 +19,10 @@ import Setlist from './setlist';
 // Mode 或決定付費升級 Premium 帳號後，把下面這行 import 跟 JSX 區塊復原即可。
 // import GeneratePlaylistButton from './generate-playlist-button';
 
-export const revalidate = 0;
+export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const supabase = createClient();
+  const supabase = createPublicClient();
   const { data: show } = await supabase
     .from('shows')
     .select('title, show_date, venue, cover_image_url')
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function ShowPage({ params }: { params: { slug: string } }) {
-  const supabase = createClient();
+  const supabase = createPublicClient();
 
   const { data: show } = await supabase
     .from('shows')

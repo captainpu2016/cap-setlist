@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import type { Show } from '@/types/database';
 import Image from 'next/image';
 import { getSiteContent } from '@/lib/site-settings';
@@ -17,7 +17,7 @@ interface HomeSearchParams {
 }
 
 export default async function HomePage({ searchParams }: { searchParams: HomeSearchParams }) {
-  const supabase = createClient();
+  const supabase = createPublicClient();
   const [{ data: shows }, content] = await Promise.all([
     supabase
       .from('shows')

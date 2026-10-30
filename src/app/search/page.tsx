@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { formatShowDateShort } from '@/lib/format';
 import type { Show, Song } from '@/types/database';
 import PageHeader from '@/components/PageHeader';
@@ -21,7 +21,7 @@ interface SongResult extends Song {
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
   const q = searchParams.q?.trim() ?? '';
-  const supabase = createClient();
+  const supabase = createPublicClient();
 
   let results: SongResult[] = [];
   if (q) {
