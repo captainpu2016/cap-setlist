@@ -117,7 +117,7 @@ export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
     }))
     .filter((d) => d.count >= 2)
     .sort((a, b) => b.showsSince - a.showsSince || a.lastDate.localeCompare(b.lastDate))
-    .slice(0, 10);
+    .slice(0, 5);
 
   return {
     showsWithSetlist: played.length,
@@ -129,10 +129,10 @@ export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
     coverSongCount: coverPlays.size,
     originalPlays,
     coverPlays: coverPlaysTotal,
-    topCovers: rank(coverPlays, 10),
+    topCovers: rank(coverPlays, 5),
     longest,
     shortest,
-    topSongs: rank(plays, 12),
+    topSongs: rank(plays, 10),
     openers: rank(openers, 5),
     closers: rank(closers, 5),
     byYear,
