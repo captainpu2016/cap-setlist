@@ -43,6 +43,11 @@ export function isCoverSong(title: string, albumIsCover: boolean | null | undefi
   return albumIsCover === true || /^\s*[(（]cover[)）]/i.test(title);
 }
 
+/** 開場音樂（歌名以「INTRO」開頭，例如「INTRO: Endless Trip」）：不算歌曲，統計時排除 */
+export function isIntroSong(title: string): boolean {
+  return /^\s*intro\b/i.test(title);
+}
+
 /** 顯示用歌名：去掉開頭的「(Cover) 」標記 */
 export function displaySongTitle(title: string): string {
   return title.replace(/^\s*[(（]cover[)）]\s*/i, '');

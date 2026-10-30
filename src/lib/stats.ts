@@ -1,4 +1,4 @@
-import type { ArchiveShow } from '@/lib/archive';
+import { isIntroSong, type ArchiveShow } from '@/lib/archive';
 
 export type RankedSong = { id: string; title: string; count: number };
 
@@ -6,7 +6,7 @@ export type ArchiveStats = {
   showsWithSetlist: number;
   totalSlots: number;
   avgLength: number;
-  /** 原創與翻唱分開算：每場平均各幾首、不同的歌各幾首 */
+  /** 歌曲與翻唱分開算：每場平均各幾首、不同的歌各幾首 */
   avgOriginal: number;
   avgCover: number;
   originalSongCount: number;
@@ -31,7 +31,9 @@ function rank(map: Map<string, RankedSong>, limit: number): RankedSong[] {
 }
 
 /** 從已公開的場次資料算出各種統計；shows 必須是新到舊排序（getArchive 的順序） */
-export function computeStats(shows: ArchiveShow[]): ArchiveStats {
+export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
+  // 開場音樂（INTRO）不是歌，先整批排除，這樣「開場曲」會是真正的第一首歌
+  const shows = allShows.map((s) => ({ ...s, songs: s.songs.filter((x) => !isIntroSong(x.title)) }));
   const played = shows.filter((s) => s.songs.length > 0);
   const totalSlots = played.reduce((sum, s) => sum + s.songs.length, 0);
 

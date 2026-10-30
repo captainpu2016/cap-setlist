@@ -11,7 +11,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: '歌單統計｜普通隊長最常唱的歌、開場曲與壓軸曲',
-  description: '從歷年演出歌單統計：普通隊長最常演出的原創歌、最常開場與壓軸的歌、最常翻唱的歌、每年平均歌單長度，以及只唱過一次的稀有歌曲。',
+  description: '從歷年演出歌單統計：普通隊長最常演出的歌、最常開場與壓軸的歌、最常翻唱的歌、每年平均歌單長度，以及只唱過一次的稀有歌曲。',
   alternates: { canonical: '/stats' }
 };
 
@@ -55,18 +55,17 @@ export default async function StatsPage() {
 
         {/* 摘要：給讀者，也給搜尋與 AI 直接引用 */}
         <p className="mt-6 max-w-2xl leading-relaxed text-stone-300">
-          目前已公開歌單的 {s.showsWithSetlist} 場演出中，共演出 {s.originalSongCount} 首不同的原創歌（累計 {s.originalPlays} 首次）與{' '}
-          {s.coverSongCount} 首不同的翻唱（累計 {s.coverPlays} 首次），平均每場 {s.avgLength.toFixed(1)} 首
-          {s.topSongs[0] && <>，最常演出的原創歌是〈{s.topSongs[0].title}〉（{s.topSongs[0].count} 場）</>}。
-          以下排行只計原創歌，翻唱另外統計。
+          目前已公開歌單的 {s.showsWithSetlist} 場演出中，共演出 {s.originalSongCount} 首不同的歌（累計 {s.originalPlays} 首次），另外翻唱了{' '}
+          {s.coverSongCount} 首（累計 {s.coverPlays} 首次），平均每場 {s.avgLength.toFixed(1)} 首
+          {s.topSongs[0] && <>，最常演出的是〈{s.topSongs[0].title}〉（{s.topSongs[0].count} 場）</>}。
         </p>
 
         <section className="mt-8 grid grid-cols-2 gap-px border-2 border-stage-700 bg-stage-700 font-accent sm:grid-cols-4">
           {[
             ['Shows', s.showsWithSetlist, '場演出'],
-            ['Originals', s.originalSongCount, '首原創歌'],
+            ['Songs', s.originalSongCount, '首歌'],
             ['Covers', s.coverSongCount, '首翻唱'],
-            ['Avg / show', s.avgLength.toFixed(1), `原創 ${s.avgOriginal.toFixed(1)}・翻唱 ${s.avgCover.toFixed(1)}`]
+            ['Avg / show', s.avgLength.toFixed(1), `歌 ${s.avgOriginal.toFixed(1)}・翻唱 ${s.avgCover.toFixed(1)}`]
           ].map(([label, value, note]) => (
             <div key={label as string} className="bg-stage-900 p-4">
               <p className="text-[11px] uppercase tracking-[0.25em] text-stone-500">{label}</p>
@@ -77,7 +76,7 @@ export default async function StatsPage() {
         </section>
 
         <section className="mt-14">
-          <h2 className="section-title mb-5 text-2xl">最常演出的原創歌</h2>
+          <h2 className="section-title mb-5 text-2xl">最常演出的歌</h2>
           <Bars rows={s.topSongs} />
         </section>
 
@@ -102,7 +101,7 @@ export default async function StatsPage() {
                   <div className="h-full bg-signal" style={{ width: `${(y.shows / maxYearShows) * 100}%` }} />
                 </div>
                 <span className="text-right text-xs text-stone-400">
-                  {y.shows} 場・平均 {y.avgLength.toFixed(1)} 首・{y.distinctSongs} 首不同的原創歌
+                  {y.shows} 場・平均 {y.avgLength.toFixed(1)} 首・{y.distinctSongs} 首不同的歌
                 </span>
               </div>
             ))}
@@ -142,7 +141,7 @@ export default async function StatsPage() {
 
         {s.dormant.length > 0 && (
           <section className="mt-14">
-            <h2 className="section-title mb-2 text-2xl">最久沒唱的原創歌</h2>
+            <h2 className="section-title mb-2 text-2xl">最久沒唱的歌</h2>
             <p className="mb-5 text-sm text-stone-500">唱過兩場以上，但最近好幾場都沒有出現。</p>
             <ol className="border-y border-stage-700">
               {s.dormant.map((d) => (
@@ -161,7 +160,7 @@ export default async function StatsPage() {
 
         {s.oneTimers.length > 0 && (
           <section className="mt-14">
-            <h2 className="section-title mb-2 text-2xl">只唱過一次的原創歌</h2>
+            <h2 className="section-title mb-2 text-2xl">只唱過一次的歌</h2>
             <p className="mb-5 text-sm text-stone-500">共 {s.oneTimers.length} 首，想聽到可能要靠運氣。</p>
             <ul className="border-y border-stage-700">
               {s.oneTimers.map((d) => (
