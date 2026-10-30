@@ -80,10 +80,10 @@ export default async function ShowsListPage() {
                   <li key={show.id}>
                     <a
                       href={`/show/${show.slug}`}
-                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm transition-colors hover:bg-stage-800"
+                      className="flex flex-col gap-1 px-4 py-3 text-sm transition-colors hover:bg-stage-800 sm:flex-row sm:items-baseline sm:justify-between sm:gap-x-4"
                     >
-                      <span className="text-paper">{show.title}</span>
-                      <span className="shrink-0 text-xs text-stone-500">
+                      <span className="min-w-0 break-words text-paper">{show.title}</span>
+                      <span className="min-w-0 break-words text-xs text-stone-500 sm:max-w-[45%] sm:shrink-0 sm:text-right">
                         {formatShowDateShort(show.show_date)}
                         {show.venue ? `・${show.venue}` : ''}
                       </span>

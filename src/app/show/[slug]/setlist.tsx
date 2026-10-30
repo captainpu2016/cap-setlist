@@ -332,7 +332,7 @@ function SongRow({
   );
 
   return (
-    <li className="group/row -mx-2 rounded-sm border-l-2 border-transparent px-2 transition-colors hover:border-signal hover:bg-stage-900">
+    <li className="group/row -mx-2 rounded-sm px-2 transition-colors hover:bg-stage-900 hover:shadow-[inset_2px_0_0_#e2231c]">
       <div className="flex items-start gap-4 py-3 sm:items-center">
         <span className="mt-2 w-8 shrink-0 text-center font-accent text-lg font-semibold tabular-nums text-stone-600 transition-colors group-hover/row:text-signal sm:mt-0">
           {String(index + 1).padStart(2, '0')}

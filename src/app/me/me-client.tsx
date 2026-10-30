@@ -170,7 +170,7 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
       )}
 
       {ready && !recap && (
-        <p className="border-y-2 border-paper py-6 text-stone-300">
+        <p className="border-t-2 border-paper pt-6 text-stone-300">
           還沒有標記任何場次。從下面的清單點「我去過」，就會開始累積你的現場紀錄。
         </p>
       )}

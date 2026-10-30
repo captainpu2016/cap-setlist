@@ -97,7 +97,7 @@ export default async function AboutPage() {
           <PageHeader eyebrow="About" title="關於本站" description="普通隊長演出歌單資料庫的收錄範圍與使用說明。" />
         </div>
 
-        <section className="mt-10 border-y-2 border-paper py-5" aria-label="資料概況">
+        <section className="mt-10 border-t-2 border-paper pt-5" aria-label="資料概況">
           <dl className="grid grid-cols-3 gap-4 font-accent">
             <div>
               <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">Shows</dt>
