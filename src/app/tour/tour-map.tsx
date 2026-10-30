@@ -36,7 +36,7 @@ function bearing(lat1: number, lng1: number, lat2: number, lng2: number): number
 function curvePoints(a: RoutePoint, b: RoutePoint, steps = 32): [number, number][] {
   const dLat = b.lat - a.lat;
   const dLng = b.lng - a.lng;
-  const bend = 0.18;
+  const bend = 0.12;
   const cLat = (a.lat + b.lat) / 2 + dLng * bend;
   const cLng = (a.lng + b.lng) / 2 - dLat * bend;
   const pts: [number, number][] = [];
@@ -103,6 +103,25 @@ function InteractionToggle({ locked }: { locked: boolean }) {
   return null;
 }
 
+/** 載入後自動縮放到剛好看得到所有場地，不用手動拖地圖找 */
+function FitToTour({ coords }: { coords: [number, number][] }) {
+  const map = useMap();
+  const key = coords.map((c) => c.join(',')).join('|');
+
+  useEffect(() => {
+    if (coords.length === 0) return;
+    // 地圖剛掛載時容器尺寸可能還沒定案，先重算尺寸再縮放，否則會縮到錯誤的位置
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+      map.fitBounds(L.latLngBounds(coords), { padding: [40, 40], maxZoom: 10, animate: false });
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  return null;
+}
+
 export default function TourMap({
   points,
   route = []
@@ -145,9 +164,11 @@ export default function TourMap({
         style={{ height: '100%', width: '100%', background: '#170f0a' }}
       >
         <InteractionToggle locked={locked} />
+        <FitToTour coords={[...points, ...route].map((p) => [p.lat, p.lng] as [number, number])} />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution="Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+          maxNativeZoom={16}
         />
 
         {segments.map((seg, i) => {
