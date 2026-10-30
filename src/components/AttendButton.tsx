@@ -49,9 +49,9 @@ export default function AttendButton({ showId, initialCount }: { showId: string;
       type="button"
       onClick={handleClick}
       disabled={attended || loading}
-      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition ${
+      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-sm font-medium transition ${
         attended
-          ? 'border-marquee bg-marquee/10 text-marquee'
+          ? 'border-signal bg-signal/10 text-paper'
           : 'border-stage-700 text-stone-300 hover:border-marquee hover:text-marquee'
       } disabled:cursor-default`}
     >

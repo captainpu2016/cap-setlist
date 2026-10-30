@@ -95,17 +95,17 @@ export default async function TourPage() {
         </div>
 
         <section className="mt-10">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="font-display text-lg font-bold text-stone-300">演出地圖與移動路線</h2>
-            <span className="text-xs text-stone-500">拖曳下方拉桿可篩選時間區間</span>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="section-title flex-1 text-xl">演出地圖與移動路線</h2>
+            <span className="ml-4 hidden text-xs text-stone-500 sm:block">拖曳下方拉桿可篩選時間區間</span>
           </div>
           <TourExplorer points={datedPoints} />
         </section>
 
         <section className="mt-10">
-          <h2 className="mb-3 font-display text-lg font-bold text-stone-300">逐月演出趨勢</h2>
+          <h2 className="section-title mb-4 text-xl">逐月演出趨勢</h2>
           {monthlyTimeline.length > 0 ? (
-            <div className="rounded-lg border border-stage-700 bg-stage-900/60 p-6">
+            <div className="rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 p-6">
               <div className="overflow-x-auto">
                 <div
                   className="flex items-end gap-1.5"
@@ -121,11 +121,11 @@ export default async function TourPage() {
                             百分比高度需要父層有明確的高度，不能只靠外層的 flex 撐開） */}
                         <div className="flex h-28 w-full items-end">
                           <div
-                            className="w-full rounded-t transition-all"
+                            className="w-full rounded-t-[1px] transition-all"
                             style={{
                               height: `${(m.count / maxMonthly) * 100}%`,
                               minHeight: m.count > 0 ? 4 : 2,
-                              backgroundColor: m.count > 0 ? '#c9a876' : '#40291a'
+                              backgroundColor: m.count > 0 ? '#e2231c' : '#302a27'
                             }}
                           />
                         </div>

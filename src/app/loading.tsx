@@ -9,11 +9,11 @@ export default function Loading() {
       </header>
 
       <section className="px-6 py-10 sm:px-10">
-        <div className="mb-8 h-28 animate-pulse rounded-lg bg-stage-800" />
+        <div className="mb-8 h-28 animate-pulse rounded-sm bg-stage-800" />
         <div className="mb-4 h-5 w-24 animate-pulse rounded bg-stage-800" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-lg bg-stage-800" />
+            <div key={i} className="h-32 animate-pulse rounded-sm bg-stage-800" />
           ))}
         </div>
       </section>

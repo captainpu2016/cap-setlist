@@ -44,7 +44,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
 
   if (monthKeys.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">
+      <p className="rounded-sm border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">
         目前還沒有可定位的演出地點。
       </p>
     );
@@ -80,7 +80,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
 
   return (
     <div>
-      <div className="mb-4 rounded-lg border border-stage-700 bg-stage-900/60 p-4">
+      <div className="mb-4 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 p-4">
         <div className="flex items-center justify-between text-xs text-stone-400">
           <span>起始：{formatMonthKey(rangeStart)}</span>
           <span>結束：{formatMonthKey(rangeEnd)}</span>
@@ -94,7 +94,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
             max={monthKeys.length - 1}
             value={startIdx}
             onChange={(e) => setStartIdx(Number(e.target.value))}
-            className="w-full accent-marquee"
+            className="w-full accent-signal"
           />
         </div>
 
@@ -106,7 +106,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
             max={monthKeys.length - 1}
             value={endIdx}
             onChange={(e) => setEndIdx(Number(e.target.value))}
-            className="w-full accent-marquee"
+            className="w-full accent-signal"
           />
         </div>
 
@@ -116,7 +116,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
               type="checkbox"
               checked={showRoute}
               onChange={(e) => setShowRoute(e.target.checked)}
-              className="accent-marquee"
+              className="accent-signal"
             />
             顯示移動路線
           </label>
@@ -127,7 +127,7 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
                 setStartIdx(defaultStartIdx);
                 setEndIdx(defaultEndIdx);
               }}
-              className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee"
+              className="font-accent text-xs uppercase tracking-[0.2em] text-stone-500 hover:text-marquee"
             >
               重設為近一年
             </button>

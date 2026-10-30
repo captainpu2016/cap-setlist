@@ -56,7 +56,7 @@ export default function ShareCardButton({ slug, title }: { slug: string; title: 
         type="button"
         onClick={handleClick}
         disabled={loading}
-        className="inline-flex items-center gap-1.5 rounded-full border border-stage-700 px-4 py-2 text-sm text-stone-300 transition hover:border-marquee hover:text-marquee disabled:cursor-not-allowed disabled:opacity-50"
+        className="btn-ghost"
       >
         <ImageIcon /> {loading ? '產生中…' : '分享歌單卡片'}
       </button>

@@ -153,7 +153,7 @@ export default function TourMap({
   }, []);
 
   return (
-    <div className="relative h-[420px] w-full overflow-hidden rounded-lg border border-stage-700">
+    <div className="relative h-[420px] w-full overflow-hidden rounded-sm border border-stage-700">
       <MapContainer
         center={center}
         zoom={points.length > 1 ? 6 : 9}
@@ -161,7 +161,7 @@ export default function TourMap({
         touchZoom={!locked}
         doubleClickZoom={!locked}
         scrollWheelZoom={false}
-        style={{ height: '100%', width: '100%', background: '#170f0a' }}
+        style={{ height: '100%', width: '100%', background: '#0b0908' }}
       >
         <InteractionToggle locked={locked} />
         <FitToTour coords={[...points, ...route].map((p) => [p.lat, p.lng] as [number, number])} />
@@ -229,7 +229,7 @@ export default function TourMap({
           onClick={() => setLocked(false)}
           className="absolute inset-0 flex items-center justify-center bg-stage-950/20 text-xs text-paper backdrop-blur-[1px] transition hover:bg-stage-950/10"
         >
-          <span className="rounded-full bg-stage-950/80 px-4 py-2">輕觸以操作地圖</span>
+          <span className="bg-stage-950/90 px-4 py-2 font-bold">輕觸以操作地圖</span>
         </button>
       )}
     </div>

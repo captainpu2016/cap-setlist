@@ -51,13 +51,13 @@ export default async function ShowsListPage() {
         <div className="mt-10 space-y-10">
           {years.map((year) => (
             <section key={year}>
-              <h2 className="mb-3 font-display text-lg font-bold text-marquee">{year}</h2>
-              <ul className="divide-y divide-stage-700 rounded-lg border border-stage-700 bg-stage-900/60">
+              <h2 className="section-title mb-3 font-accent text-2xl tracking-wider">{year}</h2>
+              <ul className="divide-y divide-stage-700 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900">
                 {(groups.get(year) ?? []).map((show) => (
                   <li key={show.id}>
                     <a
                       href={`/show/${show.slug}`}
-                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm transition-colors hover:bg-stage-800/60"
+                      className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-4 py-3 text-sm transition-colors hover:bg-stage-800"
                     >
                       <span className="text-paper">{show.title}</span>
                       <span className="shrink-0 text-xs text-stone-500">

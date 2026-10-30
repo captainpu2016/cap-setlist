@@ -30,7 +30,7 @@ export default function ShareButton({ title }: { title: string }) {
     <button
       type="button"
       onClick={handleShare}
-      className="inline-flex items-center gap-1.5 rounded-full border border-stage-700 px-4 py-2 text-sm text-stone-300 transition hover:border-marquee hover:text-marquee"
+      className="btn-ghost"
     >
       {copied ? (
         '已複製連結 ✓'

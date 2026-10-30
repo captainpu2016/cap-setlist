@@ -1,19 +1,21 @@
 import type { Metadata, Viewport } from 'next';
 import { GoogleAnalytics } from '@next/third-parties/google';
-import { Noto_Serif_TC, Noto_Sans_TC } from 'next/font/google';
+import { Noto_Sans_TC, Oswald } from 'next/font/google';
 import BottomNav from '@/components/BottomNav';
+import SiteHeader from '@/components/SiteHeader';
 import './globals.css';
-
-const display = Noto_Serif_TC({
-  subsets: ['latin'],
-  weight: ['700', '900'],
-  variable: '--font-display'
-});
 
 const body = Noto_Sans_TC({
   subsets: ['latin'],
-  weight: ['400', '500', '700'],
+  weight: ['400', '500', '700', '900'],
   variable: '--font-body'
+});
+
+/** 英文標籤、日期、數字用的窄體字，帶出演唱會海報的力道 */
+const accent = Oswald({
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  variable: '--font-accent'
 });
 
 export const metadata: Metadata = {
@@ -33,7 +35,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#170f0a'
+  themeColor: '#0b0908'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -41,18 +43,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="zh-Hant">
-      <body className={`${display.variable} ${body.variable} font-body bg-stage-950 pb-14 sm:pb-0`}>
+      <body className={`${body.variable} ${accent.variable} font-body bg-stage-950 text-paper pb-14 sm:pb-0`}>
+        <SiteHeader />
         {children}
 
-        <footer className="border-t border-stage-800 px-6 py-8 text-center text-xs text-stone-500 sm:px-10">
-          <div className="flex flex-wrap items-center justify-center gap-4">
+        <footer className="border-t border-stage-700 px-6 py-12 text-center sm:px-10">
+          <div className="star-rule mx-auto max-w-xs" aria-hidden>
+            ★★★
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-accent text-xs uppercase tracking-[0.2em] text-stone-400">
             <a href="/" className="hover:text-marquee">首頁</a>
             <a href="/shows" className="hover:text-marquee">全部場次</a>
             <a href="/tour" className="hover:text-marquee">巡演足跡</a>
             <a href="/search" className="hover:text-marquee">搜尋歌曲</a>
             <a href="/privacy" className="hover:text-marquee">隱私權說明</a>
           </div>
-          <p className="mt-3 text-stone-600">© {new Date().getFullYear()} 普通隊長</p>
+          <p className="mt-4 font-accent text-[11px] uppercase tracking-[0.25em] text-stone-600">
+            © {new Date().getFullYear()} Captain Ordinary
+          </p>
         </footer>
 
         <BottomNav />

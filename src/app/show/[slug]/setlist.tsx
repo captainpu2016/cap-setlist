@@ -170,7 +170,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
             <button
               type="button"
               onClick={handlePlaylistToggle}
-              className="inline-flex items-center gap-2 rounded-full bg-marquee px-5 py-2.5 text-sm font-bold text-stage-950 transition hover:bg-marquee/80"
+              className="btn-primary"
             >
               {isPlaylistMode && isPlaying ? (
                 <>
@@ -185,7 +185,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
           </div>
 
           {currentPlayingItem?.song && (
-            <div className="mt-3 rounded-lg border border-stage-700 bg-stage-900/60 px-4 py-3">
+            <div className="mt-3 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 px-4 py-3">
               <p className="truncate text-sm font-medium text-paper">{currentPlayingItem.song.title}</p>
               <div className="mt-2 flex items-center gap-3">
                 <span className="w-9 shrink-0 text-right text-xs tabular-nums text-stone-500">
@@ -198,7 +198,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
                   step={0.1}
                   value={Math.min(currentTime, duration || 0)}
                   onChange={handleSeek}
-                  className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-stage-700 accent-marquee"
+                  className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-stage-700 accent-signal"
                 />
                 <span className="w-9 shrink-0 text-xs tabular-nums text-stone-500">
                   {duration ? formatDuration(Math.floor(duration)) : '0:00'}
@@ -211,7 +211,7 @@ export default function Setlist({ items }: { items: SetlistItemWithSong[] }) {
         </div>
       )}
 
-      <ol className="divide-y divide-stage-700">
+      <ol className="divide-y divide-stage-700/70 border-y border-stage-700">
         {items.map((item, idx) => (
           <SongRow
             key={item.id}
@@ -332,9 +332,9 @@ function SongRow({
   );
 
   return (
-    <li className="rounded-md px-2 transition-colors hover:bg-stage-900/70 -mx-2">
+    <li className="group/row -mx-2 rounded-sm border-l-2 border-transparent px-2 transition-colors hover:border-signal hover:bg-stage-900">
       <div className="flex items-start gap-4 py-3 sm:items-center">
-        <span className="mt-2 w-6 shrink-0 text-center font-display tabular-nums text-stone-600 sm:mt-0">
+        <span className="mt-2 w-8 shrink-0 text-center font-accent text-lg font-semibold tabular-nums text-stone-600 transition-colors group-hover/row:text-signal sm:mt-0">
           {String(index + 1).padStart(2, '0')}
         </span>
 
@@ -373,7 +373,7 @@ function SongRow({
       </div>
 
       {showLyrics && item.song?.lyrics && (
-        <div className="mb-3 ml-10 whitespace-pre-line rounded-lg border border-stage-700 bg-stage-900/60 p-4 text-sm leading-relaxed text-stone-300">
+        <div className="mb-3 ml-10 whitespace-pre-line rounded-sm border border-stage-700 bg-stage-900 p-4 text-sm leading-relaxed text-stone-300">
           {item.song.lyrics}
         </div>
       )}

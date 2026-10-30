@@ -25,7 +25,7 @@ export default function GeneratePlaylistButton({
           href={playlistUrl}
           target="_blank"
           rel="noreferrer noopener"
-          className="inline-flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
+          className="inline-flex items-center gap-2 rounded-sm bg-signal px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-110"
         >
           開啟 Spotify 播放清單 ↗
         </a>
@@ -67,7 +67,7 @@ export default function GeneratePlaylistButton({
       <button
         onClick={handleGenerate}
         disabled={loading}
-        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1DB954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#1DB954] px-5 py-2.5 text-sm font-bold text-black transition hover:bg-[#1ed760] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? '生成中…' : '生成 Spotify 播放清單'}
       </button>

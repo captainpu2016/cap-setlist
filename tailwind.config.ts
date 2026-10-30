@@ -6,22 +6,24 @@ const config: Config = {
     extend: {
       colors: {
         stage: {
-          950: '#170f0a',
-          900: '#20140d',
-          800: '#2c1c12',
-          700: '#40291a'
+          950: '#0b0908',
+          900: '#141110',
+          800: '#1d1917',
+          700: '#302a27'
         },
         marquee: {
-          DEFAULT: '#c9a876',
-          soft: '#ddc79c'
+          DEFAULT: '#d4b27a',
+          soft: '#e8d3a6'
         },
         signal: {
-          DEFAULT: '#e2231c'
+          DEFAULT: '#e2231c',
+          dark: '#a8150f'
         },
-        paper: '#f2ece0'
+        paper: '#f4efe6'
       },
       fontFamily: {
-        display: ['var(--font-display)', 'sans-serif'],
+        display: ['var(--font-body)', 'sans-serif'],
+        accent: ['var(--font-accent)', 'var(--font-body)', 'sans-serif'],
         body: ['var(--font-body)', 'sans-serif']
       },
       backgroundImage: {

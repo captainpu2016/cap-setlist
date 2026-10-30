@@ -35,7 +35,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   while (idx !== -1) {
     if (idx > from) parts.push(text.slice(from, idx));
     parts.push(
-      <mark key={idx} className="rounded-sm bg-marquee/25 px-0.5 text-marquee-soft">
+      <mark key={idx} className="rounded-sm bg-signal px-0.5 text-paper">
         {text.slice(idx, idx + q.length)}
       </mark>
     );
@@ -107,7 +107,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
           placeholder="輸入歌名關鍵字…"
           autoFocus
           aria-label="搜尋歌曲"
-          className="w-full rounded-xl border border-stage-700 bg-stage-900/70 py-3.5 pl-12 pr-12 text-base text-paper shadow-lg shadow-black/20 placeholder:text-stone-600 focus:border-marquee focus:outline-none focus:ring-2 focus:ring-marquee/20 [&::-webkit-search-cancel-button]:hidden"
+          className="w-full rounded-sm border-2 border-stage-700 bg-stage-900 py-4 pl-12 pr-12 text-base font-medium text-paper placeholder:text-stone-600 focus:border-signal focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
           <button
@@ -134,15 +134,15 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
             </>
           )}
         </p>
-        <div className="flex gap-1 rounded-full border border-stage-700 bg-stage-900/60 p-1" role="group" aria-label="排序">
+        <div className="flex gap-1 rounded-sm border border-stage-700 bg-stage-900 p-1" role="group" aria-label="排序">
           {SORTS.map((s) => (
             <button
               key={s.key}
               type="button"
               onClick={() => setSort(s.key)}
               aria-pressed={sort === s.key}
-              className={`rounded-full px-3 py-1 text-xs transition ${
-                sort === s.key ? 'bg-marquee text-stage-950 font-bold' : 'text-stone-400 hover:text-paper'
+              className={`rounded-sm px-3 py-1 text-xs transition ${
+                sort === s.key ? 'bg-signal font-bold text-paper' : 'text-stone-400 hover:text-paper'
               }`}
             >
               {s.label}
@@ -159,7 +159,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
           return (
             <li
               key={song.id}
-              className="overflow-hidden rounded-xl border border-stage-700 bg-stage-900/60 transition-colors hover:border-stage-700/80"
+              className="card-bar overflow-hidden pl-1"
             >
               <button
                 type="button"
@@ -168,12 +168,12 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
                 aria-controls={panelId}
                 className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-stage-800/50"
               >
-                <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-lg border border-marquee/30 bg-stage-950/60">
-                  <span className="font-display text-xl font-black leading-none text-marquee">{song.shows.length}</span>
-                  <span className="mt-0.5 text-[10px] text-stone-500">場</span>
+                <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-sm bg-stage-950 font-accent">
+                  <span className="text-2xl font-bold leading-none text-paper">{song.shows.length}</span>
+                  <span className="mt-0.5 text-[10px] tracking-widest text-signal">SHOWS</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate font-display text-base font-bold text-paper">
+                  <h2 className="truncate text-base font-black text-paper">
                     <Highlight text={song.title} query={q} />
                   </h2>
                   <p className="mt-0.5 truncate text-xs text-stone-500">
@@ -181,7 +181,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
                   </p>
                   <div className="mt-2 h-1 overflow-hidden rounded-full bg-stage-700/60" aria-hidden>
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-marquee/60 to-signal"
+                      className="h-full rounded-full bg-signal"
                       style={{ width: `${(song.shows.length / maxCount) * 100}%` }}
                     />
                   </div>
@@ -212,7 +212,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
                           <span className="block truncate text-paper">{show.title}</span>
                           {show.venue && <span className="block truncate text-xs text-stone-500">{show.venue}</span>}
                         </span>
-                        <span className="shrink-0 font-mono text-xs text-stone-500">{formatDate(show.date)}</span>
+                        <span className="shrink-0 font-accent text-xs tracking-wider text-stone-500">{formatDate(show.date)}</span>
                       </a>
                     </li>
                   ))}
@@ -227,14 +227,14 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
         <button
           type="button"
           onClick={() => setLimit((l) => l + PAGE_SIZE)}
-          className="mt-5 w-full rounded-xl border border-stage-700 py-3 text-sm text-stone-400 transition hover:border-marquee/50 hover:text-marquee"
+          className="mt-5 btn-ghost w-full !py-3"
         >
           顯示更多（還有 {results.length - visible.length} 首）
         </button>
       )}
 
       {q && results.length === 0 && (
-        <div className="mt-10 rounded-xl border border-dashed border-stage-700 py-12 text-center">
+        <div className="mt-10 rounded-sm border border-dashed border-stage-700 py-12 text-center">
           <p className="text-paper">沒有找到符合「{q}」的歌曲</p>
           <p className="mt-2 text-xs text-stone-500">試試看更短的關鍵字，或確認有沒有打錯字。</p>
         </div>

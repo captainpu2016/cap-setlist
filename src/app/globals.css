@@ -3,27 +3,91 @@
 @tailwind utilities;
 
 :root {
-  --font-display: 'Noto Serif TC', serif;
-  --font-body: 'Noto Sans TC', sans-serif;
+  --font-display: var(--font-body);
 }
 
 body {
-  background-color: #0c0a09;
+  background-color: #0b0908;
   color: #f4efe6;
 }
 
+/* 頁面底：頂端一抹紅色舞台光 + 細微顆粒，取代舊的圓點網點 */
 .bg-noise {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-color: #0b0908;
 }
 
 .bg-halftone {
-  background-image: radial-gradient(circle, rgba(201, 168, 118, 0.14) 1px, transparent 1.4px);
-  background-size: 14px 14px;
+  background-image: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(226, 35, 28, 0.16), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, repeat;
+  background-size: 100% 520px, 120px 120px;
 }
 
 ::selection {
-  background-color: #f4b93c;
-  color: #151211;
+  background-color: #e2231c;
+  color: #f4efe6;
+}
+
+/* ── 視覺元件：英雄特攝／演唱會海報風格 ───────────────────── */
+
+/* 斜切標籤：用在 eyebrow、狀態標示，像片頭字卡 */
+.tag-slash {
+  @apply inline-block bg-signal px-4 py-1 font-accent text-xs font-semibold uppercase tracking-[0.22em] text-paper;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.tag-slash-ghost {
+  @apply inline-block bg-stage-700 px-4 py-1 font-accent text-xs font-semibold uppercase tracking-[0.22em] text-stone-300;
+  clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+
+/* 主要按鈕：紅底、兩端斜切 */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 bg-signal px-7 py-3 text-sm font-black tracking-wider text-paper transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50;
+  clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+
+/* 次要按鈕：細框、直角 */
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-sm border border-stage-700 bg-stage-900/60 px-4 py-2 text-sm font-medium text-stone-300 transition hover:border-marquee hover:text-marquee disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* 區塊標題：左側紅色斜塊 + 後面延伸的細線 */
+.section-title {
+  @apply flex items-center gap-3 font-black text-paper;
+}
+.section-title::before {
+  content: '';
+  @apply h-5 w-2 shrink-0 bg-signal;
+  transform: skewX(-14deg);
+}
+.section-title::after {
+  content: '';
+  @apply h-px flex-1 bg-stage-700;
+}
+
+/* 三星分隔線，呼應 Logo 的 ★★★ */
+.star-rule {
+  @apply flex items-center gap-4 text-sm tracking-[0.5em] text-signal;
+}
+.star-rule::before,
+.star-rule::after {
+  content: '';
+  @apply h-px flex-1 bg-stage-700;
+}
+
+/* 卡片：直角，左側色條，hover 時色條轉紅 */
+.card-bar {
+  @apply relative rounded-sm border border-stage-700 bg-stage-900 transition-all duration-200;
+}
+.card-bar::before {
+  content: '';
+  @apply absolute inset-y-0 left-0 w-1 bg-stage-700 transition-colors;
+}
+.card-bar:hover {
+  @apply -translate-y-0.5 border-stage-700 shadow-lg shadow-black/40;
+}
+.card-bar:hover::before {
+  @apply bg-signal;
 }
 
 .admin-input {
@@ -56,7 +120,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #c9a876;
+  outline: 2px solid #d4b27a;
   outline-offset: 2px;
   border-radius: 2px;
 }

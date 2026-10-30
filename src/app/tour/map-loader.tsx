@@ -8,7 +8,7 @@ import type { TourPoint, RoutePoint } from './tour-map';
 const TourMap = dynamic(() => import('./tour-map'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[420px] w-full items-center justify-center rounded-lg border border-stage-700 bg-stage-900/60 text-sm text-stone-500">
+    <div className="flex h-[420px] w-full items-center justify-center rounded-sm border border-stage-700 bg-stage-900 text-sm text-stone-500">
       地圖載入中…
     </div>
   )

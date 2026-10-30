@@ -114,7 +114,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {show.cover_image_url && (
-        <div className="relative h-[36vh] w-full sm:h-[46vh]">
+        <div className="relative h-[38vh] w-full sm:h-[50vh]">
           <Image
             src={show.cover_image_url}
             alt={`${show.title} 演出照片`}
@@ -123,6 +123,8 @@ export default async function ShowPage({ params }: { params: { slug: string } })
             sizes="100vw"
             className="object-cover"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-stage-950 via-stage-950/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-signal" />
         </div>
       )}
 
@@ -130,23 +132,40 @@ export default async function ShowPage({ params }: { params: { slug: string } })
         <div className="mx-auto max-w-2xl">
           <BackLink />
 
-          <div className="mt-6 flex items-start gap-4">
-            <CaptainBadge size={56} rotate={-4} className="mt-1 shrink-0" />
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-marquee">{formatShowDate(show.show_date)}</p>
-              <h1 className="mt-2 font-display text-3xl font-black text-paper sm:text-5xl">{show.title}</h1>
-              {show.venue && <p className="mt-2 text-stone-400">{show.venue}</p>}
+          <div className="mt-6 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <span className="tag-slash">{formatShowDate(show.show_date)}</span>
+              <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight text-paper sm:text-5xl">
+                {show.title}
+              </h1>
+              {show.venue && (
+                <p className="mt-3 flex items-center gap-2 text-stone-300">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden className="shrink-0 text-signal">
+                    <path d="M12 0C7.6 0 4 3.6 4 8c0 5.4 8 16 8 16s8-10.6 8-16c0-4.4-3.6-8-8-8zm0 11a3 3 0 110-6 3 3 0 010 6z" />
+                  </svg>
+                  {show.venue}
+                </p>
+              )}
             </div>
+            <CaptainBadge size={64} rotate={6} className="hidden shrink-0 sm:block" />
           </div>
 
           {isRevealed && (
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-stone-500">
-              <span>{setlist.length} 首歌</span>
-              {totalSeconds > 0 && <span>· 約 {formatDuration(totalSeconds)}</span>}
-            </div>
+            <dl className="mt-6 flex gap-8 border-y border-stage-700 py-4 font-accent">
+              <div>
+                <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">Songs</dt>
+                <dd className="text-2xl font-bold leading-none text-paper">{setlist.length}</dd>
+              </div>
+              {totalSeconds > 0 && (
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">Duration</dt>
+                  <dd className="text-2xl font-bold leading-none text-paper">{formatDuration(totalSeconds)}</dd>
+                </div>
+              )}
+            </dl>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-2">
             <AttendButton showId={show.id} initialCount={attendanceCount} />
             <ShareButton title={show.title} />
             <AddToCalendarButton title={show.title} dateStr={show.show_date} venue={show.venue} url={showUrl} />
@@ -161,8 +180,9 @@ export default async function ShowPage({ params }: { params: { slug: string } })
                 <p className="text-center text-stone-500">歌單準備中，敬請期待。</p>
               )
             ) : (
-              <div className="rounded-lg border border-dashed border-stage-700 p-8 text-center">
-                <p className="font-display text-lg text-paper">歌單敬請期待</p>
+              <div className="rounded-sm border border-dashed border-marquee/40 bg-stage-900 p-10 text-center">
+                <span className="tag-slash">Coming Soon</span>
+                <p className="mt-4 text-xl font-black text-paper">歌單敬請期待</p>
                 <p className="mt-2 text-sm text-stone-500">
                   這場的歌單將於{' '}
                   {formatDateTimeTW(show.setlist_reveal_at as string)}{' '}
@@ -173,10 +193,10 @@ export default async function ShowPage({ params }: { params: { slug: string } })
           </div>
 
           {(prevShow || nextShow) && (
-            <div className="mt-12 flex items-center justify-between border-t border-stage-700 pt-6 text-sm">
+            <div className="mt-14 flex items-center justify-between gap-6 border-t border-stage-700 pt-6 text-sm">
               {prevShow ? (
                 <a href={`/show/${prevShow.slug}`} className="min-w-0 text-stone-400 hover:text-marquee">
-                  <span className="block text-xs uppercase tracking-widest text-stone-600">← 上一場</span>
+                  <span className="block font-accent text-xs uppercase tracking-[0.2em] text-signal">◀ Prev</span>
                   <span className="block truncate">{prevShow.title}</span>
                 </a>
               ) : (
@@ -184,7 +204,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
               )}
               {nextShow ? (
                 <a href={`/show/${nextShow.slug}`} className="min-w-0 text-right text-stone-400 hover:text-marquee">
-                  <span className="block text-xs uppercase tracking-widest text-stone-600">下一場 →</span>
+                  <span className="block font-accent text-xs uppercase tracking-[0.2em] text-signal">Next ▶</span>
                   <span className="block truncate">{nextShow.title}</span>
                 </a>
               ) : (

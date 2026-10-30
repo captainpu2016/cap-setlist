@@ -33,11 +33,11 @@ export default function FilterBar({
   return (
     <form
       method="get"
-      className="mb-8 flex flex-col gap-3 rounded-lg border border-stage-700 bg-stage-900/60 p-4 sm:flex-row sm:flex-wrap sm:items-end"
+      className="mb-10 flex flex-col gap-3 rounded-sm border border-stage-700 border-l-4 border-l-signal bg-stage-900 p-4 sm:flex-row sm:flex-wrap sm:items-end"
     >
       <div className="grid grid-cols-2 gap-3 sm:contents">
         <div>
-          <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="year">
+          <label className="mb-1 block font-accent text-[11px] uppercase tracking-[0.2em] text-stone-500" htmlFor="year">
             年份
           </label>
           <select
@@ -45,7 +45,7 @@ export default function FilterBar({
             name="year"
             defaultValue={selectedYear}
             onChange={handleChange}
-            className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">全部年份</option>
             {years.map((y) => (
@@ -57,7 +57,7 @@ export default function FilterBar({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="month">
+          <label className="mb-1 block font-accent text-[11px] uppercase tracking-[0.2em] text-stone-500" htmlFor="month">
             月份
           </label>
           <select
@@ -65,7 +65,7 @@ export default function FilterBar({
             name="month"
             defaultValue={selectedMonth}
             onChange={handleChange}
-            className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">全部月份</option>
             {months.map((m) => (
@@ -79,7 +79,7 @@ export default function FilterBar({
 
       <div className="grid grid-cols-2 gap-3 sm:contents">
         <div>
-          <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="city">
+          <label className="mb-1 block font-accent text-[11px] uppercase tracking-[0.2em] text-stone-500" htmlFor="city">
             城市
           </label>
           <select
@@ -87,7 +87,7 @@ export default function FilterBar({
             name="city"
             defaultValue={selectedCity}
             onChange={handleChange}
-            className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
+            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:py-1.5"
           >
             <option value="">全部城市</option>
             {cities.map((c) => (
@@ -99,7 +99,7 @@ export default function FilterBar({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs uppercase tracking-wide text-stone-500" htmlFor="venue">
+          <label className="mb-1 block font-accent text-[11px] uppercase tracking-[0.2em] text-stone-500" htmlFor="venue">
             場地
           </label>
           <select
@@ -107,7 +107,7 @@ export default function FilterBar({
             name="venue"
             defaultValue={selectedVenue}
             onChange={handleChange}
-            className="w-full rounded-md border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
+            className="w-full rounded-sm border border-stage-700 bg-stage-950 px-3 py-2 text-sm text-paper focus:border-marquee focus:outline-none sm:w-auto sm:max-w-[14rem] sm:py-1.5"
           >
             <option value="">全部場地</option>
             {venues.map((v) => (
@@ -120,7 +120,7 @@ export default function FilterBar({
       </div>
 
       {hasFilter && (
-        <a href="/" className="text-xs uppercase tracking-widest text-stone-500 hover:text-marquee">
+        <a href="/" className="font-accent text-xs uppercase tracking-[0.2em] text-stone-500 hover:text-marquee">
           清除篩選
         </a>
       )}
@@ -129,7 +129,7 @@ export default function FilterBar({
       <noscript>
         <button
           type="submit"
-          className="rounded-md bg-marquee px-4 py-1.5 text-sm font-bold text-stage-950 transition hover:bg-marquee/80"
+          className="btn-primary"
         >
           篩選
         </button>
