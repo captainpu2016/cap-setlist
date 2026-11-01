@@ -10,27 +10,37 @@ import BackLink from '@/components/BackLink';
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: '歌單統計｜普通隊長最常唱的歌、開場曲與壓軸曲',
-  description: '從歷年演出歌單統計：普通隊長最常演出的歌、最常開場與壓軸的歌、最常翻唱的歌、每年平均歌單長度，以及只唱過一次的稀有歌曲。',
+  title: '歌單統計｜普通隊長最常唱的歌、翻唱過的歌與每年歌單',
+  description: '從歷年演出歌單統計：普通隊長最常演出的歌、曾經翻唱過的歌、每年平均歌單長度、最久沒唱的歌，以及只唱過一次的稀有歌曲。',
   alternates: { canonical: '/stats' }
 };
 
+/** 排行：長條畫在整列後面，歌名直接壓在上面，第一名顏色加深；一眼看得出差距又不會有細線的單薄感 */
 function Bars({ rows, accent = false }: { rows: RankedSong[]; accent?: boolean }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
+  const fill = accent ? 'bg-marquee' : 'bg-signal';
+  const cap = accent ? 'border-marquee' : 'border-signal';
   return (
-    <ol className="space-y-2.5">
+    <ol className="space-y-1.5">
       {rows.map((r, i) => (
         <li key={r.id}>
-          <a href={`/song/${r.id}`} className="group block">
-            <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate text-paper transition-colors group-hover:text-marquee">
-                <span className="mr-2 font-accent text-stone-600">{String(i + 1).padStart(2, '0')}</span>
+          <a href={`/song/${r.id}`} className="group relative block overflow-hidden border border-stage-700 bg-stage-900 transition-colors hover:border-stone-500">
+            <div
+              className={`absolute inset-y-0 left-0 border-r-2 ${cap} ${fill} ${i === 0 ? 'opacity-45' : 'opacity-25'}`}
+              style={{ width: `${(r.count / max) * 100}%` }}
+              aria-hidden
+            />
+            <div className="relative flex items-center gap-3 px-3 py-2.5">
+              <span className={`w-6 shrink-0 font-accent text-sm ${i === 0 ? (accent ? 'text-marquee' : 'text-signal') : 'text-stone-500'}`}>
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <span className={`min-w-0 flex-1 truncate text-sm ${i === 0 ? 'font-bold' : 'font-medium'} text-paper`}>
                 {displaySongTitle(r.title)}
               </span>
-              <span className="shrink-0 font-accent text-stone-400">{r.count}</span>
-            </div>
-            <div className="mt-1 h-1.5 bg-stage-800">
-              <div className={accent ? 'h-full bg-marquee' : 'h-full bg-signal'} style={{ width: `${(r.count / max) * 100}%` }} />
+              <span className="shrink-0 font-accent text-base font-semibold text-paper">
+                {r.count}
+                <span className="ml-0.5 text-[11px] font-normal text-stone-400"> 次</span>
+              </span>
             </div>
           </a>
         </li>
@@ -80,62 +90,48 @@ export default async function StatsPage() {
           <Bars rows={s.topSongs} />
         </section>
 
-        <section className="mt-14 grid gap-12 sm:grid-cols-2">
-          <div>
-            <h2 className="section-title mb-5 text-2xl">最常開場</h2>
-            <Bars rows={s.openers} accent />
-          </div>
-          <div>
-            <h2 className="section-title mb-5 text-2xl">最常壓軸</h2>
-            <Bars rows={s.closers} accent />
-          </div>
-        </section>
-
         <section className="mt-14">
           <h2 className="section-title mb-5 text-2xl">每年的歌單</h2>
-          <div className="border-y border-stage-700">
+          <ol className="space-y-1.5">
             {s.byYear.map((y) => (
-              <div key={y.year} className="grid grid-cols-[3.5rem_1fr_auto] items-center gap-4 border-b border-stage-700/70 py-3 last:border-b-0">
-                <span className="font-accent text-lg font-semibold text-paper">{y.year}</span>
-                <div className="h-2 bg-stage-800">
-                  <div className="h-full bg-signal" style={{ width: `${(y.shows / maxYearShows) * 100}%` }} />
+              <li key={y.year} className="relative overflow-hidden border border-stage-700 bg-stage-900">
+                <div
+                  className="absolute inset-y-0 left-0 border-r-2 border-signal bg-signal opacity-25"
+                  style={{ width: `${(y.shows / maxYearShows) * 100}%` }}
+                  aria-hidden
+                />
+                <div className="relative flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 px-3 py-2.5">
+                  <span className="font-accent text-lg font-semibold text-paper">
+                    {y.year}
+                    <span className="ml-3 text-sm font-normal text-stone-300">{y.shows} 場</span>
+                  </span>
+                  <span className="text-xs text-stone-400">
+                    平均 {y.avgLength.toFixed(1)} 首・{y.distinctSongs} 首不同的歌
+                  </span>
                 </div>
-                <span className="text-right text-xs text-stone-400">
-                  {y.shows} 場・平均 {y.avgLength.toFixed(1)} 首・{y.distinctSongs} 首不同的歌
-                </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </section>
 
-        {s.longest && s.shortest && (
-          <section className="mt-14 grid gap-6 sm:grid-cols-2">
-            {[
-              ['歌單最長', s.longest],
-              ['歌單最短', s.shortest]
-            ].map(([label, v]) => {
-              const item = v as NonNullable<typeof s.longest>;
-              return (
-                <a key={label as string} href={`/show/${item.show.slug}`} className="card-bar block p-4">
-                  <p className="font-accent text-xs uppercase tracking-[0.2em] text-signal">{label as string}</p>
-                  <p className="mt-1 text-3xl font-black text-paper">
-                    {item.length} <span className="text-base font-bold text-stone-400">首</span>
-                  </p>
-                  <p className="mt-2 truncate text-sm text-stone-300">{item.show.title}</p>
-                  <p className="text-xs text-stone-500">{formatShowDateShort(item.show.date)}</p>
-                </a>
-              );
-            })}
-          </section>
-        )}
-
-        {s.topCovers.length > 0 && (
+        {s.coverSongs.length > 0 && (
           <section className="mt-14">
-            <h2 className="section-title mb-2 text-2xl">最常翻唱的歌</h2>
+            <h2 className="section-title mb-2 text-2xl">曾經翻唱過的歌</h2>
             <p className="mb-5 text-sm text-stone-500">
-              共翻唱 {s.coverSongCount} 首不同的歌、{s.coverPlays} 首次；括號內是原唱樂團。
+              共翻唱過 {s.coverSongs.length} 首，最近唱的排在前面；括號內是原唱樂團。
             </p>
-            <Bars rows={s.topCovers} accent />
+            <ul className="grid gap-1.5 sm:grid-cols-2">
+              {s.coverSongs.map((c) => (
+                <li key={c.id} className="min-w-0">
+                  <a
+                    href={`/song/${c.id}`}
+                    className="block truncate border border-stage-700 border-l-2 border-l-marquee bg-stage-900 px-3 py-2.5 text-sm font-medium text-paper transition-colors hover:border-stone-500 hover:border-l-marquee hover:text-marquee"
+                  >
+                    {displaySongTitle(c.title)}
+                  </a>
+                </li>
+              ))}
+            </ul>
           </section>
         )}
 
