@@ -72,7 +72,8 @@ export default function ShowFilterBar({
   filter,
   admission,
   onChange,
-  caption
+  caption,
+  collapsible = false
 }: {
   shows: FilterableShow[];
   filter: Filter;
@@ -80,7 +81,10 @@ export default function ShowFilterBar({
   onChange: (filter: Filter, admission: Admission) => void;
   /** 篩選中時顯示在按鈕下方的說明（例如「海外演出：共 7 場」） */
   caption?: string;
+  /** true：預設收合，只顯示目前的篩選條件，按「篩選」才展開所有按鈕 */
+  collapsible?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
   const categoryCounts = useMemo(() => {
     const m = new Map<string, number>();
     for (const s of shows) if (s.category) m.set(s.category, (m.get(s.category) ?? 0) + 1);
@@ -105,8 +109,40 @@ export default function ShowFilterBar({
 
   if (categoryCounts.size === 0 && overseasCount === 0) return null;
 
+  const active = filter.kind !== 'all' || admission !== 'all';
+  const showPanel = !collapsible || open;
+
   return (
     <div className="mt-8 space-y-3">
+      {collapsible && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            className="inline-flex items-center gap-2 border-2 border-stage-700 px-3 py-1.5 text-xs font-bold text-stone-300 transition-colors hover:border-stone-500 hover:text-paper"
+          >
+            篩選場次
+            <span aria-hidden className={`inline-block transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
+          </button>
+          {active ? (
+            <span className="inline-flex items-center gap-2 text-sm text-paper">
+              <span className="border border-signal bg-signal/15 px-2 py-0.5 text-xs font-bold">{filterLabel(filter, admission)}</span>
+              <button
+                type="button"
+                onClick={() => onChange({ kind: 'all' }, 'all')}
+                className="text-xs text-stone-500 underline underline-offset-2 hover:text-paper"
+              >
+                清除篩選
+              </button>
+            </span>
+          ) : (
+            <span className="text-sm text-stone-500">目前統計全部 {shows.length} 場；可依分類、海外、入場方式、系列縮小範圍</span>
+          )}
+        </div>
+      )}
+      {showPanel && (
+        <div className="space-y-3">
       <div className="flex flex-wrap gap-2" role="group" aria-label="依分類篩選">
         <Chip active={filter.kind === 'all'} onClick={() => onChange({ kind: 'all' }, admission)}>
           全部 {shows.length}
@@ -147,6 +183,8 @@ export default function ShowFilterBar({
               {name} {n}
             </Chip>
           ))}
+        </div>
+      )}
         </div>
       )}
       {caption && <p className="text-sm text-stone-500">{caption}</p>}

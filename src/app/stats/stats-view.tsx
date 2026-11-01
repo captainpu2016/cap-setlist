@@ -41,6 +41,7 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
         filter={filter}
         admission={admission}
         onChange={choose}
+        collapsible
         caption={filtered ? `以下只統計${scope}的場次：共 ${shows.length} 場，其中 ${s.showsWithSetlist} 場已公開歌單。` : undefined}
       />
 
