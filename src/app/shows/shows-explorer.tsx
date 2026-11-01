@@ -13,9 +13,10 @@ export interface ExplorerShow {
   category: string | null;
   series: string | null;
   admission: string | null;
+  overseas: boolean;
 }
 
-type Filter = { kind: 'all' } | { kind: 'category'; value: string } | { kind: 'series'; value: string };
+type Filter = { kind: 'all' } | { kind: 'category'; value: string } | { kind: 'series'; value: string } | { kind: 'overseas' };
 
 type Admission = 'all' | 'paid' | 'free';
 
@@ -23,6 +24,7 @@ function parseHash(hash: string): { filter: Filter; admission: Admission } {
   const p = new URLSearchParams(hash.replace(/^#/, ''));
   const a = p.get('a');
   const admission: Admission = a === 'paid' || a === 'free' ? a : 'all';
+  if (p.get('o')) return { filter: { kind: 'overseas' }, admission: 'all' };
   if (p.get('c')) return { filter: { kind: 'category', value: p.get('c')! }, admission };
   if (p.get('s')) return { filter: { kind: 'series', value: p.get('s')! }, admission: 'all' };
   return { filter: { kind: 'all' }, admission: 'all' };
@@ -34,6 +36,7 @@ function buildHash(filter: Filter, admission: Admission): string {
     p.set('c', filter.value);
     if (admission !== 'all') p.set('a', admission);
   } else if (filter.kind === 'series') p.set('s', filter.value);
+  else if (filter.kind === 'overseas') p.set('o', '1');
   const q = p.toString();
   return q ? `#${q}` : '';
 }
@@ -88,6 +91,7 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
   }, [shows]);
 
   const hasCategories = categoryCounts.size > 0;
+  const overseasCount = useMemo(() => shows.filter((s) => s.overseas).length, [shows]);
 
   // 音樂祭/節再分付費、免費（有填入場方式才顯示）
   const festivalAdmission = useMemo(() => {
@@ -102,6 +106,7 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
       return filter.value === 'festival' && admission !== 'all' ? s.admission === admission : true;
     }
     if (filter.kind === 'series') return s.series === filter.value;
+    if (filter.kind === 'overseas') return s.overseas;
     return true;
   });
 
@@ -130,6 +135,11 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
                 {c.label} {categoryCounts.get(c.value)}
               </Chip>
             ))}
+            {overseasCount > 0 && (
+              <Chip active={filter.kind === 'overseas'} onClick={() => choose({ kind: 'overseas' })}>
+                海外 {overseasCount}
+              </Chip>
+            )}
           </div>
           {filter.kind === 'category' && filter.value === 'festival' && festivalAdmission.size > 0 && (
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label="音樂祭依入場方式篩選">
@@ -156,7 +166,7 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
           )}
           {filter.kind !== 'all' && (
             <p className="text-sm text-stone-500">
-              {filter.kind === 'category' ? categoryLabel(filter.value) ?? filter.value : filter.value}
+              {filter.kind === 'category' ? categoryLabel(filter.value) ?? filter.value : filter.kind === 'overseas' ? '海外演出' : filter.value}
               {filter.kind === 'category' && admission !== 'all' ? `（${admissionLabel(admission)}）` : ''}：共 {visible.length} 場
             </p>
           )}
@@ -176,6 +186,9 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
                   >
                     <span className="min-w-0 break-words text-paper">
                       {show.title}
+                      {show.overseas && (
+                        <span className="ml-2 inline-block border border-signal/60 px-1.5 py-px align-middle text-[10px] text-signal">海外</span>
+                      )}
                       {categoryLabel(show.category) && (
                         <span className="ml-2 inline-block border border-stage-700 px-1.5 py-px align-middle text-[10px] text-stone-500">
                           {categoryLabel(show.category)}

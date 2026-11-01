@@ -54,3 +54,14 @@ export function getShowCoordinates(
   }
   return null;
 }
+
+const TAIWAN_CITIES = new Set([
+  '台北', '臺北', '新北', '基隆', '桃園', '新竹', '苗栗', '台中', '臺中', '彰化', '南投', '雲林', '嘉義', '台南', '臺南',
+  '高雄', '屏東', '宜蘭', '花蓮', '台東', '臺東', '澎湖', '金門', '連江', '馬祖'
+]);
+
+/** 場地城市不在台灣（場地欄位的第一個詞，例如「大阪 心斎橋 BRONZE」）就算海外演出；沒填場地不算 */
+export function isOverseasVenue(venue: string | null | undefined): boolean {
+  const city = getCity(venue ?? null);
+  return Boolean(city) && !TAIWAN_CITIES.has(city as string);
+}
