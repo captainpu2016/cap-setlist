@@ -241,9 +241,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
                     </a>
                   )}
                   {show.series && (
-                    <a href={`/shows#s=${encodeURIComponent(show.series)}`} className="border border-stage-700 px-2 py-0.5 text-stone-300 transition-colors hover:border-marquee hover:text-marquee">
-                      {show.series}
-                    </a>
+                    <span className="border border-stage-700 px-2 py-0.5 text-stone-300">{show.series}</span>
                   )}
                 </p>
               )}

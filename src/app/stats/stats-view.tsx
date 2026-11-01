@@ -10,6 +10,7 @@ export type StatsShow = ArchiveShow & {
   series: string | null;
   admission: string | null;
   overseas: boolean;
+  city: string | null;
 };
 
 /** 歌單統計的內容：可依分類、海外、入場方式、系列篩選，所有數字都只算篩選後的場次。預設（含搜尋引擎看到的）是全部場次 */

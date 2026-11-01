@@ -1,6 +1,6 @@
 import { createPublicClient } from '@/lib/supabase/public';
 import type { Show } from '@/types/database';
-import { formatShowDateShort } from '@/lib/format';
+import { formatShowDateShort, getCity } from '@/lib/format';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
 import JsonLd from '@/components/JsonLd';
@@ -81,7 +81,8 @@ export default async function ShowsListPage() {
               category: s.category ?? null,
               series: s.series ?? null,
               admission: s.admission ?? null,
-              overseas: isOverseasVenue(s.venue)
+              overseas: isOverseasVenue(s.venue),
+              city: getCity(s.venue)
             }))}
           />
         )}

@@ -15,6 +15,7 @@ export interface ExplorerShow {
   series: string | null;
   admission: string | null;
   overseas: boolean;
+  city: string | null;
 }
 
 /** 全部場次：依年份列出，可用分類、地區、入場方式、系列篩選（可同時使用）。預設（含搜尋引擎看到的）是全部場次 */

@@ -7,7 +7,6 @@ import {
   buildHash,
   filterLabel,
   isFiltered,
-  matchesFilter,
   parseHash,
   type FilterableShow,
   type ShowFilter
@@ -52,7 +51,7 @@ function Field({ label, value, onChange, children }: { label: string; value: str
   );
 }
 
-/** 篩選列：分類、地區、入場、系列四個下拉選單，可以同時使用；選項後面的數字是在「其他三個條件」之下的場數 */
+/** 篩選列：分類、地區（選了台灣或海外會多一個城市選單）、入場三組下拉選單，可以同時使用 */
 export default function ShowFilterBar({
   shows,
   filter,
@@ -65,28 +64,23 @@ export default function ShowFilterBar({
   /** 篩選中時顯示在選單下方的說明（例如「海外演出：共 7 場」） */
   caption?: string;
 }) {
-  // 每個下拉選單的數字：套用「其他三個條件」後，符合該選項的場數
-  const counts = useMemo(() => {
-    const count = (patch: Partial<ShowFilter>) => shows.filter((s) => matchesFilter(s, { ...filter, ...patch })).length;
-    return {
-      category: (v: string | null) => count({ category: v }),
-      series: (v: string | null) => count({ series: v }),
-      region: (v: ShowFilter['region']) => count({ region: v }),
-      admission: (v: ShowFilter['admission']) => count({ admission: v })
-    };
-  }, [shows, filter]);
-
   const categories = useMemo(() => {
     const present = new Set(shows.map((s) => s.category).filter(Boolean));
     return SHOW_CATEGORIES.filter((c) => present.has(c.value));
   }, [shows]);
-  const seriesList = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const s of shows) if (s.series) m.set(s.series, (m.get(s.series) ?? 0) + 1);
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant')).map(([name]) => name);
-  }, [shows]);
   const hasOverseas = useMemo(() => shows.some((s) => s.overseas), [shows]);
   const hasAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
+
+  // 目前選的地區（台灣或海外）底下出現過的城市，場次多的排前面
+  const cities = useMemo(() => {
+    if (filter.region === 'all') return [];
+    const m = new Map<string, number>();
+    for (const s of shows) {
+      if ((filter.region === 'overseas') !== s.overseas || !s.city) continue;
+      m.set(s.city, (m.get(s.city) ?? 0) + 1);
+    }
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant')).map(([name]) => name);
+  }, [shows, filter.region]);
 
   if (categories.length === 0 && !hasOverseas) return null;
 
@@ -95,37 +89,41 @@ export default function ShowFilterBar({
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {categories.length > 0 && (
           <Field label="分類" value={filter.category ?? ''} onChange={(v) => onChange({ ...filter, category: v || null })}>
-            <option value="">全部 {counts.category(null)}</option>
+            <option value="">全部</option>
             {categories.map((c) => (
               <option key={c.value} value={c.value}>
-                {c.label} {counts.category(c.value)}
+                {c.label}
               </option>
             ))}
           </Field>
         )}
         {hasOverseas && (
-          <Field label="地區" value={filter.region === 'all' ? '' : filter.region} onChange={(v) => onChange({ ...filter, region: (v || 'all') as ShowFilter['region'] })}>
-            <option value="">全部 {counts.region('all')}</option>
-            <option value="taiwan">台灣 {counts.region('taiwan')}</option>
-            <option value="overseas">海外 {counts.region('overseas')}</option>
+          <Field
+            label="地區"
+            value={filter.region === 'all' ? '' : filter.region}
+            onChange={(v) => onChange({ ...filter, region: (v || 'all') as ShowFilter['region'], city: null })}
+          >
+            <option value="">全部</option>
+            <option value="taiwan">台灣</option>
+            <option value="overseas">海外</option>
           </Field>
         )}
-        {hasAdmission && (
-          <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>
-            <option value="">不限 {counts.admission('all')}</option>
-            {ADMISSIONS.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label} {counts.admission(a.value)}
+        {cities.length > 0 && (
+          <Field label="城市" value={filter.city ?? ''} onChange={(v) => onChange({ ...filter, city: v || null })}>
+            <option value="">全部城市</option>
+            {cities.map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </Field>
         )}
-        {seriesList.length > 0 && (
-          <Field label="系列" value={filter.series ?? ''} onChange={(v) => onChange({ ...filter, series: v || null })}>
-            <option value="">全部 {counts.series(null)}</option>
-            {seriesList.map((name) => (
-              <option key={name} value={name}>
-                {name} {counts.series(name)}
+        {hasAdmission && (
+          <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>
+            <option value="">不限</option>
+            {ADMISSIONS.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
               </option>
             ))}
           </Field>
