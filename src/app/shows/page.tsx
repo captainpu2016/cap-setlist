@@ -78,7 +78,8 @@ export default async function ShowsListPage() {
               dateLabel: formatShowDateShort(s.show_date),
               venue: s.venue,
               category: s.category ?? null,
-              series: s.series ?? null
+              series: s.series ?? null,
+              admission: s.admission ?? null
             }))}
           />
         )}

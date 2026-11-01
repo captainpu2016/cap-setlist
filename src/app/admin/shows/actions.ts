@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { isShowCategory, type ShowCategory } from '@/lib/show-category';
+import { isAdmission, isShowCategory, type ShowCategory } from '@/lib/show-category';
 import { slugify, taipeiInputToIso } from '@/lib/format';
 
 async function requireSession() {
@@ -89,6 +89,11 @@ export async function updateShowInfo(formData: FormData) {
     classify.series = (formData.get('series') as string)?.trim() || null;
   }
 
+  if (formData.has('admission')) {
+    const raw = (formData.get('admission') as string)?.trim();
+    (classify as { admission?: 'paid' | 'free' | null }).admission = isAdmission(raw) ? raw : null;
+  }
+
   const { error } = await supabase
     .from('shows')
     .update({
@@ -117,12 +122,16 @@ export async function updateShowInfo(formData: FormData) {
 }
 
 /** 場次列表上直接改分類與系列：只動這兩個欄位，不影響其他資料 */
-export async function updateShowClassification(id: string, category: string, series: string) {
+export async function updateShowClassification(id: string, category: string, series: string, admission?: string) {
   const supabase = await requireSession();
   if (category && !isShowCategory(category)) throw new Error('演出分類不正確');
   const { data, error } = await supabase
     .from('shows')
-    .update({ category: category ? (category as ShowCategory) : null, series: series.trim() || null })
+    .update({
+      category: category ? (category as ShowCategory) : null,
+      series: series.trim() || null,
+      ...(admission !== undefined ? { admission: isAdmission(admission) ? admission : null } : {})
+    })
     .eq('id', id)
     .select('slug')
     .single<{ slug: string }>();

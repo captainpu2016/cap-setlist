@@ -14,6 +14,7 @@ export type ArchiveShow = {
   /** 演出分類與系列；資料庫還沒執行 0005_show_category.sql 時都是 null */
   category: ShowCategory | null;
   series: string | null;
+  admission: 'paid' | 'free' | null;
   songs: { id: string; title: string; durationSeconds: number | null; isCover: boolean }[];
   /** 歌單是否已公開（未公開時 songs 是空的，避免提早洩漏） */
   revealed: boolean;
@@ -86,6 +87,9 @@ export const getArchive = cache(async () => {
     .eq('status', 'published')
     .returns<{ id: string; category: ShowCategory | null; series: string | null }[]>();
   const meta = new Map((metaRes.error ? [] : (metaRes.data ?? [])).map((m) => [m.id, m]));
+  // 入場方式是更晚加的欄位（0007），獨立查詢，失敗就當作都沒填
+  const admRes = await supabase.from('shows').select('id, admission').eq('status', 'published').returns<{ id: string; admission: 'paid' | 'free' | null }[]>();
+  const admission = new Map((admRes.error ? [] : (admRes.data ?? [])).map((m) => [m.id, m.admission]));
 
   const now = new Date();
   const shows: ArchiveShow[] = (data ?? []).map((row) => {
@@ -111,6 +115,7 @@ export const getArchive = cache(async () => {
       updatedAt: row.updated_at,
       category: meta.get(row.id)?.category ?? null,
       series: meta.get(row.id)?.series ?? null,
+      admission: admission.get(row.id) ?? null,
       songs,
       revealed
     };

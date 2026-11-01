@@ -74,8 +74,10 @@ export type Show = {
   ticket_url?: string | null;
   start_time?: string | null; // 'HH:MM:SS'
   /** 0005_show_category.sql 執行之前資料庫沒有這兩個欄位 */
-  category?: 'festival' | 'own' | 'invited' | 'campus' | 'gig_event' | null;
+  category?: 'festival' | 'own' | 'invited' | 'gig_event' | 'commercial' | 'campus' | null;
   series?: string | null;
+  /** 0007_show_admission.sql 之後才有：付費或免費 */
+  admission?: 'paid' | 'free' | null;
   venue_id: string | null;
   latitude: number | null;
   longitude: number | null;

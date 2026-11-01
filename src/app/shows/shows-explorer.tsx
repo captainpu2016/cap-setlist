@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { SHOW_CATEGORIES, categoryLabel } from '@/lib/show-category';
+import { ADMISSIONS, SHOW_CATEGORIES, admissionLabel, categoryLabel } from '@/lib/show-category';
 
 export interface ExplorerShow {
   id: string;
@@ -12,15 +12,30 @@ export interface ExplorerShow {
   venue: string | null;
   category: string | null;
   series: string | null;
+  admission: string | null;
 }
 
 type Filter = { kind: 'all' } | { kind: 'category'; value: string } | { kind: 'series'; value: string };
 
-function parseHash(hash: string): Filter {
-  const h = hash.replace(/^#/, '');
-  if (h.startsWith('c=')) return { kind: 'category', value: decodeURIComponent(h.slice(2)) };
-  if (h.startsWith('s=')) return { kind: 'series', value: decodeURIComponent(h.slice(2)) };
-  return { kind: 'all' };
+type Admission = 'all' | 'paid' | 'free';
+
+function parseHash(hash: string): { filter: Filter; admission: Admission } {
+  const p = new URLSearchParams(hash.replace(/^#/, ''));
+  const a = p.get('a');
+  const admission: Admission = a === 'paid' || a === 'free' ? a : 'all';
+  if (p.get('c')) return { filter: { kind: 'category', value: p.get('c')! }, admission };
+  if (p.get('s')) return { filter: { kind: 'series', value: p.get('s')! }, admission: 'all' };
+  return { filter: { kind: 'all' }, admission: 'all' };
+}
+
+function buildHash(filter: Filter, admission: Admission): string {
+  const p = new URLSearchParams();
+  if (filter.kind === 'category') {
+    p.set('c', filter.value);
+    if (admission !== 'all') p.set('a', admission);
+  } else if (filter.kind === 'series') p.set('s', filter.value);
+  const q = p.toString();
+  return q ? `#${q}` : '';
 }
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -41,18 +56,23 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 /** 全部場次：依年份列出，可用分類或系列篩選。預設（含搜尋引擎看到的）是全部場次；網址 #c=分類 或 #s=系列 可直接帶入篩選 */
 export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
   const [filter, setFilter] = useState<Filter>({ kind: 'all' });
+  const [admission, setAdmission] = useState<Admission>('all');
 
   useEffect(() => {
-    const apply = () => setFilter(parseHash(window.location.hash));
+    const apply = () => {
+      const parsed = parseHash(window.location.hash);
+      setFilter(parsed.filter);
+      setAdmission(parsed.admission);
+    };
     apply();
     window.addEventListener('hashchange', apply);
     return () => window.removeEventListener('hashchange', apply);
   }, []);
 
-  function choose(next: Filter) {
+  function choose(next: Filter, nextAdmission: Admission = 'all') {
     setFilter(next);
-    const hash = next.kind === 'category' ? `#c=${encodeURIComponent(next.value)}` : next.kind === 'series' ? `#s=${encodeURIComponent(next.value)}` : '';
-    window.history.replaceState(null, '', `${window.location.pathname}${hash}`);
+    setAdmission(nextAdmission);
+    window.history.replaceState(null, '', `${window.location.pathname}${buildHash(next, nextAdmission)}`);
   }
 
   const categoryCounts = useMemo(() => {
@@ -69,8 +89,18 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
 
   const hasCategories = categoryCounts.size > 0;
 
+  // 音樂祭/節再分付費、免費（有填入場方式才顯示）
+  const festivalAdmission = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of shows) if (s.category === 'festival' && s.admission) m.set(s.admission, (m.get(s.admission) ?? 0) + 1);
+    return m;
+  }, [shows]);
+
   const visible = shows.filter((s) => {
-    if (filter.kind === 'category') return s.category === filter.value;
+    if (filter.kind === 'category') {
+      if (s.category !== filter.value) return false;
+      return filter.value === 'festival' && admission !== 'all' ? s.admission === admission : true;
+    }
     if (filter.kind === 'series') return s.series === filter.value;
     return true;
   });
@@ -101,6 +131,19 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
               </Chip>
             ))}
           </div>
+          {filter.kind === 'category' && filter.value === 'festival' && festivalAdmission.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="音樂祭依入場方式篩選">
+              <span className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">入場</span>
+              <Chip active={admission === 'all'} onClick={() => choose(filter, 'all')}>
+                全部 {categoryCounts.get('festival')}
+              </Chip>
+              {ADMISSIONS.filter((a) => festivalAdmission.has(a.value)).map((a) => (
+                <Chip key={a.value} active={admission === a.value} onClick={() => choose(filter, a.value)}>
+                  {a.label} {festivalAdmission.get(a.value)}
+                </Chip>
+              ))}
+            </div>
+          )}
           {seriesList.length > 0 && (
             <div className="flex flex-wrap items-center gap-2" role="group" aria-label="依系列篩選">
               <span className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">系列</span>
@@ -113,7 +156,8 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
           )}
           {filter.kind !== 'all' && (
             <p className="text-sm text-stone-500">
-              {filter.kind === 'category' ? categoryLabel(filter.value) ?? filter.value : filter.value}：共 {visible.length} 場
+              {filter.kind === 'category' ? categoryLabel(filter.value) ?? filter.value : filter.value}
+              {filter.kind === 'category' && admission !== 'all' ? `（${admissionLabel(admission)}）` : ''}：共 {visible.length} 場
             </p>
           )}
         </div>
@@ -135,6 +179,7 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
                       {categoryLabel(show.category) && (
                         <span className="ml-2 inline-block border border-stage-700 px-1.5 py-px align-middle text-[10px] text-stone-500">
                           {categoryLabel(show.category)}
+                          {show.category === 'festival' && admissionLabel(show.admission) ? `・${admissionLabel(show.admission)}` : ''}
                         </span>
                       )}
                     </span>

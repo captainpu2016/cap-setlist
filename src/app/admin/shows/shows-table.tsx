@@ -29,7 +29,12 @@ export default function ShowsTable({ shows, hasClassification }: { shows: Show[]
                 </td>
                 {hasClassification && (
                   <td className="px-4 py-3">
-                    <ClassificationCell showId={show.id} category={show.category ?? null} series={show.series ?? null} />
+                    <ClassificationCell
+                      showId={show.id}
+                      category={show.category ?? null}
+                      series={show.series ?? null}
+                      admission={show.admission}
+                    />
                   </td>
                 )}
                 <td className="whitespace-nowrap px-4 py-3.5">

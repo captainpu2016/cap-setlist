@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { updateShowInfo, deleteShow } from '../../actions';
 import type { Show, Venue } from '@/types/database';
 import { toTaipeiInputValue } from '@/lib/format';
-import { SHOW_CATEGORIES } from '@/lib/show-category';
+import { ADMISSIONS, SHOW_CATEGORIES } from '@/lib/show-category';
 
 type SaveState = 'idle' | 'saved' | 'error';
 
@@ -91,6 +91,19 @@ export default function ShowInfoForm({ show, venues, seriesOptions = [] }: { sho
             <p className="mt-1 text-xs text-stone-400">同一條巡迴或每年舉辦的活動填一樣的名稱，前台就能把它們歸在一起。從下拉選已有的名稱，避免打錯字。</p>
           </div>
         </>
+      )}
+
+      {'admission' in show && (
+        <div>
+          <label className="admin-label" htmlFor="admission">入場方式（選填）</label>
+          <select id="admission" name="admission" defaultValue={show.admission ?? ''} className="admin-input">
+            <option value="">未填</option>
+            {ADMISSIONS.map((a) => (
+              <option key={a.value} value={a.value}>{a.label}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-stone-400">主要給音樂祭/節用：前台選「音樂祭/節」時可以再分付費或免費。</p>
+        </div>
       )}
 
       {/* 這兩個欄位要等資料庫執行過 0003_show_ticket_time.sql 才存在；還沒執行就不顯示，避免儲存失敗 */}
