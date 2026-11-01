@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { getArchive, parseCoverTitle } from '@/lib/archive';
-import { computeStats, rankTopSongs } from '@/lib/stats';
+import { getArchive } from '@/lib/archive';
+import { computeStats, groupCoversByArtist, rankTopSongs } from '@/lib/stats';
 import { formatShowDateShort, todayTaipei } from '@/lib/format';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
@@ -30,6 +30,7 @@ export default async function StatsPage() {
     { key: '1y', label: '近一年', since: monthsAgo(12) },
     { key: 'all', label: '全部', since: null }
   ].map(({ since, ...p }) => ({ ...p, ...rankTopSongs(shows, since, 10) }));
+  const covers = groupCoversByArtist(s.coverSongs);
   const maxYearShows = Math.max(1, ...s.byYear.map((y) => y.shows));
 
   return (
@@ -96,21 +97,37 @@ export default async function StatsPage() {
           <section className="mt-14">
             <h2 className="section-title mb-2 text-2xl">曾經翻唱過的歌</h2>
             <p className="mb-5 text-sm text-stone-500">
-              共翻唱過 {s.coverSongs.length} 首，最近唱的排在前面，右邊是原唱。
+              共翻唱過 {s.coverSongs.length} 首、{covers.foreign.length + covers.taiwan.length} 組樂團。海外樂團在前、台灣樂團在後，同一個樂團的歌排在一起。
             </p>
-            <ul className="grid gap-1.5 sm:grid-cols-2">
-              {s.coverSongs.map((c) => (
-                <li key={c.id} className="min-w-0">
-                  <a
-                    href={`/song/${c.id}`}
-                    className="flex items-baseline justify-between gap-3 border border-stage-700 border-l-2 border-l-marquee bg-stage-900 px-3 py-2.5 text-sm transition-colors hover:border-stone-500 hover:border-l-marquee hover:text-marquee"
-                  >
-                    <span className="min-w-0 truncate font-medium text-paper">{parseCoverTitle(c.title).name}</span>
-                    <span className="max-w-[45%] shrink-0 truncate text-xs text-stone-500">{parseCoverTitle(c.title).artist}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+            {[
+              ['海外樂團', covers.foreign],
+              ['台灣樂團', covers.taiwan]
+            ].map(([label, groups]) =>
+              (groups as typeof covers.foreign).length > 0 ? (
+                <div key={label as string} className="mt-6 first:mt-0">
+                  <h3 className="mb-2 font-accent text-xs uppercase tracking-[0.25em] text-stone-500">{label as string}</h3>
+                  <ul className="grid gap-1.5 sm:grid-cols-2">
+                    {(groups as typeof covers.foreign).map((g) => (
+                      <li key={g.artist} className="min-w-0 border border-stage-700 border-l-2 border-l-marquee bg-stage-900">
+                        <p className="truncate px-3 pt-2.5 text-xs font-bold text-marquee">{g.artist}</p>
+                        <ul className="px-1 pb-1.5 pt-1">
+                          {g.songs.map((song) => (
+                            <li key={song.id}>
+                              <a
+                                href={`/song/${song.id}`}
+                                className="block truncate px-2 py-1.5 text-sm text-paper transition-colors hover:text-marquee"
+                              >
+                                {song.name}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null
+            )}
           </section>
         )}
 

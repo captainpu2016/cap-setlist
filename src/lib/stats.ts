@@ -1,4 +1,4 @@
-import { isIntroSong, type ArchiveShow } from '@/lib/archive';
+import { isIntroSong, parseCoverTitle, type ArchiveShow } from '@/lib/archive';
 
 export type RankedSong = { id: string; title: string; count: number };
 
@@ -20,6 +20,33 @@ export type ArchiveStats = {
   oneTimers: { id: string; title: string; showTitle: string; date: string; slug: string }[];
   dormant: { id: string; title: string; lastDate: string; count: number; showsSince: number }[];
 };
+
+/**
+ * 翻唱歌的原唱是不是海外樂團：歌名含假名一律算海外；其餘依下面這份名單比對（小寫、不分大小寫）。
+ * 之後翻唱了新的海外樂團，把團名關鍵字補進來；沒列在這裡的就歸在「台灣樂團」。
+ */
+const FOREIGN_ARTIST = /hi-?standard|shank|\benth\b|honest|kuzira|mongol800|asian kung-fu generation|ellegarden|locofrank/i;
+const HAS_KANA = /[\u3040-\u30ff]/;
+
+export type CoverGroup = { artist: string; songs: { id: string; name: string; lastDate: string }[]; latest: string };
+
+/** 翻唱歌依原唱樂團分組：海外樂團在前、台灣樂團在後；同一樂團的歌排在一起，團與團之間、團內的歌都是最近唱的在前 */
+export function groupCoversByArtist(covers: ArchiveStats['coverSongs']): { foreign: CoverGroup[]; taiwan: CoverGroup[] } {
+  const groups = new Map<string, CoverGroup>();
+  for (const c of covers) {
+    const { name, artist } = parseCoverTitle(c.title);
+    const key = artist ?? '原唱未標示';
+    const g = groups.get(key) ?? { artist: key, songs: [], latest: '' };
+    g.songs.push({ id: c.id, name, lastDate: c.lastDate });
+    if (c.lastDate > g.latest) g.latest = c.lastDate;
+    groups.set(key, g);
+  }
+  const all = Array.from(groups.values());
+  for (const g of all) g.songs.sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.name.localeCompare(b.name, 'zh-Hant'));
+  const byLatest = (a: CoverGroup, b: CoverGroup) => b.latest.localeCompare(a.latest) || a.artist.localeCompare(b.artist, 'zh-Hant');
+  const isForeign = (g: CoverGroup) => HAS_KANA.test(g.artist + g.songs.map((s) => s.name).join('')) || FOREIGN_ARTIST.test(g.artist);
+  return { foreign: all.filter(isForeign).sort(byLatest), taiwan: all.filter((g) => !isForeign(g)).sort(byLatest) };
+}
 
 function rank(map: Map<string, RankedSong>, limit: number): RankedSong[] {
   return Array.from(map.values())
