@@ -27,6 +27,29 @@ function rank(map: Map<string, RankedSong>, limit: number): RankedSong[] {
     .slice(0, limit);
 }
 
+/** 指定日期（含）之後的演出裡，歌（不含翻唱與 INTRO）被演出最多次的前幾首；since 為 null 代表全部 */
+export function rankTopSongs(
+  allShows: ArchiveShow[],
+  since: string | null,
+  limit: number
+): { rows: RankedSong[]; showCount: number } {
+  const map = new Map<string, RankedSong>();
+  let showCount = 0;
+  for (const show of allShows) {
+    if (since && show.date < since) continue;
+    const songs = show.songs.filter((x) => !isIntroSong(x.title));
+    if (songs.length === 0) continue;
+    showCount += 1;
+    for (const song of songs) {
+      if (song.isCover) continue;
+      const entry = map.get(song.id) ?? { id: song.id, title: song.title, count: 0 };
+      entry.count += 1;
+      map.set(song.id, entry);
+    }
+  }
+  return { rows: rank(map, limit), showCount };
+}
+
 /** 從已公開的場次資料算出各種統計；shows 必須是新到舊排序（getArchive 的順序） */
 export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
   // 開場音樂（INTRO）不是歌，先整批排除

@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { displaySongTitle, getArchive } from '@/lib/archive';
-import { computeStats, type RankedSong } from '@/lib/stats';
-import { formatShowDateShort } from '@/lib/format';
+import { computeStats, rankTopSongs } from '@/lib/stats';
+import { formatShowDateShort, todayTaipei } from '@/lib/format';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
 import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
+import TopSongs from './top-songs';
 
 export const revalidate = 3600;
 
@@ -15,43 +16,20 @@ export const metadata: Metadata = {
   alternates: { canonical: '/stats' }
 };
 
-/** 排行：長條畫在整列後面，歌名直接壓在上面，第一名顏色加深；一眼看得出差距又不會有細線的單薄感 */
-function Bars({ rows, accent = false }: { rows: RankedSong[]; accent?: boolean }) {
-  const max = Math.max(1, ...rows.map((r) => r.count));
-  const fill = accent ? 'bg-marquee' : 'bg-signal';
-  const cap = accent ? 'border-marquee' : 'border-signal';
-  return (
-    <ol className="space-y-1.5">
-      {rows.map((r, i) => (
-        <li key={r.id}>
-          <a href={`/song/${r.id}`} className="group relative block overflow-hidden border border-stage-700 bg-stage-900 transition-colors hover:border-stone-500">
-            <div
-              className={`absolute inset-y-0 left-0 border-r-2 ${cap} ${fill} ${i === 0 ? 'opacity-45' : 'opacity-25'}`}
-              style={{ width: `${(r.count / max) * 100}%` }}
-              aria-hidden
-            />
-            <div className="relative flex items-center gap-3 px-3 py-2.5">
-              <span className={`w-6 shrink-0 font-accent text-sm ${i === 0 ? (accent ? 'text-marquee' : 'text-signal') : 'text-stone-500'}`}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span className={`min-w-0 flex-1 truncate text-sm ${i === 0 ? 'font-bold' : 'font-medium'} text-paper`}>
-                {displaySongTitle(r.title)}
-              </span>
-              <span className="shrink-0 font-accent text-base font-semibold text-paper">
-                {r.count}
-                <span className="ml-0.5 text-[11px] font-normal text-stone-400"> 次</span>
-              </span>
-            </div>
-          </a>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 export default async function StatsPage() {
   const { shows, stats: archiveStats } = await getArchive();
   const s = computeStats(shows);
+  const today = todayTaipei();
+  const monthsAgo = (n: number) => {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCMonth(d.getUTCMonth() - n);
+    return d.toISOString().slice(0, 10);
+  };
+  const periods = [
+    { key: '3m', label: '近三個月', since: monthsAgo(3) },
+    { key: '1y', label: '近一年', since: monthsAgo(12) },
+    { key: 'all', label: '全部', since: null }
+  ].map(({ since, ...p }) => ({ ...p, ...rankTopSongs(shows, since, 10) }));
   const maxYearShows = Math.max(1, ...s.byYear.map((y) => y.shows));
 
   return (
@@ -87,7 +65,7 @@ export default async function StatsPage() {
 
         <section className="mt-14">
           <h2 className="section-title mb-5 text-2xl">最常演出的歌</h2>
-          <Bars rows={s.topSongs} />
+          <TopSongs periods={periods} />
         </section>
 
         <section className="mt-14">
