@@ -95,13 +95,20 @@ export function BarList({ rows, unit, showShare = true }: { rows: BarRow[]; unit
 }
 
 export interface DailyPoint {
+  /** YYYY-MM-DD */
+  date: string;
   label: string;
   users: number;
   views: number;
 }
 
 /** 每日趨勢面積圖：瀏覽量（深色底）疊上訪客（紅線），滑過每一天會顯示數字 */
-export function AreaChart({ data }: { data: DailyPoint[] }) {
+export interface ShowMarker {
+  date: string;
+  title: string;
+}
+
+export function AreaChart({ data, markers = [] }: { data: DailyPoint[]; markers?: ShowMarker[] }) {
   if (data.length === 0) return <p className="text-sm text-stone-400">這段期間還沒有資料。</p>;
   const W = 800;
   const H = 200;
@@ -124,6 +131,9 @@ export function AreaChart({ data }: { data: DailyPoint[] }) {
       <div className="mb-2 flex gap-4 text-xs text-stone-500">
         <span className="flex items-center gap-1.5"><i className="inline-block h-2 w-3 rounded-sm bg-stone-300" />瀏覽量</span>
         <span className="flex items-center gap-1.5"><i className="inline-block h-0.5 w-3 bg-red-600" />訪客</span>
+        {markers.length > 0 && (
+          <span className="flex items-center gap-1.5"><i className="inline-block h-3 w-0 border-l border-dashed border-stone-900" />演出日</span>
+        )}
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="每日瀏覽量與訪客趨勢">
         {ticks.map((t) => (
@@ -135,6 +145,17 @@ export function AreaChart({ data }: { data: DailyPoint[] }) {
         <path d={area} fill="#d6d3d1" opacity="0.55" />
         <path d={line('views')} fill="none" stroke="#57534e" strokeWidth="1.5" />
         <path d={line('users')} fill="none" stroke="#dc2626" strokeWidth="2" />
+        {markers.map((m) => {
+          const i = data.findIndex((d) => d.date === m.date);
+          if (i < 0) return null;
+          return (
+            <g key={m.date + m.title}>
+              <line x1={x(i)} x2={x(i)} y1={pad.t} y2={y(0)} stroke="#1c1917" strokeWidth="1" strokeDasharray="3 3" />
+              <circle cx={x(i)} cy={pad.t} r="3.5" fill="#1c1917" />
+              <title>{`${m.date}　${m.title}`}</title>
+            </g>
+          );
+        })}
         {labelIdx.map((i) => (
           <text key={i} x={x(i)} y={H - 6} textAnchor={i === 0 ? 'start' : i === data.length - 1 ? 'end' : 'middle'} fontSize="10" fill="#a8a29e">
             {data[i].label}

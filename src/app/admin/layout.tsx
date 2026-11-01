@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import InternalTrafficMark from './internal-traffic-mark';
 
 const NAV = [
   { href: '/admin', label: '總覽' },
@@ -15,6 +16,7 @@ const NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-stone-100">
+      <InternalTrafficMark />
       <div className="flex">
         <aside className="hidden w-56 shrink-0 border-r border-stone-200 bg-white px-4 py-6 sm:block">
           <p className="px-2 font-display text-sm font-bold text-stone-900">普通隊長後台</p>

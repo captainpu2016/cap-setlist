@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { isGa4Configured, runReport, type ReportRow } from '@/lib/ga4';
 import { getArchive, displaySongTitle } from '@/lib/archive';
-import { getCity } from '@/lib/format';
+import { getCity, todayTaipei } from '@/lib/format';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AreaChart, BarList, Card, Heatmap, StatCard, type BarRow } from './charts';
 import { classifySource, isAiSource, normalizeCity, toTaiwanCity } from './helpers';
@@ -30,10 +30,6 @@ function fmtDuration(sec: number) {
   const m = Math.floor(sec / 60);
   const s = Math.round(sec % 60);
   return m > 0 ? `${m} 分 ${s} 秒` : `${s} 秒`;
-}
-
-function fmtDate(yyyymmdd: string) {
-  return `${Number(yyyymmdd.slice(4, 6))}/${Number(yyyymmdd.slice(6, 8))}`;
 }
 
 function safeDecode(s: string) {
@@ -140,7 +136,19 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
   const t = (i: number) => curTotals?.metrics[i] ?? 0;
   const p = (i: number) => prevTotals?.metrics[i] ?? 0;
 
-  const dailyData = daily.map((r) => ({ label: fmtDate(r.dims[0]), users: r.metrics[0], views: r.metrics[1] }));
+  // GA 沒資料的日子不會回傳，補成 0，讓橫軸連續、演出日標示才對得上
+  const byDate = new Map(daily.map((r) => [r.dims[0], r]));
+  const today = todayTaipei();
+  const dailyData = Array.from({ length: d + 1 }, (_, i) => {
+    const day = new Date(`${today}T00:00:00Z`);
+    day.setUTCDate(day.getUTCDate() - (d - i));
+    const iso = day.toISOString().slice(0, 10);
+    const row = byDate.get(iso.replace(/-/g, ''));
+    return { date: iso, label: `${day.getUTCMonth() + 1}/${day.getUTCDate()}`, users: row?.metrics[0] ?? 0, views: row?.metrics[1] ?? 0 };
+  });
+  const showMarkers = archive.shows
+    .filter((s) => s.date >= dailyData[0].date && s.date <= today)
+    .map((s) => ({ date: s.date, title: s.title }));
 
   // 城市：台灣城市對照已巡演名單，標出「有人看卻還沒去過」
   const cityBars: BarRow[] = cityRows.slice(0, 12).map((r) => {
@@ -236,7 +244,7 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-stone-900">網站數據</h1>
-          <p className="mt-1 text-sm text-stone-500">資料來自 Google Analytics 4，約每小時更新；漲跌是和前一段同長度期間比較。</p>
+          <p className="mt-1 text-sm text-stone-500">資料來自 Google Analytics 4，約每小時更新；漲跌是和前一段同長度期間比較。登入過後台的瀏覽器不會被計入。</p>
         </div>
         <div className="flex gap-1 rounded-md border border-stone-200 bg-white p-1 text-sm">
           {RANGES.map((r) => (
@@ -262,8 +270,8 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
             <StatCard label="平均停留" value={fmtDuration(t(3))} cur={t(3)} prev={p(3)} />
           </div>
 
-          <Card title="每日趨勢">
-            <AreaChart data={dailyData} />
+          <Card title="每日趨勢" note={showMarkers.length > 0 ? `虛線為演出日（${showMarkers.length} 場），可以看演出前後的流量變化。` : undefined}>
+            <AreaChart data={dailyData} markers={showMarkers} />
           </Card>
 
           <Card title="歌迷在哪裡" note="依訪客城市排序，並對照「巡演足跡」已去過的城市。">

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { GoogleAnalytics } from '@next/third-parties/google';
+import GoogleAnalyticsGate from '@/components/GoogleAnalyticsGate';
 import { Noto_Sans_TC, Oswald } from 'next/font/google';
 import BottomNav from '@/components/BottomNav';
 import SiteHeader from '@/components/SiteHeader';
@@ -80,7 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <BottomNav />
       </body>
-      {gaId && <GoogleAnalytics gaId={gaId} />}
+      {gaId && <GoogleAnalyticsGate gaId={gaId} />}
     </html>
   );
 }
