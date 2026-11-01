@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 export interface SearchSong {
   id: string;
@@ -63,6 +64,13 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
     });
     return list;
   }, [songs, q, sort]);
+
+  // 停止輸入一下子後才記錄搜尋關鍵字，避免每打一個字就送一次
+  useEffect(() => {
+    if (!q) return;
+    const timer = setTimeout(() => trackEvent('site_search', { search_term: q.slice(0, 40), result_count: results.length }), 1200);
+    return () => clearTimeout(timer);
+  }, [q, results.length]);
 
   function updateQuery(value: string) {
     setQuery(value);

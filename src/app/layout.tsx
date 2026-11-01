@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import ClickTracker from '@/components/ClickTracker';
 import GoogleAnalyticsGate from '@/components/GoogleAnalyticsGate';
 import { Noto_Sans_TC, Oswald } from 'next/font/google';
 import BottomNav from '@/components/BottomNav';
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </footer>
 
         <BottomNav />
+        <ClickTracker />
       </body>
       {gaId && <GoogleAnalyticsGate gaId={gaId} />}
     </html>

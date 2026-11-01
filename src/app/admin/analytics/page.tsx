@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { isGa4Configured, runReport, type ReportRow } from '@/lib/ga4';
 import { getArchive, displaySongTitle } from '@/lib/archive';
 import { getCity, todayTaipei } from '@/lib/format';
+import { getSiteUrl } from '@/lib/seo';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { AreaChart, BarList, Card, Heatmap, StatCard, type BarRow } from './charts';
+import AreaChart from './area-chart';
+import { BarList, Card, Heatmap, StatCard, type BarRow } from './charts';
 import { classifySource, isAiSource, normalizeCity, toTaiwanCity } from './helpers';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +41,34 @@ function safeDecode(s: string) {
     return s;
   }
 }
+
+const PAGE_TYPE: [RegExp, string][] = [
+  [/^\/$/, '首頁'],
+  [/^\/shows\/?$/, '全部場次'],
+  [/^\/show\/[^/]+\/?$/, '場次頁'],
+  [/^\/song\/[^/]+\/?$/, '歌曲頁'],
+  [/^\/tour\/?$/, '巡演足跡'],
+  [/^\/stats\/?$/, '歌單統計'],
+  [/^\/search\/?$/, '搜尋'],
+  [/^\/me\/?$/, '我的紀錄'],
+  [/^\/about\/?$/, '關於本站']
+];
+
+function pageType(path: string): string {
+  for (const [re, label] of PAGE_TYPE) if (re.test(path)) return label;
+  return path;
+}
+
+/** 自訂維度還沒在 GA 註冊時 API 會報錯：這類報表失敗不影響整頁，只標記為「尚未啟用」 */
+async function optional(p: Promise<ReportRow[]>): Promise<{ rows: ReportRow[]; failed: boolean }> {
+  try {
+    return { rows: await p, failed: false };
+  } catch {
+    return { rows: [], failed: true };
+  }
+}
+
+const eventIs = (name: string) => ({ filter: { fieldName: 'eventName', stringFilter: { matchType: 'EXACT', value: name } } });
 
 const startsWith = (fieldName: string, value: string) => ({
   filter: { fieldName, stringFilter: { matchType: 'BEGINS_WITH', value } }
@@ -124,6 +154,34 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
   } catch (e) {
     error = e instanceof Error ? e.message : '讀取 GA4 失敗';
   }
+
+  // ── 行為軌跡：路徑與入口頁（內建維度）＋ 點擊與搜尋（需要自訂維度，失敗不影響整頁）──
+  const siteHost = new URL(getSiteUrl()).host;
+  const [flowRes, landingRes, clickRes, searchRes, streamSongRes, streamPlatformRes] = await Promise.all([
+    optional(
+      runReport({
+        ...cur,
+        dimensions: ['pageReferrer', 'pagePath'],
+        metrics: ['screenPageViews'],
+        orderBy: { metric: 'screenPageViews' },
+        limit: 200,
+        dimensionFilter: { filter: { fieldName: 'pageReferrer', stringFilter: { matchType: 'CONTAINS', value: siteHost } } }
+      })
+    ),
+    optional(runReport({ ...cur, dimensions: ['landingPage'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 10 })),
+    optional(
+      runReport({ ...cur, dimensions: ['customEvent:item'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 15, dimensionFilter: eventIs('internal_click') })
+    ),
+    optional(
+      runReport({ ...cur, dimensions: ['customEvent:search_term'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 15, dimensionFilter: eventIs('site_search') })
+    ),
+    optional(
+      runReport({ ...cur, dimensions: ['customEvent:song_title'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 10, dimensionFilter: eventIs('streaming_link_click') })
+    ),
+    optional(
+      runReport({ ...cur, dimensions: ['customEvent:platform'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 5, dimensionFilter: eventIs('streaming_link_click') })
+    )
+  ]);
 
   // ── 站內資料：歌名、場次、已巡演城市、報到與留言 ──────────────────────────
   const archive = await getArchive();
@@ -231,6 +289,55 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
   const userTotal = newUsers + returning;
   const returningPct = userTotal > 0 ? Math.round((returning / userTotal) * 100) : 0;
 
+  // 常見瀏覽路徑：上一頁類型 → 這一頁類型（同類型合併，例如所有場次頁算同一種）
+  const flowMap = new Map<string, number>();
+  for (const r of flowRes.rows) {
+    let fromPath: string;
+    try {
+      fromPath = new URL(r.dims[0]).pathname;
+    } catch {
+      continue;
+    }
+    const from = pageType(fromPath);
+    const to = pageType(r.dims[1]);
+    if (from === to && fromPath === r.dims[1]) continue; // 重新整理
+    const key = `${from} → ${to}`;
+    flowMap.set(key, (flowMap.get(key) ?? 0) + r.metrics[0]);
+  }
+  const flowBars: BarRow[] = Array.from(flowMap.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 12);
+
+  // 入口頁：訪客第一個看到的頁面，場次與歌曲顯示名稱
+  const labelPath = (path: string): string => {
+    const show = path.match(/^\/show\/([^/?]+)/);
+    if (show) return showBySlug.get(safeDecode(show[1]))?.title ?? pageType(path);
+    const song = path.match(/^\/song\/([^/?]+)/);
+    if (song) {
+      const s = songById.get(safeDecode(song[1]));
+      return s ? `歌曲：${displaySongTitle(s.title)}` : pageType(path);
+    }
+    return pageType(path.split('?')[0]);
+  };
+  const landingMap = new Map<string, number>();
+  for (const r of landingRes.rows) {
+    const label = labelPath(r.dims[0]);
+    landingMap.set(label, (landingMap.get(label) ?? 0) + r.metrics[0]);
+  }
+  const landingBars: BarRow[] = Array.from(landingMap.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
+
+  const toBars = (rows: ReportRow[]): BarRow[] =>
+    rows.filter((r) => r.dims[0] && r.dims[0] !== '(not set)').map((r) => ({ name: r.dims[0], value: r.metrics[0] }));
+  const clickBars = toBars(clickRes.rows);
+  const searchBars = toBars(searchRes.rows);
+  const streamSongBars = toBars(streamSongRes.rows).map((r) => ({ ...r, name: displaySongTitle(r.name) }));
+  const streamPlatformBars = toBars(streamPlatformRes.rows);
+  const needsDimensions = clickRes.failed || searchRes.failed || streamSongRes.failed || streamPlatformRes.failed;
+
   // 星期 × 小時（GA dayOfWeek: 0=週日 → 轉成 0=週一）
   const cells: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
   for (const r of hours) {
@@ -332,6 +439,67 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
               </div>
             )}
           </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card title="訪客怎麼逛" note="從哪一種頁面走到哪一種頁面，次數愈多代表這條動線愈常被走。">
+              {flowRes.failed ? (
+                <p className="text-sm text-stone-400">暫時讀不到路徑資料。</p>
+              ) : (
+                <BarList rows={flowBars} unit="次" showShare={false} />
+              )}
+            </Card>
+            <Card title="從哪一頁進站" note="訪客第一個看到的頁面。">
+              <BarList rows={landingBars} unit="次" />
+            </Card>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card title="站內點擊" note="選單、頁尾與內容區連結被點了幾次。">
+              {clickRes.failed ? (
+                <p className="text-sm text-stone-400">尚未啟用，見下方說明。</p>
+              ) : (
+                <BarList rows={clickBars} unit="次" showShare={false} />
+              )}
+            </Card>
+            <Card title="歌迷搜了什麼歌" note="搜尋頁的關鍵字排行。">
+              {searchRes.failed ? (
+                <p className="text-sm text-stone-400">尚未啟用，見下方說明。</p>
+              ) : (
+                <BarList rows={searchBars} unit="次" showShare={false} />
+              )}
+            </Card>
+            <Card title="串流點擊：哪首歌" note="歌單頁上串流圖示被點的歌。">
+              {streamSongRes.failed ? (
+                <p className="text-sm text-stone-400">尚未啟用，見下方說明。</p>
+              ) : (
+                <BarList rows={streamSongBars} unit="次" showShare={false} />
+              )}
+            </Card>
+            <Card title="串流點擊：哪個平台">
+              {streamPlatformRes.failed ? (
+                <p className="text-sm text-stone-400">尚未啟用，見下方說明。</p>
+              ) : (
+                <BarList
+                  rows={streamPlatformBars.map((r) => ({
+                    ...r,
+                    name: ({ spotify: 'Spotify', apple_music: 'Apple Music', youtube: 'YouTube' } as Record<string, string>)[r.name] ?? r.name
+                  }))}
+                  unit="次"
+                />
+              )}
+            </Card>
+          </div>
+
+          {needsDimensions && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+              <p className="font-bold">還有幾項需要在 GA 註冊「自訂維度」才看得到</p>
+              <p className="mt-1">
+                到 GA「管理 → 自訂定義 → 建立自訂維度」，範圍選「事件」，事件參數依序填入下列四個（維度名稱可自取）：
+                <code> item</code>、<code>search_term</code>、<code>song_title</code>、<code>platform</code>。
+                註冊後從當天開始累積，過去的點擊無法回補，大約隔天資料才會出現。
+              </p>
+            </div>
+          )}
 
           <Card title="什麼時候最多人上線" note="依造訪次數，適合用來決定公告與貼文時間。">
             <Heatmap cells={cells} />

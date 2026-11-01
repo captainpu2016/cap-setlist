@@ -31,7 +31,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
             ))}
           </nav>
-          <form action="/api/auth/logout" method="post" className="mt-8 px-2">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener"
+            className="mt-6 block rounded-md border border-stone-300 px-3 py-2 text-center text-sm text-stone-700 hover:bg-stone-100"
+          >
+            瀏覽前台 ↗
+          </a>
+          <form action="/api/auth/logout" method="post" className="mt-6 px-2">
             <button className="text-xs text-stone-400 hover:text-red-600">登出</button>
           </form>
         </aside>
@@ -39,9 +47,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex-1">
           <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 sm:hidden">
             <p className="font-display text-sm font-bold text-stone-900">普通隊長後台</p>
-            <form action="/api/auth/logout" method="post">
-              <button className="text-xs text-stone-400">登出</button>
-            </form>
+            <div className="flex items-center gap-4">
+              <a href="/" target="_blank" rel="noopener" className="text-xs font-medium text-stone-700">瀏覽前台 ↗</a>
+              <form action="/api/auth/logout" method="post">
+                <button className="text-xs text-stone-400">登出</button>
+              </form>
+            </div>
           </header>
           <nav className="flex gap-3 overflow-x-auto border-b border-stone-200 bg-white px-4 py-2 text-sm sm:hidden">
             {NAV.map((item) => (
