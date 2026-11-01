@@ -89,3 +89,12 @@ export function countryOfVenue(venue: string | null | undefined): string | null 
   if (TAIWAN_CITIES.has(city)) return '台灣';
   return CITY_COUNTRY[city] ?? '其他海外';
 }
+
+/** 場地（「城市 場館名稱」）依城市排序：同樣是台灣由北到南、海外在最後；同一城市內再依場館名稱排 */
+export function sortVenuesByCity(venues: string[]): string[] {
+  const cityOrder = new Map(sortCitiesNorthToSouth(Array.from(new Set(venues.map((v) => getCity(v) ?? '')))).map((c, i) => [c, i]));
+  return [...venues].sort(
+    (a, b) =>
+      (cityOrder.get(getCity(a) ?? '') ?? 999) - (cityOrder.get(getCity(b) ?? '') ?? 999) || a.localeCompare(b, 'zh-Hant')
+  );
+}

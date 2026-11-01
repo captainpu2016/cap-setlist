@@ -12,7 +12,7 @@ export interface TopSongsPeriod {
 }
 
 /** 排行：長條畫在整列後面，歌名直接壓在上面，第一名顏色加深；一眼看得出差距又不會有細線的單薄感 */
-function Bars({ rows }: { rows: RankedSong[] }) {
+function Bars({ rows, total }: { rows: RankedSong[]; total: number }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
     <ol className="space-y-1.5">
@@ -31,9 +31,10 @@ function Bars({ rows }: { rows: RankedSong[] }) {
               <span className={`min-w-0 flex-1 truncate text-sm ${i === 0 ? 'font-bold' : 'font-medium'} text-paper`}>
                 {displaySongTitle(r.title)}
               </span>
-              <span className="shrink-0 font-accent text-base font-semibold text-paper">
+              <span className="shrink-0 text-right font-accent text-base font-semibold leading-tight text-paper">
                 {r.count}
-                <span className="ml-0.5 text-[11px] font-normal text-stone-400"> 次</span>
+                <span className="ml-0.5 text-[11px] font-normal text-stone-400"> 場</span>
+                <span className="block text-[11px] font-normal text-stone-400">{total > 0 ? Math.round((r.count / total) * 100) : 0}%</span>
               </span>
             </div>
           </a>
@@ -66,10 +67,10 @@ export default function TopSongs({ periods }: { periods: TopSongsPeriod[] }) {
             {p.label}
           </button>
         ))}
-        <span className="ml-auto text-xs text-stone-500">{period.showCount} 場演出</span>
+        <span className="ml-auto text-xs text-stone-500">共 {period.showCount} 場演出，百分比是「出現在多少場裡」</span>
       </div>
       {period.rows.length > 0 ? (
-        <Bars rows={period.rows} />
+        <Bars rows={period.rows} total={period.showCount} />
       ) : (
         <p className="border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">
           這段期間還沒有已公開歌單的演出。
