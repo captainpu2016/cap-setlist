@@ -74,8 +74,34 @@ const startsWith = (fieldName: string, value: string) => ({
   filter: { fieldName, stringFilter: { matchType: 'BEGINS_WITH', value } }
 });
 
-export default async function AdminAnalyticsPage({ searchParams }: { searchParams: { range?: string } }) {
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RANGE_DAYS = 366;
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetween(from: string, to: string): number {
+  return Math.round((new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) / 86_400_000) + 1;
+}
+
+export default async function AdminAnalyticsPage({ searchParams }: { searchParams: { range?: string; from?: string; to?: string } }) {
   const range = RANGES.find((r) => r.key === searchParams.range) ?? RANGES[1];
+  const today = todayTaipei();
+
+  // 自訂起迄日（台灣時間）：格式、先後、不超過今天、最長一年；不合格就退回預設的近 28 天，並提示原因
+  let custom: { from: string; to: string } | null = null;
+  let rangeNote: string | null = null;
+  if (searchParams.from || searchParams.to) {
+    const { from, to } = searchParams;
+    if (!from || !to || !ISO_DATE.test(from) || !ISO_DATE.test(to)) rangeNote = '請同時選好起始日與結束日。';
+    else if (from > to) rangeNote = '起始日不能晚於結束日。';
+    else if (to > today) rangeNote = '結束日不能晚於今天。';
+    else if (daysBetween(from, to) > MAX_RANGE_DAYS) rangeNote = `一次最多查詢 ${MAX_RANGE_DAYS} 天。`;
+    else custom = { from, to };
+  }
 
   if (!isGa4Configured()) {
     return (
@@ -89,9 +115,13 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
     );
   }
 
-  const d = range.days;
-  const cur = { startDate: `${d}daysAgo`, endDate: 'today' };
-  const prev = { startDate: `${d * 2}daysAgo`, endDate: `${d + 1}daysAgo` };
+  const from = custom ? custom.from : addDays(today, -range.days);
+  const to = custom ? custom.to : today;
+  const dayCount = daysBetween(from, to);
+  const cur = { startDate: from, endDate: to };
+  // 對照期：緊接在所選期間之前、天數一樣長
+  const prevTo = addDays(from, -1);
+  const prev = { startDate: addDays(prevTo, -(dayCount - 1)), endDate: prevTo };
   const totalMetrics = ['activeUsers', 'sessions', 'screenPageViews', 'averageSessionDuration', 'newUsers'];
 
   let error: string | null = null;
@@ -113,7 +143,7 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
       await Promise.all([
         runReport({ ...cur, metrics: totalMetrics }),
         runReport({ ...prev, metrics: totalMetrics }),
-        runReport({ ...cur, dimensions: ['date'], metrics: ['activeUsers', 'screenPageViews'], orderBy: { dimension: 'date', desc: false }, limit: 100 }),
+        runReport({ ...cur, dimensions: ['date'], metrics: ['activeUsers', 'screenPageViews'], orderBy: { dimension: 'date', desc: false }, limit: 400 }),
         runReport({
           ...cur,
           dimensions: ['country', 'city'],
@@ -196,16 +226,14 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
 
   // GA 沒資料的日子不會回傳，補成 0，讓橫軸連續、演出日標示才對得上
   const byDate = new Map(daily.map((r) => [r.dims[0], r]));
-  const today = todayTaipei();
-  const dailyData = Array.from({ length: d + 1 }, (_, i) => {
-    const day = new Date(`${today}T00:00:00Z`);
-    day.setUTCDate(day.getUTCDate() - (d - i));
-    const iso = day.toISOString().slice(0, 10);
+  const dailyData = Array.from({ length: dayCount }, (_, i) => {
+    const iso = addDays(from, i);
+    const day = new Date(`${iso}T00:00:00Z`);
     const row = byDate.get(iso.replace(/-/g, ''));
     return { date: iso, label: `${day.getUTCMonth() + 1}/${day.getUTCDate()}`, users: row?.metrics[0] ?? 0, views: row?.metrics[1] ?? 0 };
   });
   const showMarkers = archive.shows
-    .filter((s) => s.date >= dailyData[0].date && s.date <= today)
+    .filter((s) => s.date >= from && s.date <= to)
     .map((s) => ({ date: s.date, title: s.title }));
 
   // 城市：台灣城市對照已巡演名單，標出「有人看卻還沒去過」
@@ -353,18 +381,38 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
           <h1 className="font-display text-2xl font-bold text-stone-900">網站數據</h1>
           <p className="mt-1 text-sm text-stone-500">資料來自 Google Analytics 4，約每小時更新；漲跌是和前一段同長度期間比較。登入過後台的瀏覽器不會被計入。</p>
         </div>
-        <div className="flex gap-1 rounded-md border border-stone-200 bg-white p-1 text-sm">
+        <div className="flex flex-wrap items-center gap-1 rounded-md border border-stone-200 bg-white p-1 text-sm">
           {RANGES.map((r) => (
             <Link
               key={r.key}
               href={`/admin/analytics?range=${r.key}`}
-              className={`rounded px-3 py-1 ${r.key === range.key ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}
+              className={`rounded px-3 py-1 ${!custom && r.key === range.key ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-100'}`}
             >
               {r.label}
             </Link>
           ))}
         </div>
       </div>
+
+      <form
+        method="get"
+        action="/admin/analytics"
+        className={`mt-3 flex flex-wrap items-end gap-3 rounded-md border bg-white p-3 text-sm ${custom ? 'border-stone-900' : 'border-stone-200'}`}
+      >
+        <label className="block">
+          <span className="mb-1 block text-xs text-stone-500">自訂起始日</span>
+          <input type="date" name="from" defaultValue={custom?.from ?? from} max={today} required className="admin-input !w-40 !py-1.5" />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-stone-500">結束日</span>
+          <input type="date" name="to" defaultValue={custom?.to ?? to} max={today} required className="admin-input !w-40 !py-1.5" />
+        </label>
+        <button type="submit" className="admin-btn !py-1.5">套用</button>
+        <p className="pb-1.5 text-xs text-stone-400">
+          {from.replace(/-/g, '/')} – {to.replace(/-/g, '/')}（共 {dayCount} 天），對照前一段 {prev.startDate.replace(/-/g, '/')} – {prev.endDate.replace(/-/g, '/')}
+        </p>
+        {rangeNote && <p className="w-full text-xs text-red-600">{rangeNote}已改回近 {range.days} 天。</p>}
+      </form>
 
       {error ? (
         <p className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>
