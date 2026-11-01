@@ -8,6 +8,7 @@ import { displaySongTitle, getArchive } from '@/lib/archive';
 import { getShowLabels } from '@/lib/song-insights';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
+import { categoryLabel } from '@/lib/show-category';
 import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
@@ -220,6 +221,20 @@ export default async function ShowPage({ params }: { params: { slug: string } })
               <h1 className="mt-4 text-3xl font-black leading-tight tracking-tight text-paper sm:text-5xl">
                 {show.title}
               </h1>
+              {(categoryLabel(show.category) || show.series) && (
+                <p className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  {categoryLabel(show.category) && (
+                    <a href={`/shows#c=${show.category}`} className="border border-stage-700 px-2 py-0.5 text-stone-300 transition-colors hover:border-marquee hover:text-marquee">
+                      {categoryLabel(show.category)}
+                    </a>
+                  )}
+                  {show.series && (
+                    <a href={`/shows#s=${encodeURIComponent(show.series)}`} className="border border-stage-700 px-2 py-0.5 text-stone-300 transition-colors hover:border-marquee hover:text-marquee">
+                      {show.series}
+                    </a>
+                  )}
+                </p>
+              )}
               {show.venue && (
                 <p className="mt-3 flex items-center gap-2 text-stone-300">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden className="shrink-0 text-signal">

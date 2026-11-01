@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { createPublicClient } from '@/lib/supabase/public';
 import { getCity } from '@/lib/format';
+import type { ShowCategory } from '@/lib/show-category';
 
 export type ArchiveShow = {
   id: string;
@@ -10,6 +11,9 @@ export type ArchiveShow = {
   venue: string | null;
   coverImageUrl: string | null;
   updatedAt: string;
+  /** 演出分類與系列；資料庫還沒執行 0005_show_category.sql 時都是 null */
+  category: ShowCategory | null;
+  series: string | null;
   songs: { id: string; title: string; durationSeconds: number | null; isCover: boolean }[];
   /** 歌單是否已公開（未公開時 songs 是空的，避免提早洩漏） */
   revealed: boolean;
@@ -75,6 +79,14 @@ export const getArchive = cache(async () => {
     .order('show_date', { ascending: false })
     .returns<Row[]>();
 
+  // 分類與系列用獨立查詢：欄位還不存在時這個查詢會失敗，忽略即可，不能拖垮整份公開資料
+  const metaRes = await supabase
+    .from('shows')
+    .select('id, category, series')
+    .eq('status', 'published')
+    .returns<{ id: string; category: ShowCategory | null; series: string | null }[]>();
+  const meta = new Map((metaRes.error ? [] : (metaRes.data ?? [])).map((m) => [m.id, m]));
+
   const now = new Date();
   const shows: ArchiveShow[] = (data ?? []).map((row) => {
     const revealed = !row.setlist_reveal_at || new Date(row.setlist_reveal_at) <= now;
@@ -97,6 +109,8 @@ export const getArchive = cache(async () => {
       venue: row.venue,
       coverImageUrl: row.cover_image_url,
       updatedAt: row.updated_at,
+      category: meta.get(row.id)?.category ?? null,
+      series: meta.get(row.id)?.series ?? null,
       songs,
       revealed
     };

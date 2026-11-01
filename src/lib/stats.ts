@@ -1,4 +1,5 @@
 import { isIntroSong, parseCoverTitle, type ArchiveShow } from '@/lib/archive';
+import { SHOW_CATEGORIES } from '@/lib/show-category';
 
 export type RankedSong = { id: string; title: string; count: number };
 
@@ -46,6 +47,27 @@ export function groupCoversByArtist(covers: ArchiveStats['coverSongs']): { forei
   const byLatest = (a: CoverGroup, b: CoverGroup) => b.latest.localeCompare(a.latest) || a.artist.localeCompare(b.artist, 'zh-Hant');
   const isForeign = (g: CoverGroup) => HAS_KANA.test(g.artist + g.songs.map((s) => s.name).join('')) || FOREIGN_ARTIST.test(g.artist);
   return { foreign: all.filter(isForeign).sort(byLatest), taiwan: all.filter((g) => !isForeign(g)).sort(byLatest) };
+}
+
+export type CategoryStat = { value: string; label: string; shows: number; avgLength: number; coverShare: number };
+
+/** 依演出分類比較歌單：場數、平均每場首數、翻唱占比（INTRO 不算歌）；沒有任何已公開歌單的分類不列出 */
+export function statsByCategory(allShows: ArchiveShow[]): CategoryStat[] {
+  return SHOW_CATEGORIES.map((c) => {
+    const played = allShows
+      .filter((s) => s.category === c.value)
+      .map((s) => s.songs.filter((x) => !isIntroSong(x.title)))
+      .filter((songs) => songs.length > 0);
+    const total = played.reduce((n, songs) => n + songs.length, 0);
+    const covers = played.reduce((n, songs) => n + songs.filter((x) => x.isCover).length, 0);
+    return {
+      value: c.value,
+      label: c.label,
+      shows: played.length,
+      avgLength: played.length ? total / played.length : 0,
+      coverShare: total ? covers / total : 0
+    };
+  }).filter((r) => r.shows > 0);
 }
 
 function rank(map: Map<string, RankedSong>, limit: number): RankedSong[] {

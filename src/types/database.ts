@@ -73,6 +73,9 @@ export type Show = {
   /** 0003_show_ticket_time.sql 執行之前資料庫沒有這兩個欄位，所以是 optional */
   ticket_url?: string | null;
   start_time?: string | null; // 'HH:MM:SS'
+  /** 0005_show_category.sql 執行之前資料庫沒有這兩個欄位 */
+  category?: 'festival' | 'own' | 'invited' | 'campus' | 'gig_event' | null;
+  series?: string | null;
   venue_id: string | null;
   latitude: number | null;
   longitude: number | null;

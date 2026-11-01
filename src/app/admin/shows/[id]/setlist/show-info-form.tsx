@@ -4,10 +4,11 @@ import { useState, useTransition } from 'react';
 import { updateShowInfo, deleteShow } from '../../actions';
 import type { Show, Venue } from '@/types/database';
 import { toTaipeiInputValue } from '@/lib/format';
+import { SHOW_CATEGORIES } from '@/lib/show-category';
 
 type SaveState = 'idle' | 'saved' | 'error';
 
-export default function ShowInfoForm({ show, venues }: { show: Show; venues: Venue[] }) {
+export default function ShowInfoForm({ show, venues, seriesOptions = [] }: { show: Show; venues: Venue[]; seriesOptions?: string[] }) {
   const [status, setStatus] = useState(show.status);
   const [isPending, startTransition] = useTransition();
   const [saveState, setSaveState] = useState<SaveState>('idle');
@@ -58,6 +59,39 @@ export default function ShowInfoForm({ show, venues }: { show: Show; venues: Ven
         <label className="admin-label" htmlFor="slug">網址代稱（slug）</label>
         <input id="slug" name="slug" defaultValue={show.slug} required className="admin-input" />
       </div>
+
+      {/* 分類與系列要等資料庫執行過 0005_show_category.sql 才存在 */}
+      {'category' in show && (
+        <>
+          <div>
+            <label className="admin-label" htmlFor="category">演出分類</label>
+            <select id="category" name="category" defaultValue={show.category ?? ''} className="admin-input">
+              <option value="">未分類</option>
+              {SHOW_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-stone-400">一場演出只選一種。前台全部場次可依分類篩選，歌單統計也會依分類比較。</p>
+          </div>
+          <div>
+            <label className="admin-label" htmlFor="series">系列（選填）</label>
+            <input
+              id="series"
+              name="series"
+              list="series-options"
+              defaultValue={show.series ?? ''}
+              className="admin-input"
+              placeholder="例如 Tiny Me, BIG Dream Tour"
+            />
+            <datalist id="series-options">
+              {seriesOptions.map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+            <p className="mt-1 text-xs text-stone-400">同一條巡迴或每年舉辦的活動填一樣的名稱，前台就能把它們歸在一起。從下拉選已有的名稱，避免打錯字。</p>
+          </div>
+        </>
+      )}
 
       {/* 這兩個欄位要等資料庫執行過 0003_show_ticket_time.sql 才存在；還沒執行就不顯示，避免儲存失敗 */}
       {'ticket_url' in show && (

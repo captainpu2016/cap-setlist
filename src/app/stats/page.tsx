@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { getArchive } from '@/lib/archive';
-import { computeStats, groupCoversByArtist, rankTopSongs } from '@/lib/stats';
+import { computeStats, groupCoversByArtist, rankTopSongs, statsByCategory } from '@/lib/stats';
 import { formatShowDateShort, todayTaipei } from '@/lib/format';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
@@ -31,6 +31,7 @@ export default async function StatsPage() {
     { key: 'all', label: '全部', since: null }
   ].map(({ since, ...p }) => ({ ...p, ...rankTopSongs(shows, since, 10) }));
   const covers = groupCoversByArtist(s.coverSongs);
+  const byCategory = statsByCategory(shows);
   const maxYearShows = Math.max(1, ...s.byYear.map((y) => y.shows));
 
   return (
@@ -92,6 +93,37 @@ export default async function StatsPage() {
             ))}
           </ol>
         </section>
+
+        {byCategory.length > 0 && (
+          <section className="mt-14">
+            <h2 className="section-title mb-2 text-2xl">不同類型的演出</h2>
+            <p className="mb-5 text-sm text-stone-500">依演出分類比較歌單長度與翻唱比例（只算已公開歌單的場次）。</p>
+            <div className="-mx-1 overflow-x-auto">
+              <table className="w-full min-w-[420px] text-left text-sm">
+                <thead className="text-xs text-stone-500">
+                  <tr>
+                    <th className="px-1 py-2 font-normal">分類</th>
+                    <th className="px-1 py-2 text-right font-normal">場數</th>
+                    <th className="px-1 py-2 text-right font-normal">平均每場</th>
+                    <th className="px-1 py-2 text-right font-normal">翻唱占比</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stage-700/70 border-y border-stage-700 tabular-nums">
+                  {byCategory.map((r) => (
+                    <tr key={r.value}>
+                      <td className="px-1 py-3 font-bold text-paper">
+                        <a href={`/shows#c=${r.value}`} className="hover:text-marquee">{r.label}</a>
+                      </td>
+                      <td className="px-1 py-3 text-right text-stone-300">{r.shows} 場</td>
+                      <td className="px-1 py-3 text-right text-stone-300">{r.avgLength.toFixed(1)} 首</td>
+                      <td className="px-1 py-3 text-right text-stone-300">{Math.round(r.coverShare * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {s.coverSongs.length > 0 && (
           <section className="mt-14">

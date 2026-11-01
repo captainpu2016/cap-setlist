@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isShowCategory, type ShowCategory } from '@/lib/show-category';
 import { slugify, taipeiInputToIso } from '@/lib/format';
 
 async function requireSession() {
@@ -77,6 +78,17 @@ export async function updateShowInfo(formData: FormData) {
     extra.start_time = raw || null;
   }
 
+  // 分類與系列：同樣只有表單帶了欄位（資料庫已有欄位）才更新
+  const classify: { category?: ShowCategory | null; series?: string | null } = {};
+  if (formData.has('category')) {
+    const raw = (formData.get('category') as string)?.trim();
+    if (raw && !isShowCategory(raw)) throw new Error('演出分類不正確');
+    classify.category = raw && isShowCategory(raw) ? raw : null;
+  }
+  if (formData.has('series')) {
+    classify.series = (formData.get('series') as string)?.trim() || null;
+  }
+
   const { error } = await supabase
     .from('shows')
     .update({
@@ -88,7 +100,8 @@ export async function updateShowInfo(formData: FormData) {
       status,
       cover_image_url: coverImageUrl,
       setlist_reveal_at: setlistRevealAt,
-      ...extra
+      ...extra,
+      ...classify
     })
     .eq('id', id);
 
@@ -101,6 +114,24 @@ export async function updateShowInfo(formData: FormData) {
   revalidatePath('/tour');
   revalidatePath('/');
   revalidatePath('/calendar.ics');
+}
+
+/** 場次列表上直接改分類與系列：只動這兩個欄位，不影響其他資料 */
+export async function updateShowClassification(id: string, category: string, series: string) {
+  const supabase = await requireSession();
+  if (category && !isShowCategory(category)) throw new Error('演出分類不正確');
+  const { data, error } = await supabase
+    .from('shows')
+    .update({ category: category ? (category as ShowCategory) : null, series: series.trim() || null })
+    .eq('id', id)
+    .select('slug')
+    .single<{ slug: string }>();
+  if (error) throw new Error(error.message);
+
+  revalidatePath('/admin/shows');
+  revalidatePath('/shows');
+  revalidatePath('/stats');
+  revalidatePath(`/show/${data.slug}`);
 }
 
 export async function deleteShow(formData: FormData) {

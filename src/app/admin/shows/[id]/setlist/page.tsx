@@ -35,6 +35,10 @@ export default async function SetlistEditorPage({ params }: { params: { id: stri
       .returns<{ id: string; title: string; show_date: string; setlist_items: { count: number }[] }[]>()
   ]);
 
+  // 已用過的系列名稱（欄位還不存在時查詢會失敗，忽略即可）
+  const { data: seriesRows } = await supabase.from('shows').select('series').not('series', 'is', null).returns<{ series: string }[]>();
+  const seriesOptions = Array.from(new Set((seriesRows ?? []).map((r) => r.series))).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+
   const songLibrary = (songs ?? []).map((s) => ({
     ...s,
     usageCount: s.setlist_items?.[0]?.count ?? 0
@@ -46,7 +50,7 @@ export default async function SetlistEditorPage({ params }: { params: { id: stri
       <p className="mt-1 text-sm text-stone-500">歌單編輯器</p>
 
       <div className="mt-6">
-        <ShowInfoForm show={show} venues={venues ?? []} />
+        <ShowInfoForm show={show} venues={venues ?? []} seriesOptions={seriesOptions} />
       </div>
 
       <SetlistTools

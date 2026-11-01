@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
 import JsonLd from '@/components/JsonLd';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
+import ShowsExplorer from './shows-explorer';
 
 export const revalidate = 60;
 
@@ -29,14 +30,6 @@ export default async function ShowsListPage() {
   }
 
   const allShows = shows ?? [];
-
-  const groups = new Map<string, Show[]>();
-  for (const show of allShows) {
-    const year = show.show_date.slice(0, 4);
-    if (!groups.has(year)) groups.set(year, []);
-    groups.get(year)!.push(show);
-  }
-  const years = Array.from(groups.keys()).sort((a, b) => b.localeCompare(a));
 
   const url = getSiteUrl();
   const listJsonLd = {
@@ -71,39 +64,24 @@ export default async function ShowsListPage() {
           />
         </div>
 
-        <div className="mt-10 space-y-10">
-          {years.map((year) => (
-            <section key={year}>
-              <h2 className="section-title mb-3 font-accent text-2xl tracking-wider">{year}</h2>
-              <ul className="divide-y divide-stage-700 border-2 border-stage-700 bg-stage-900">
-                {(groups.get(year) ?? []).map((show) => (
-                  <li key={show.id}>
-                    <a
-                      href={`/show/${show.slug}`}
-                      className="flex flex-col gap-1 px-4 py-3 text-sm transition-colors hover:bg-stage-800 sm:flex-row sm:items-baseline sm:justify-between sm:gap-x-4"
-                    >
-                      <span className="min-w-0 break-words text-paper">{show.title}</span>
-                      <span className="min-w-0 break-words text-xs text-stone-500 sm:max-w-[45%] sm:shrink-0 sm:text-right">
-                        {formatShowDateShort(show.show_date)}
-                        {show.venue ? `・${show.venue}` : ''}
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-
-          {error && (
-            <p className="text-sm text-signal">
-              讀取場次時發生錯誤：{error.message}
-            </p>
-          )}
-
-          {!error && allShows.length === 0 && (
-            <p className="text-sm text-stone-500">還沒有上架的場次。</p>
-          )}
-        </div>
+        {error ? (
+          <p className="mt-10 text-sm text-signal">讀取場次時發生錯誤：{error.message}</p>
+        ) : allShows.length === 0 ? (
+          <p className="mt-10 text-sm text-stone-500">還沒有上架的場次。</p>
+        ) : (
+          <ShowsExplorer
+            shows={allShows.map((s) => ({
+              id: s.id,
+              slug: s.slug,
+              title: s.title,
+              date: s.show_date,
+              dateLabel: formatShowDateShort(s.show_date),
+              venue: s.venue,
+              category: s.category ?? null,
+              series: s.series ?? null
+            }))}
+          />
+        )}
       </div>
     </main>
   );
