@@ -24,19 +24,18 @@ function parseHash(hash: string): { filter: Filter; admission: Admission } {
   const p = new URLSearchParams(hash.replace(/^#/, ''));
   const a = p.get('a');
   const admission: Admission = a === 'paid' || a === 'free' ? a : 'all';
-  if (p.get('o')) return { filter: { kind: 'overseas' }, admission: 'all' };
+  if (p.get('o')) return { filter: { kind: 'overseas' }, admission };
   if (p.get('c')) return { filter: { kind: 'category', value: p.get('c')! }, admission };
-  if (p.get('s')) return { filter: { kind: 'series', value: p.get('s')! }, admission: 'all' };
-  return { filter: { kind: 'all' }, admission: 'all' };
+  if (p.get('s')) return { filter: { kind: 'series', value: p.get('s')! }, admission };
+  return { filter: { kind: 'all' }, admission };
 }
 
 function buildHash(filter: Filter, admission: Admission): string {
   const p = new URLSearchParams();
-  if (filter.kind === 'category') {
-    p.set('c', filter.value);
-    if (admission !== 'all') p.set('a', admission);
-  } else if (filter.kind === 'series') p.set('s', filter.value);
+  if (filter.kind === 'category') p.set('c', filter.value);
+  else if (filter.kind === 'series') p.set('s', filter.value);
   else if (filter.kind === 'overseas') p.set('o', '1');
+  if (admission !== 'all') p.set('a', admission);
   const q = p.toString();
   return q ? `#${q}` : '';
 }
@@ -72,7 +71,7 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
     return () => window.removeEventListener('hashchange', apply);
   }, []);
 
-  function choose(next: Filter, nextAdmission: Admission = 'all') {
+  function choose(next: Filter, nextAdmission: Admission = admission) {
     setFilter(next);
     setAdmission(nextAdmission);
     window.history.replaceState(null, '', `${window.location.pathname}${buildHash(next, nextAdmission)}`);
@@ -93,22 +92,23 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
   const hasCategories = categoryCounts.size > 0;
   const overseasCount = useMemo(() => shows.filter((s) => s.overseas).length, [shows]);
 
-  // 音樂祭/節再分付費、免費（有填入場方式才顯示）
-  const festivalAdmission = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const s of shows) if (s.category === 'festival' && s.admission) m.set(s.admission, (m.get(s.admission) ?? 0) + 1);
-    return m;
-  }, [shows]);
-
-  const visible = shows.filter((s) => {
-    if (filter.kind === 'category') {
-      if (s.category !== filter.value) return false;
-      return filter.value === 'festival' && admission !== 'all' ? s.admission === admission : true;
-    }
+  const matchesMain = (s: ExplorerShow) => {
+    if (filter.kind === 'category') return s.category === filter.value;
     if (filter.kind === 'series') return s.series === filter.value;
     if (filter.kind === 'overseas') return s.overseas;
     return true;
-  });
+  };
+
+  // 入場方式（付費、免費）可以和其他篩選一起用；數字是在目前分類／系列／海外之下的場數
+  const admissionCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of shows) if (matchesMain(s) && s.admission) m.set(s.admission, (m.get(s.admission) ?? 0) + 1);
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shows, filter]);
+  const anyAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
+
+  const visible = shows.filter((s) => matchesMain(s) && (admission === 'all' || s.admission === admission));
 
   const groups = new Map<string, ExplorerShow[]>();
   for (const s of visible) {
@@ -141,15 +141,15 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
               </Chip>
             )}
           </div>
-          {filter.kind === 'category' && filter.value === 'festival' && festivalAdmission.size > 0 && (
-            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="音樂祭依入場方式篩選">
+          {anyAdmission && (
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="依入場方式篩選">
               <span className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">入場</span>
               <Chip active={admission === 'all'} onClick={() => choose(filter, 'all')}>
-                全部 {categoryCounts.get('festival')}
+                不限
               </Chip>
-              {ADMISSIONS.filter((a) => festivalAdmission.has(a.value)).map((a) => (
+              {ADMISSIONS.map((a) => (
                 <Chip key={a.value} active={admission === a.value} onClick={() => choose(filter, a.value)}>
-                  {a.label} {festivalAdmission.get(a.value)}
+                  {a.label} {admissionCounts.get(a.value) ?? 0}
                 </Chip>
               ))}
             </div>
@@ -164,10 +164,15 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
               ))}
             </div>
           )}
-          {filter.kind !== 'all' && (
+          {(filter.kind !== 'all' || admission !== 'all') && (
             <p className="text-sm text-stone-500">
-              {filter.kind === 'category' ? categoryLabel(filter.value) ?? filter.value : filter.kind === 'overseas' ? '海外演出' : filter.value}
-              {filter.kind === 'category' && admission !== 'all' ? `（${admissionLabel(admission)}）` : ''}：共 {visible.length} 場
+              {[
+                filter.kind === 'category' ? categoryLabel(filter.value) ?? filter.value : filter.kind === 'overseas' ? '海外演出' : filter.kind === 'series' ? filter.value : null,
+                admission !== 'all' ? admissionLabel(admission) : null
+              ]
+                .filter(Boolean)
+                .join('・')}
+              ：共 {visible.length} 場
             </p>
           )}
         </div>
@@ -189,10 +194,9 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
                       {show.overseas && (
                         <span className="ml-2 inline-block border border-signal/60 px-1.5 py-px align-middle text-[10px] text-signal">海外</span>
                       )}
-                      {categoryLabel(show.category) && (
+                      {(categoryLabel(show.category) || admissionLabel(show.admission)) && (
                         <span className="ml-2 inline-block border border-stage-700 px-1.5 py-px align-middle text-[10px] text-stone-500">
-                          {categoryLabel(show.category)}
-                          {show.category === 'festival' && admissionLabel(show.admission) ? `・${admissionLabel(show.admission)}` : ''}
+                          {[categoryLabel(show.category), admissionLabel(show.admission)].filter(Boolean).join('・')}
                         </span>
                       )}
                     </span>

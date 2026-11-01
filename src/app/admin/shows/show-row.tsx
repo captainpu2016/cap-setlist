@@ -108,27 +108,23 @@ export default function ShowRow({
           </td>
           {hasAdmission && (
             <td className="px-2 py-3">
-              {cat === 'festival' ? (
-                <select
-                  value={adm}
-                  disabled={pending}
-                  onChange={(e) => {
-                    setAdm(e.target.value);
-                    save(cat, ser, e.target.value);
-                  }}
-                  aria-label="入場方式"
-                  className={`admin-input !py-1.5 text-sm ${adm ? '' : '!border-amber-300 !bg-amber-50'}`}
-                >
-                  <option value="">入場?</option>
-                  {ADMISSIONS.map((a) => (
-                    <option key={a.value} value={a.value}>
-                      {a.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <span className="px-2 text-stone-300">—</span>
-              )}
+              <select
+                value={adm}
+                disabled={pending}
+                onChange={(e) => {
+                  setAdm(e.target.value);
+                  save(cat, ser, e.target.value);
+                }}
+                aria-label="入場方式"
+                className={`admin-input !py-1.5 text-sm ${adm ? '' : '!border-amber-300 !bg-amber-50'}`}
+              >
+                <option value="">入場?</option>
+                {ADMISSIONS.map((a) => (
+                  <option key={a.value} value={a.value}>
+                    {a.label}
+                  </option>
+                ))}
+              </select>
             </td>
           )}
         </>

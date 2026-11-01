@@ -102,7 +102,7 @@ export default function ShowInfoForm({ show, venues, seriesOptions = [] }: { sho
               <option key={a.value} value={a.value}>{a.label}</option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-stone-400">主要給音樂祭/節用：前台選「音樂祭/節」時可以再分付費或免費。</p>
+          <p className="mt-1 text-xs text-stone-400">每場演出都可以填：付費或免費。前台全部場次可以依入場方式篩選。</p>
         </div>
       )}
 
