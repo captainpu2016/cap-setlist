@@ -92,6 +92,39 @@ function Stat({ label, value, note }: { label: string; value: string; note?: str
   );
 }
 
+const REF_MARK = /\n+參考資料\n/;
+const URL_AT_END = /^(.*?)\s*(https?:\/\/\S+)$/;
+
+/** 介紹正文 +（選填）結尾的「參考資料」：後台把「參考資料」獨立一行，其後每行「名稱 網址」，這裡會變成可點的連結 */
+function SongDescription({ text }: { text: string }) {
+  const [body, refs] = text.split(REF_MARK);
+  const refLines = (refs ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+  return (
+    <>
+      <p className="max-w-xl whitespace-pre-line leading-relaxed text-stone-300">{body}</p>
+      {refLines.length > 0 && (
+        <div className="mt-6 max-w-xl border-t border-stage-700 pt-4">
+          <h3 className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">參考資料</h3>
+          <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-stone-500">
+            {refLines.map((line) => {
+              const m = line.match(URL_AT_END);
+              if (!m) return <li key={line}>{line}</li>;
+              return (
+                <li key={line} className="break-all">
+                  {m[1] && <span>{m[1]}　</span>}
+                  <a href={m[2]} target="_blank" rel="noopener noreferrer nofollow" className="underline decoration-stage-700 underline-offset-2 hover:text-marquee">
+                    {m[2]}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default async function SongPage({ params }: { params: { id: string } }) {
   const data = await load(params.id);
   if (!data) notFound();
@@ -147,7 +180,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
           {extras.description && (
             <section className="mt-10">
               <h2 className="section-title mb-4 text-2xl">關於這首歌</h2>
-              <p className="max-w-xl whitespace-pre-line leading-relaxed text-stone-300">{extras.description}</p>
+              <SongDescription text={extras.description} />
             </section>
           )}
 

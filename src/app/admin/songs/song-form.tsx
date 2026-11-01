@@ -121,7 +121,7 @@ export default function SongForm({ song, albums }: { song?: Song; albums: Album[
             defaultValue={song.description ?? ''}
             rows={5}
             className="admin-input text-sm"
-            placeholder={'寫一段這首歌的介紹，例如原唱是誰、為什麼選這首、第一次是在哪一場唱的。會顯示在前台的歌曲頁，翻唱歌尤其適合。'}
+            placeholder={'寫一段這首歌的介紹，例如原唱是誰、為什麼選這首、第一次是在哪一場唱的。會顯示在前台的歌曲頁，翻唱歌尤其適合。要附來源的話，在最後空一行寫「參考資料」，下面每行寫「名稱 網址」，前台會變成可點的連結。'}
           />
         </div>
       )}
