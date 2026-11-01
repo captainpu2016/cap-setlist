@@ -15,6 +15,7 @@ export interface ExplorerShow {
   series: string | null;
   admission: string | null;
   overseas: boolean;
+  country: string | null;
   city: string | null;
 }
 

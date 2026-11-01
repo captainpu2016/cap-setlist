@@ -65,3 +65,27 @@ export function isOverseasVenue(venue: string | null | undefined): boolean {
   const city = getCity(venue ?? null);
   return Boolean(city) && !TAIWAN_CITIES.has(city as string);
 }
+
+/** 城市由北到南排序：台灣的城市在前（依緯度，北→南），海外城市在最後（同樣北→南）。查不到座標的城市排在各自區段最後 */
+export function sortCitiesNorthToSouth(cities: string[]): string[] {
+  const lat = (c: string) => CITY_COORDINATES[c]?.[0] ?? -Infinity;
+  const rank = (c: string) => (TAIWAN_CITIES.has(c) ? 0 : 1);
+  return [...cities].sort((a, b) => rank(a) - rank(b) || lat(b) - lat(a) || a.localeCompare(b, 'zh-Hant'));
+}
+
+/** 海外城市所屬國家（之後有新的海外城市，加一筆進來；沒列到的海外城市會歸在「其他海外」） */
+const CITY_COUNTRY: Record<string, string> = {
+  東京: '日本', 大阪: '日本', 名古屋: '日本', 京都: '日本', 橫濱: '日本', 福岡: '日本', 札幌: '日本', 神戶: '日本',
+  仙台: '日本', 廣島: '日本', 下北沢: '日本', 沖繩: '日本',
+  首爾: '韓國', 釜山: '韓國',
+  香港: '香港', 澳門: '澳門',
+  新加坡: '新加坡', 吉隆坡: '馬來西亞', 曼谷: '泰國', 上海: '中國', 北京: '中國', 深圳: '中國', 廣州: '中國'
+};
+
+/** 一場演出所在的國家：台灣、日本…；沒填場地回傳 null，城市不在對照表的海外城市回傳「其他海外」 */
+export function countryOfVenue(venue: string | null | undefined): string | null {
+  const city = getCity(venue ?? null);
+  if (!city) return null;
+  if (TAIWAN_CITIES.has(city)) return '台灣';
+  return CITY_COUNTRY[city] ?? '其他海外';
+}

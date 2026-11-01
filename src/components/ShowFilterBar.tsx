@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ADMISSIONS, SHOW_CATEGORIES } from '@/lib/show-category';
+import { sortCitiesNorthToSouth } from '@/lib/geo';
 import {
   EMPTY_FILTER,
   buildHash,
@@ -51,7 +52,7 @@ function Field({ label, value, onChange, children }: { label: string; value: str
   );
 }
 
-/** 篩選列：分類、地區（選了台灣或海外會多一個城市選單）、入場三組下拉選單，可以同時使用 */
+/** 篩選列（由左到右）：分類、入場、國家，選了國家之後多一個城市；可以同時使用 */
 export default function ShowFilterBar({
   shows,
   filter,
@@ -61,28 +62,33 @@ export default function ShowFilterBar({
   shows: FilterableShow[];
   filter: ShowFilter;
   onChange: (filter: ShowFilter) => void;
-  /** 篩選中時顯示在選單下方的說明（例如「海外演出：共 7 場」） */
+  /** 篩選中時顯示在選單下方的說明（例如「日本：共 7 場」） */
   caption?: string;
 }) {
   const categories = useMemo(() => {
     const present = new Set(shows.map((s) => s.category).filter(Boolean));
     return SHOW_CATEGORIES.filter((c) => present.has(c.value));
   }, [shows]);
-  const hasOverseas = useMemo(() => shows.some((s) => s.overseas), [shows]);
   const hasAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
 
-  // 目前選的地區（台灣或海外）底下出現過的城市，場次多的排前面
-  const cities = useMemo(() => {
-    if (filter.region === 'all') return [];
+  // 出現過的國家：台灣在前，其他依場次數
+  const countries = useMemo(() => {
     const m = new Map<string, number>();
-    for (const s of shows) {
-      if ((filter.region === 'overseas') !== s.overseas || !s.city) continue;
-      m.set(s.city, (m.get(s.city) ?? 0) + 1);
-    }
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant')).map(([name]) => name);
-  }, [shows, filter.region]);
+    for (const s of shows) if (s.country) m.set(s.country, (m.get(s.country) ?? 0) + 1);
+    return Array.from(m.entries())
+      .sort((a, b) => (a[0] === '台灣' ? -1 : b[0] === '台灣' ? 1 : b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant')))
+      .map(([name]) => name);
+  }, [shows]);
 
-  if (categories.length === 0 && !hasOverseas) return null;
+  // 目前選的國家底下出現過的城市，由北到南
+  const cities = useMemo(() => {
+    if (!filter.country) return [];
+    const m = new Set<string>();
+    for (const s of shows) if (s.country === filter.country && s.city) m.add(s.city);
+    return sortCitiesNorthToSouth(Array.from(m));
+  }, [shows, filter.country]);
+
+  if (categories.length === 0 && countries.length < 2) return null;
 
   return (
     <div className="mt-8">
@@ -97,15 +103,24 @@ export default function ShowFilterBar({
             ))}
           </Field>
         )}
-        {hasOverseas && (
-          <Field
-            label="地區"
-            value={filter.region === 'all' ? '' : filter.region}
-            onChange={(v) => onChange({ ...filter, region: (v || 'all') as ShowFilter['region'], city: null })}
-          >
+        {hasAdmission && (
+          <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>
+            <option value="">不限</option>
+            {ADMISSIONS.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label}
+              </option>
+            ))}
+          </Field>
+        )}
+        {countries.length > 1 && (
+          <Field label="國家" value={filter.country ?? ''} onChange={(v) => onChange({ ...filter, country: v || null, city: null })}>
             <option value="">全部</option>
-            <option value="taiwan">台灣</option>
-            <option value="overseas">海外</option>
+            {countries.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
           </Field>
         )}
         {cities.length > 0 && (
@@ -114,16 +129,6 @@ export default function ShowFilterBar({
             {cities.map((name) => (
               <option key={name} value={name}>
                 {name}
-              </option>
-            ))}
-          </Field>
-        )}
-        {hasAdmission && (
-          <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>
-            <option value="">不限</option>
-            {ADMISSIONS.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label}
               </option>
             ))}
           </Field>

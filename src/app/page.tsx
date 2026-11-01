@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getSiteContent } from '@/lib/site-settings';
 import { getCity, todayTaipei } from '@/lib/format';
 import ShowListSection from './show-list-section';
+import { sortCitiesNorthToSouth } from '@/lib/geo';
 import ShowTags from '@/components/ShowTags';
 import SiteLogo from '@/components/SiteLogo';
 import Stars from '@/components/Stars';
@@ -46,7 +47,8 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   );
   const cities = Array.from(
     new Set(allShows.map((s) => getCity(s.venue)).filter((c): c is string => Boolean(c)))
-  ).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+  );
+  const sortedCities = sortCitiesNorthToSouth(cities);
 
   const selectedYear = searchParams.year ?? '';
   const selectedMonth = searchParams.month ?? '';
@@ -158,7 +160,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
             years={years}
             months={months}
             venues={venues}
-            cities={cities}
+            cities={sortedCities}
             selectedYear={selectedYear}
             selectedMonth={selectedMonth}
             selectedVenue={selectedVenue}

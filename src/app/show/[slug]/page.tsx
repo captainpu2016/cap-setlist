@@ -9,7 +9,7 @@ import { getShowLabels } from '@/lib/song-insights';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
 import { admissionLabel, categoryLabel } from '@/lib/show-category';
-import { isOverseasVenue } from '@/lib/geo';
+import { countryOfVenue, isOverseasVenue } from '@/lib/geo';
 import type { Show, SetlistItemWithSong } from '@/types/database';
 import CaptainBadge from '@/components/CaptainBadge';
 import ShareButton from '@/components/ShareButton';
@@ -226,7 +226,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
               {(categoryLabel(show.category) || show.series || isOverseasVenue(show.venue) || admissionLabel(show.admission)) && (
                 <p className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {isOverseasVenue(show.venue) && (
-                    <a href="/shows#o=1" className="border border-signal/60 px-2 py-0.5 text-signal transition-colors hover:bg-signal hover:text-paper">
+                    <a href={`/shows#co=${encodeURIComponent(countryOfVenue(show.venue) ?? '')}`} className="border border-signal/60 px-2 py-0.5 text-signal transition-colors hover:bg-signal hover:text-paper">
                       海外
                     </a>
                   )}

@@ -6,7 +6,7 @@ import BackLink from '@/components/BackLink';
 import JsonLd from '@/components/JsonLd';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
 import ShowsExplorer from './shows-explorer';
-import { isOverseasVenue } from '@/lib/geo';
+import { countryOfVenue, isOverseasVenue } from '@/lib/geo';
 
 export const revalidate = 60;
 
@@ -82,6 +82,7 @@ export default async function ShowsListPage() {
               series: s.series ?? null,
               admission: s.admission ?? null,
               overseas: isOverseasVenue(s.venue),
+              country: countryOfVenue(s.venue),
               city: getCity(s.venue)
             }))}
           />

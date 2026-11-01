@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getArchive } from '@/lib/archive';
 import { getCity, todayTaipei } from '@/lib/format';
-import { isOverseasVenue } from '@/lib/geo';
+import { countryOfVenue, isOverseasVenue } from '@/lib/geo';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
 import PageHeader from '@/components/PageHeader';
@@ -29,6 +29,7 @@ export default async function StatsPage() {
     series: x.series,
     admission: x.admission,
     overseas: isOverseasVenue(x.venue),
+    country: countryOfVenue(x.venue),
     city: getCity(x.venue),
     songs: x.songs.map((song) => ({ id: song.id, title: song.title, isCover: song.isCover }))
   }));
