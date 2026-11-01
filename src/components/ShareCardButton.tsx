@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 export default function ShareCardButton({ slug, title }: { slug: string; title: string }) {
   const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ export default function ShareCardButton({ slug, title }: { slug: string; title: 
   }
 
   async function handleClick() {
+    trackEvent('share_card_download', { show_slug: slug });
     setLoading(true);
     setErrorMessage(null);
     try {

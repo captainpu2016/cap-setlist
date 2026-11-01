@@ -1,6 +1,7 @@
 'use client';
 
 import { buildCalendar } from '@/lib/ics';
+import { trackEvent } from '@/lib/analytics';
 
 export default function AddToCalendarButton({
   title,
@@ -18,6 +19,7 @@ export default function AddToCalendarButton({
   ticketUrl?: string | null;
 }) {
   function handleClick() {
+    trackEvent('calendar_subscribe', { method: 'add_event' });
     const ics = buildCalendar(title, [
       {
         uid: `${dateStr}-${title}@normalcaptain`.replace(/\s+/g, '-'),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 function targetFor(date: string, startTime: string | null): number {
   const time = startTime ? startTime.slice(0, 5) : '00:00';
@@ -62,11 +63,11 @@ export default function UpcomingInfo({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {ticketUrl && (
-            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" className="btn-primary">
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer" className="btn-primary" onClick={() => trackEvent('ticket_click')}>
               購票 →
             </a>
           )}
-          <a href={webcalUrl} className="btn-ghost">
+          <a href={webcalUrl} className="btn-ghost" onClick={() => trackEvent('calendar_subscribe', { method: 'feed' })}>
             訂閱演出行事曆
           </a>
         </div>
