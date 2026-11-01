@@ -36,6 +36,8 @@ export type Song = {
   youtube_url: string | null;
   dropbox_url: string | null;
   lyrics: string | null;
+  /** 歌曲介紹（需先執行 0004_song_description.sql，沒執行前不存在） */
+  description?: string | null;
   album_id: string | null;
   track_number: number | null;
   created_at: string;

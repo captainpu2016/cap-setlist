@@ -111,6 +111,21 @@ export default function SongForm({ song, albums }: { song?: Song; albums: Album[
         />
       </div>
 
+      {/* 要執行過 0004_song_description.sql 才有這個欄位；還沒執行就不顯示，避免儲存失敗 */}
+      {song && 'description' in song && (
+        <div>
+          <label className="admin-label" htmlFor="description">歌曲介紹（選填）</label>
+          <textarea
+            id="description"
+            name="description"
+            defaultValue={song.description ?? ''}
+            rows={5}
+            className="admin-input text-sm"
+            placeholder={'寫一段這首歌的介紹，例如原唱是誰、為什麼選這首、第一次是在哪一場唱的。會顯示在前台的歌曲頁，翻唱歌尤其適合。'}
+          />
+        </div>
+      )}
+
       <div>
         <label className="admin-label" htmlFor="lyrics">歌詞（選填）</label>
         <textarea

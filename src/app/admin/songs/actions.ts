@@ -27,6 +27,9 @@ export async function upsertSong(formData: FormData) {
   const albumId = (formData.get('album_id') as string)?.trim() || null;
   const trackNumberRaw = formData.get('track_number') as string;
   const lyrics = (formData.get('lyrics') as string)?.trim() || null;
+  // 還沒執行 0004 migration 時表單不會有這個欄位，就不要動這一欄
+  const hasDescription = formData.has('description');
+  const description = (formData.get('description') as string)?.trim() || null;
 
   if (!title) throw new Error('歌名為必填');
 
@@ -39,7 +42,8 @@ export async function upsertSong(formData: FormData) {
     dropbox_url: dropboxUrl,
     album_id: albumId,
     track_number: trackNumberRaw ? Number(trackNumberRaw) : null,
-    lyrics
+    lyrics,
+    ...(hasDescription ? { description } : {})
   };
 
   if (id && id !== 'new') {

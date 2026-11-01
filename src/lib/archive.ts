@@ -48,6 +48,13 @@ export function isIntroSong(title: string): boolean {
   return /^\s*intro\b/i.test(title);
 }
 
+/** 翻唱歌的歌名慣例是「(Cover) 歌名 (原唱)」：拆出歌名與原唱，沒有括號時原唱為 null */
+export function parseCoverTitle(title: string): { name: string; artist: string | null } {
+  const shown = displaySongTitle(title);
+  const m = shown.match(/^(.*?)\s*[(（]([^()（）]+)[)）]\s*$/);
+  return m && m[1] ? { name: m[1], artist: m[2].trim() } : { name: shown, artist: null };
+}
+
 /** 顯示用歌名：去掉開頭的「(Cover) 」標記 */
 export function displaySongTitle(title: string): string {
   return title.replace(/^\s*[(（]cover[)）]\s*/i, '');

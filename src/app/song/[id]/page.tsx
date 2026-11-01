@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { displaySongTitle, getArchive } from '@/lib/archive';
+import { displaySongTitle, getArchive, parseCoverTitle } from '@/lib/archive';
+import { createPublicClient } from '@/lib/supabase/public';
+import ListenLinks, { type ListenLink } from './listen-links';
 import { formatShowDate, formatShowDateShort } from '@/lib/format';
 import { getSongProfile } from '@/lib/song-insights';
 import { breadcrumbJsonLd, getSiteUrl, musicGroupJsonLd } from '@/lib/seo';
@@ -9,6 +11,37 @@ import PageHeader from '@/components/PageHeader';
 import BackLink from '@/components/BackLink';
 
 export const revalidate = 3600;
+
+interface SongExtras {
+  description: string | null;
+  links: ListenLink[];
+}
+
+/** 聆聽連結與歌曲介紹不在 getArchive 裡；description 欄位要等 0004 migration 執行後才有，查不到就退回不含它的查詢 */
+async function loadExtras(id: string): Promise<SongExtras> {
+  const supabase = createPublicClient();
+  type Row = { spotify_track_id: string | null; apple_music_url: string | null; youtube_url: string | null; description?: string | null };
+  let row: Row | null = null;
+  const first = await supabase
+    .from('songs')
+    .select('spotify_track_id, apple_music_url, youtube_url, description')
+    .eq('id', id)
+    .maybeSingle<Row>();
+  if (!first.error) row = first.data;
+  else {
+    const fallback = await supabase
+      .from('songs')
+      .select('spotify_track_id, apple_music_url, youtube_url')
+      .eq('id', id)
+      .maybeSingle<Row>();
+    row = fallback.data;
+  }
+  const links: ListenLink[] = [];
+  if (row?.spotify_track_id) links.push({ platform: 'spotify', label: 'Spotify', href: `https://open.spotify.com/track/${row.spotify_track_id}` });
+  if (row?.apple_music_url) links.push({ platform: 'apple_music', label: 'Apple Music', href: row.apple_music_url });
+  if (row?.youtube_url) links.push({ platform: 'youtube', label: 'YouTube', href: row.youtube_url });
+  return { description: row?.description?.trim() || null, links };
+}
 
 async function load(id: string) {
   const { songs, shows } = await getArchive();
@@ -23,6 +56,18 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
   if (!data) return { title: '找不到歌曲｜普通隊長' };
   const { song, profile } = data;
   const name = displaySongTitle(song.title);
+
+  if (song.isCover) {
+    const c = parseCoverTitle(song.title);
+    const coverTitle = `${c.name}${c.artist ? `（${c.artist}）` : ''} 翻唱｜普通隊長`;
+    const coverDesc = `普通隊長翻唱${c.artist ? `${c.artist}的` : ''}〈${c.name}〉，首次演出是 ${formatShowDate(profile.first.date)}，最近一次是 ${formatShowDate(profile.last.date)}。`;
+    return {
+      title: coverTitle,
+      description: coverDesc,
+      alternates: { canonical: `/song/${song.id}` },
+      openGraph: { title: coverTitle, description: coverDesc, type: 'website', locale: 'zh_TW' }
+    };
+  }
 
   const title = `${name} 唱過哪些場次｜普通隊長`;
   const description = `普通隊長演出過〈${name}〉共 ${profile.plays} 場，首次演出是 ${formatShowDate(profile.first.date)}，最近一次是 ${formatShowDate(profile.last.date)}${
@@ -54,6 +99,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
 
   const url = getSiteUrl();
   const name = displaySongTitle(song.title);
+  const extras = await loadExtras(song.id);
   const maxYearRate = Math.max(0.01, ...p.byYear.map((y) => y.plays / y.shows));
 
   const jsonLd = [
@@ -73,6 +119,65 @@ export default async function SongPage({ params }: { params: { id: string } }) {
       { name: name, path: `/song/${song.id}` }
     ])
   ];
+
+  if (song.isCover) {
+    const c = parseCoverTitle(song.title);
+    return (
+      <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
+        <JsonLd data={jsonLd} />
+        <div className="mx-auto max-w-2xl">
+          <BackLink href="/stats" label="歌單統計" />
+
+          <div className="mt-6">
+            <PageHeader eyebrow="Cover" title={c.name} />
+          </div>
+
+          {c.artist && (
+            <p className="mt-4 text-lg text-stone-300">
+              原唱　<strong className="font-bold text-paper">{c.artist}</strong>
+            </p>
+          )}
+
+          {extras.links.length > 0 && (
+            <div className="mt-6">
+              <ListenLinks links={extras.links} songTitle={song.title} />
+            </div>
+          )}
+
+          {extras.description && (
+            <section className="mt-10">
+              <h2 className="section-title mb-4 text-2xl">關於這首歌</h2>
+              <p className="max-w-xl whitespace-pre-line leading-relaxed text-stone-300">{extras.description}</p>
+            </section>
+          )}
+
+          <p className="mt-10 max-w-xl leading-relaxed text-stone-400">
+            普通隊長翻唱過這首歌 {p.plays} 場，首次是 {formatShowDate(p.first.date)}
+            {p.last.date !== p.first.date && <>，最近一次是 {formatShowDate(p.last.date)}</>}。
+          </p>
+
+          <section className="mt-6">
+            <h2 className="section-title mb-4 text-xl">翻唱過的場次</h2>
+            <ol className="border-y border-stage-700">
+              {p.appearances.map((a) => (
+                <li key={a.slug} className="border-b border-stage-700/70 last:border-b-0">
+                  <a href={`/show/${a.slug}`} className="flex items-center justify-between gap-4 px-2 py-3 text-sm transition-colors hover:bg-stage-900">
+                    <span className="min-w-0">
+                      <span className="block truncate text-paper">{a.title}</span>
+                      {a.venue && <span className="block truncate text-xs text-stone-500">{a.venue}</span>}
+                    </span>
+                    <time dateTime={a.date} className="shrink-0 text-xs text-stone-500">
+                      {formatShowDateShort(a.date)}
+                    </time>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
