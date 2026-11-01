@@ -73,7 +73,8 @@ export default function ShowFilterBar({
   admission,
   onChange,
   caption,
-  collapsible = false
+  collapsible = false,
+  idleText
 }: {
   shows: FilterableShow[];
   filter: Filter;
@@ -83,6 +84,8 @@ export default function ShowFilterBar({
   caption?: string;
   /** true：預設收合，只顯示目前的篩選條件，按「篩選」才展開所有按鈕 */
   collapsible?: boolean;
+  /** 收合且沒有任何篩選時顯示的說明；沒給就用預設的「目前統計全部…」 */
+  idleText?: string;
 }) {
   const [open, setOpen] = useState(false);
   const categoryCounts = useMemo(() => {
@@ -137,7 +140,7 @@ export default function ShowFilterBar({
               </button>
             </span>
           ) : (
-            <span className="text-sm text-stone-500">目前統計全部 {shows.length} 場；可依分類、海外、入場方式、系列縮小範圍</span>
+            <span className="text-sm text-stone-500">{idleText ?? `目前統計全部 ${shows.length} 場；可依分類、海外、入場方式、系列縮小範圍`}</span>
           )}
         </div>
       )}

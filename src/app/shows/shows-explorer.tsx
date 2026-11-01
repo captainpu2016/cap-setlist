@@ -38,6 +38,8 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
         filter={filter}
         admission={admission}
         onChange={choose}
+        collapsible
+        idleText={`目前顯示全部 ${shows.length} 場；可依分類、海外、入場方式、系列篩選`}
         caption={filtered ? `${filterLabel(filter, admission)}：共 ${visible.length} 場` : undefined}
       />
 
