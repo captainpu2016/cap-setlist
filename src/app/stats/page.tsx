@@ -104,18 +104,24 @@ export default async function StatsPage() {
               ['台灣樂團', covers.taiwan]
             ].map(([label, groups]) =>
               (groups as typeof covers.foreign).length > 0 ? (
-                <div key={label as string} className="mt-6 first:mt-0">
-                  <h3 className="mb-2 font-accent text-xs uppercase tracking-[0.25em] text-stone-500">{label as string}</h3>
-                  <ul className="grid gap-1.5 sm:grid-cols-2">
+                <div key={label as string} className="mt-8 first:mt-0">
+                  <h3 className="mb-1 flex items-baseline gap-3 font-accent text-xs uppercase tracking-[0.25em] text-signal">
+                    {label as string}
+                    <span className="text-stone-600">{(groups as typeof covers.foreign).length} 組</span>
+                  </h3>
+                  <ul className="border-y border-stage-700">
                     {(groups as typeof covers.foreign).map((g) => (
-                      <li key={g.artist} className="min-w-0 border border-stage-700 border-l-2 border-l-marquee bg-stage-900">
-                        <p className="truncate px-3 pt-2.5 text-xs font-bold text-marquee">{g.artist}</p>
-                        <ul className="px-1 pb-1.5 pt-1">
+                      <li
+                        key={g.artist}
+                        className="flex flex-col gap-2 border-b border-stage-700/70 py-3 last:border-b-0 sm:flex-row sm:items-baseline sm:gap-6"
+                      >
+                        <p className="shrink-0 text-sm font-bold text-paper sm:w-52">{g.artist}</p>
+                        <ul className="flex min-w-0 flex-wrap gap-1.5">
                           {g.songs.map((song) => (
-                            <li key={song.id}>
+                            <li key={song.id} className="min-w-0 max-w-full">
                               <a
                                 href={`/song/${song.id}`}
-                                className="block truncate px-2 py-1.5 text-sm text-paper transition-colors hover:text-marquee"
+                                className="block max-w-full truncate border border-stage-700 bg-stage-900 px-2.5 py-1 text-xs text-stone-300 transition-colors hover:border-marquee hover:text-marquee"
                               >
                                 {song.name}
                               </a>
