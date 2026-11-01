@@ -38,38 +38,40 @@ export default function ClassificationCell({
   }
 
   return (
-    <div className="min-w-[11rem] space-y-1.5">
-      <select
-        value={cat}
-        disabled={pending}
-        onChange={(e) => {
-          setCat(e.target.value);
-          save(e.target.value, ser);
-        }}
-        aria-label="演出分類"
-        className={`admin-input !py-1 text-xs ${cat ? '' : 'border-amber-300 bg-amber-50'}`}
-      >
-        <option value="">未分類</option>
-        {SHOW_CATEGORIES.map((c) => (
-          <option key={c.value} value={c.value}>
-            {c.label}
-          </option>
-        ))}
-      </select>
-      <input
-        value={ser}
-        disabled={pending}
-        list="admin-series-options"
-        onChange={(e) => setSer(e.target.value)}
-        onBlur={() => save(cat, ser)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-        }}
-        placeholder="系列（選填）"
-        aria-label="系列"
-        className="admin-input !py-1 text-xs"
-      />
-      <p className="h-4 text-[11px]">
+    <div>
+      <div className="flex gap-2">
+        <select
+          value={cat}
+          disabled={pending}
+          onChange={(e) => {
+            setCat(e.target.value);
+            save(e.target.value, ser);
+          }}
+          aria-label="演出分類"
+          className={`admin-input !w-28 shrink-0 !py-1.5 text-sm ${cat ? '' : '!border-amber-300 !bg-amber-50'}`}
+        >
+          <option value="">未分類</option>
+          {SHOW_CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={ser}
+          disabled={pending}
+          list="admin-series-options"
+          onChange={(e) => setSer(e.target.value)}
+          onBlur={() => save(cat, ser)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          }}
+          placeholder="系列（選填）"
+          aria-label="系列"
+          className="admin-input min-w-0 flex-1 !py-1.5 text-sm"
+        />
+      </div>
+      <p className="mt-1 h-4 text-[11px]">
         {pending && <span className="text-stone-400">儲存中…</span>}
         {state === 'saved' && <span className="text-green-600">✓ 已儲存</span>}
         {state === 'error' && <span className="text-red-600">儲存失敗，請再試一次</span>}
