@@ -241,7 +241,13 @@ export default async function ShowPage({ params }: { params: { slug: string } })
                     </a>
                   )}
                   {show.series && (
-                    <span className="border border-stage-700 px-2 py-0.5 text-stone-300">{show.series}</span>
+                    <a
+                      href={`/shows#s=${encodeURIComponent(show.series)}`}
+                      title="查看同一系列的所有場次"
+                      className="border border-stage-700 px-2 py-0.5 text-stone-300 transition-colors hover:border-marquee hover:text-marquee"
+                    >
+                      {show.series}
+                    </a>
                   )}
                 </p>
               )}

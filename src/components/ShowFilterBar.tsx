@@ -134,6 +134,14 @@ export default function ShowFilterBar({
           </Field>
         )}
       </div>
+      {filter.series && (
+        <p className="mt-3 inline-flex items-center gap-2 border border-signal bg-signal/15 px-2.5 py-1 text-xs font-bold text-paper">
+          系列：{filter.series}
+          <button type="button" onClick={() => onChange({ ...filter, series: null })} aria-label="取消系列篩選" className="text-stone-300 hover:text-paper">
+            ✕
+          </button>
+        </p>
+      )}
       {(isFiltered(filter) || caption) && (
         <p className="mt-3 flex flex-wrap items-center gap-x-3 text-sm text-stone-500">
           {caption}
