@@ -50,7 +50,7 @@ async function readDeviceId(request: Request): Promise<string | null> {
 /** 共用檢查：來源、速率、裝置代碼、場次存在且已發布且已開演 */
 async function guard(request: Request, showId: string) {
   if (!sameOrigin(request)) return { error: NextResponse.json({ error: '來源不被允許' }, { status: 403 }) };
-  if (rateLimited(`attend:${clientIp(request)}`, 12, 60_000)) {
+  if (rateLimited(`attend:${clientIp(request)}`, 40, 60_000)) {
     return { error: NextResponse.json({ error: '操作太頻繁，請稍後再試。' }, { status: 429 }) };
   }
   if (!UUID.test(showId)) return { error: NextResponse.json({ error: '場次不存在' }, { status: 404 }) };
@@ -90,14 +90,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if ('error' in g) return g.error;
   const { admin, deviceId } = g;
 
-  // 跨實例的總量限制：同一個裝置一小時內最多回報 20 場；同一場一分鐘內最多 120 筆新增
+  // 跨實例的總量限制：同一個裝置一小時內最多回報 300 場（要讓人一次補標完歷年場次）；同一場一分鐘內最多 120 筆新增
   const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
   const minuteAgo = new Date(Date.now() - 60_000).toISOString();
   const [{ count: deviceRecent }, { count: showRecent }] = await Promise.all([
     admin.from('show_attendances').select('*', { count: 'exact', head: true }).eq('device_id', deviceId).gte('created_at', hourAgo),
     admin.from('show_attendances').select('*', { count: 'exact', head: true }).eq('show_id', params.id).gte('created_at', minuteAgo)
   ]);
-  if ((deviceRecent ?? 0) >= 20 || (showRecent ?? 0) >= 120) {
+  if ((deviceRecent ?? 0) >= 300 || (showRecent ?? 0) >= 120) {
     return NextResponse.json({ error: '操作太頻繁，請稍後再試。' }, { status: 429 });
   }
 

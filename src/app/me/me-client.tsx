@@ -175,7 +175,16 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
         </p>
       )}
 
-      {error && <p className="mt-4 text-sm text-signal">{error}</p>}
+      {error && (
+        <div
+          role="alert"
+          onClick={() => setError(null)}
+          className="fixed inset-x-4 bottom-20 z-50 border-2 border-signal bg-stage-950 px-4 py-3 text-sm text-paper shadow-lg sm:inset-x-auto sm:bottom-6 sm:right-6 sm:max-w-sm"
+        >
+          {error}
+          <span className="ml-2 text-xs text-stone-500">（點一下關閉）</span>
+        </div>
+      )}
 
       <section className="mt-12">
         <h2 className="section-title mb-2 text-2xl">我去過哪幾場？</h2>
