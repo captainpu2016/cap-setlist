@@ -91,7 +91,7 @@ export async function updateShowInfo(formData: FormData) {
 
   if (formData.has('admission')) {
     const raw = (formData.get('admission') as string)?.trim();
-    (classify as { admission?: 'paid' | 'free' | null }).admission = isAdmission(raw) ? raw : null;
+    (classify as { admission?: 'paid' | 'free' | 'private' | null }).admission = isAdmission(raw) ? raw : null;
   }
 
   const { error } = await supabase

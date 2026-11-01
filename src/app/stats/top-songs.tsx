@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { displaySongTitle } from '@/lib/archive';
+import { displaySongTitle } from '@/lib/song-title';
 import type { RankedSong } from '@/lib/stats';
 
 export interface TopSongsPeriod {

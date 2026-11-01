@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getSiteContent } from '@/lib/site-settings';
 import { getCity, todayTaipei } from '@/lib/format';
 import ShowListSection from './show-list-section';
+import ShowTags from '@/components/ShowTags';
 import SiteLogo from '@/components/SiteLogo';
 import Stars from '@/components/Stars';
 import JsonLd from '@/components/JsonLd';
@@ -141,6 +142,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
                     {featured.venue ? `・${featured.venue}` : ''}
                     {daysUntil !== null && (daysUntil === 0 ? '・就是今天' : `・${daysUntil} 天後`)}
                   </p>
+                  <ShowTags show={featured} className="mt-1.5" />
                 </div>
                 <span aria-hidden className="shrink-0 font-accent text-xl text-signal">→</span>
               </a>

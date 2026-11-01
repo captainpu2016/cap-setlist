@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { displaySongTitle, getArchive, parseCoverTitle } from '@/lib/archive';
 import { createPublicClient } from '@/lib/supabase/public';
 import ListenLinks, { type ListenLink } from './listen-links';
+import ShowTags from '@/components/ShowTags';
 import { formatShowDate, formatShowDateShort } from '@/lib/format';
 import { getSongProfile } from '@/lib/song-insights';
 import { breadcrumbJsonLd, getSiteUrl, musicGroupJsonLd } from '@/lib/seo';
@@ -48,7 +49,8 @@ async function load(id: string) {
   const song = songs.find((s) => s.id === id);
   if (!song) return null;
   const profile = getSongProfile(shows, id);
-  return profile ? { song, profile } : null;
+  const showBySlug = new Map(shows.map((x) => [x.slug, x]));
+  return profile ? { song, profile, showBySlug } : null;
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
@@ -128,7 +130,7 @@ function SongDescription({ text }: { text: string }) {
 export default async function SongPage({ params }: { params: { id: string } }) {
   const data = await load(params.id);
   if (!data) notFound();
-  const { song, profile: p } = data;
+  const { song, profile: p, showBySlug } = data;
 
   const url = getSiteUrl();
   const name = displaySongTitle(song.title);
@@ -198,6 +200,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
                     <span className="min-w-0">
                       <span className="block truncate text-paper">{a.title}</span>
                       {a.venue && <span className="block truncate text-xs text-stone-500">{a.venue}</span>}
+                      <ShowTags show={showBySlug.get(a.slug) ?? {}} className="mt-1" />
                     </span>
                     <time dateTime={a.date} className="shrink-0 text-xs text-stone-500">
                       {formatShowDateShort(a.date)}
@@ -299,6 +302,7 @@ export default async function SongPage({ params }: { params: { id: string } }) {
                     <span className="block truncate text-xs text-stone-500">
                       {a.venue ? `${a.venue}・` : ''}第 {a.position} 首 / 共 {a.total} 首
                     </span>
+                    <ShowTags show={showBySlug.get(a.slug) ?? {}} className="mt-1" />
                   </span>
                   <time dateTime={a.date} className="shrink-0 text-xs text-stone-500">
                     {formatShowDateShort(a.date)}

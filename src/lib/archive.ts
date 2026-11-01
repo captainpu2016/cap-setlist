@@ -14,7 +14,7 @@ export type ArchiveShow = {
   /** 演出分類與系列；資料庫還沒執行 0005_show_category.sql 時都是 null */
   category: ShowCategory | null;
   series: string | null;
-  admission: 'paid' | 'free' | null;
+  admission: 'paid' | 'free' | 'private' | null;
   songs: { id: string; title: string; durationSeconds: number | null; isCover: boolean }[];
   /** 歌單是否已公開（未公開時 songs 是空的，避免提早洩漏） */
   revealed: boolean;
@@ -43,27 +43,9 @@ interface Row {
   }[];
 }
 
-/** 翻唱歌：專輯標記為翻唱專輯，或歌名以「(Cover)」開頭（後台沒歸到翻唱專輯時的備援） */
-export function isCoverSong(title: string, albumIsCover: boolean | null | undefined): boolean {
-  return albumIsCover === true || /^\s*[(（]cover[)）]/i.test(title);
-}
-
-/** 開場音樂（歌名以「INTRO」開頭，例如「INTRO: Endless Trip」）：不算歌曲，統計時排除 */
-export function isIntroSong(title: string): boolean {
-  return /^\s*intro\b/i.test(title);
-}
-
-/** 翻唱歌的歌名慣例是「(Cover) 歌名 (原唱)」：拆出歌名與原唱，沒有括號時原唱為 null */
-export function parseCoverTitle(title: string): { name: string; artist: string | null } {
-  const shown = displaySongTitle(title);
-  const m = shown.match(/^(.*?)\s*[(（]([^()（）]+)[)）]\s*$/);
-  return m && m[1] ? { name: m[1], artist: m[2].trim() } : { name: shown, artist: null };
-}
-
-/** 顯示用歌名：去掉開頭的「(Cover) 」標記 */
-export function displaySongTitle(title: string): string {
-  return title.replace(/^\s*[(（]cover[)）]\s*/i, '');
-}
+// 歌名工具搬到 song-title.ts（純函式，瀏覽器端也要用）；這裡重新匯出，原本的 import 路徑照常可用
+export { isCoverSong, isIntroSong, displaySongTitle, parseCoverTitle } from '@/lib/song-title';
+import { isCoverSong } from '@/lib/song-title';
 
 /**
  * 整份公開資料（已發布場次＋已公開歌單）的唯一入口，給 llms.txt、關於頁、歌曲頁、sitemap 共用。
@@ -88,7 +70,7 @@ export const getArchive = cache(async () => {
     .returns<{ id: string; category: ShowCategory | null; series: string | null }[]>();
   const meta = new Map((metaRes.error ? [] : (metaRes.data ?? [])).map((m) => [m.id, m]));
   // 入場方式是更晚加的欄位（0007），獨立查詢，失敗就當作都沒填
-  const admRes = await supabase.from('shows').select('id, admission').eq('status', 'published').returns<{ id: string; admission: 'paid' | 'free' | null }[]>();
+  const admRes = await supabase.from('shows').select('id, admission').eq('status', 'published').returns<{ id: string; admission: 'paid' | 'free' | 'private' | null }[]>();
   const admission = new Map((admRes.error ? [] : (admRes.data ?? [])).map((m) => [m.id, m.admission]));
 
   const now = new Date();

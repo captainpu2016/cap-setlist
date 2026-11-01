@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Show } from '@/types/database';
+import ShowTags from '@/components/ShowTags';
 
 const COLLAPSED_COUNT = 6;
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -94,6 +95,7 @@ export default function ShowListSection({
                       <span className="truncate">{show.venue}</span>
                     </p>
                   )}
+                  <ShowTags show={show} className="mt-2" />
                 </div>
               </div>
             </Link>

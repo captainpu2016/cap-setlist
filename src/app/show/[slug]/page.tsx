@@ -138,6 +138,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
     inLanguage: 'zh-Hant-TW',
     eventStatus: 'https://schema.org/EventScheduled',
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    ...(show.admission === 'free' ? { isAccessibleForFree: true } : show.admission === 'paid' ? { isAccessibleForFree: false } : {}),
     ...(show.venue
       ? {
           location: {

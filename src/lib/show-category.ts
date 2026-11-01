@@ -9,7 +9,8 @@ export const SHOW_CATEGORIES = [
 
 export const ADMISSIONS = [
   { value: 'paid', label: '付費' },
-  { value: 'free', label: '免費' }
+  { value: 'free', label: '免費' },
+  { value: 'private', label: '無對外開放' }
 ] as const;
 
 export type Admission = (typeof ADMISSIONS)[number]['value'];
@@ -19,7 +20,7 @@ export function admissionLabel(value: string | null | undefined): string | null 
 }
 
 export function isAdmission(value: unknown): value is Admission {
-  return value === 'paid' || value === 'free';
+  return value === 'paid' || value === 'free' || value === 'private';
 }
 
 export type ShowCategory = (typeof SHOW_CATEGORIES)[number]['value'];

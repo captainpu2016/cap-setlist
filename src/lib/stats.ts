@@ -1,5 +1,16 @@
-import { isIntroSong, parseCoverTitle, type ArchiveShow } from '@/lib/archive';
+import { isIntroSong, parseCoverTitle } from '@/lib/song-title';
 import { SHOW_CATEGORIES } from '@/lib/show-category';
+
+/** 統計需要的場次欄位（ArchiveShow 符合這個形狀；瀏覽器端也用它，所以不直接依賴 archive.ts） */
+export type ArchiveShow = {
+  id: string;
+  slug: string;
+  title: string;
+  date: string;
+  venue: string | null;
+  category: string | null;
+  songs: { id: string; title: string; isCover: boolean }[];
+};
 
 export type RankedSong = { id: string; title: string; count: number };
 

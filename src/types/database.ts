@@ -77,7 +77,7 @@ export type Show = {
   category?: 'festival' | 'own' | 'invited' | 'gig_event' | 'commercial' | 'campus' | null;
   series?: string | null;
   /** 0007_show_admission.sql 之後才有：付費或免費 */
-  admission?: 'paid' | 'free' | null;
+  admission?: 'paid' | 'free' | 'private' | null;
   venue_id: string | null;
   latitude: number | null;
   longitude: number | null;
