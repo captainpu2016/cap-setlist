@@ -1,12 +1,18 @@
-/** 場次篩選（全部場次頁與歌單統計頁共用）：分類／系列／海外三選一，再疊加入場方式 */
+import { admissionLabel, categoryLabel } from '@/lib/show-category';
 
-export type Filter =
-  | { kind: 'all' }
-  | { kind: 'category'; value: string }
-  | { kind: 'series'; value: string }
-  | { kind: 'overseas' };
+/** 場次篩選（全部場次頁與歌單統計頁共用）：分類、系列、地區、入場方式四個條件，可以同時使用 */
 
+export type Region = 'all' | 'overseas' | 'taiwan';
 export type Admission = 'all' | 'paid' | 'free' | 'private';
+
+export interface ShowFilter {
+  category: string | null;
+  series: string | null;
+  region: Region;
+  admission: Admission;
+}
+
+export const EMPTY_FILTER: ShowFilter = { category: null, series: null, region: 'all', admission: 'all' };
 
 export interface FilterableShow {
   category: string | null;
@@ -15,33 +21,50 @@ export interface FilterableShow {
   overseas: boolean;
 }
 
-export function parseHash(hash: string): { filter: Filter; admission: Admission } {
-  const p = new URLSearchParams(hash.replace(/^#/, ''));
-  const a = p.get('a');
-  const admission: Admission = a === 'paid' || a === 'free' || a === 'private' ? a : 'all';
-  if (p.get('o')) return { filter: { kind: 'overseas' }, admission };
-  if (p.get('c')) return { filter: { kind: 'category', value: p.get('c')! }, admission };
-  if (p.get('s')) return { filter: { kind: 'series', value: p.get('s')! }, admission };
-  return { filter: { kind: 'all' }, admission };
+export function isFiltered(f: ShowFilter): boolean {
+  return Boolean(f.category || f.series) || f.region !== 'all' || f.admission !== 'all';
 }
 
-export function buildHash(filter: Filter, admission: Admission): string {
+/** 網址 # 後面的參數：c 分類、s 系列、o（1 海外／0 台灣）、a 入場方式。舊連結（例如 #o=1）照樣可用 */
+export function parseHash(hash: string): ShowFilter {
+  const p = new URLSearchParams(hash.replace(/^#/, ''));
+  const a = p.get('a');
+  const o = p.get('o');
+  return {
+    category: p.get('c') || null,
+    series: p.get('s') || null,
+    region: o === '1' ? 'overseas' : o === '0' ? 'taiwan' : 'all',
+    admission: a === 'paid' || a === 'free' || a === 'private' ? a : 'all'
+  };
+}
+
+export function buildHash(f: ShowFilter): string {
   const p = new URLSearchParams();
-  if (filter.kind === 'category') p.set('c', filter.value);
-  else if (filter.kind === 'series') p.set('s', filter.value);
-  else if (filter.kind === 'overseas') p.set('o', '1');
-  if (admission !== 'all') p.set('a', admission);
+  if (f.category) p.set('c', f.category);
+  if (f.series) p.set('s', f.series);
+  if (f.region !== 'all') p.set('o', f.region === 'overseas' ? '1' : '0');
+  if (f.admission !== 'all') p.set('a', f.admission);
   const q = p.toString();
   return q ? `#${q}` : '';
 }
 
-export function matchesMain(show: FilterableShow, filter: Filter): boolean {
-  if (filter.kind === 'category') return show.category === filter.value;
-  if (filter.kind === 'series') return show.series === filter.value;
-  if (filter.kind === 'overseas') return show.overseas;
+export function matchesFilter(show: FilterableShow, f: ShowFilter): boolean {
+  if (f.category && show.category !== f.category) return false;
+  if (f.series && show.series !== f.series) return false;
+  if (f.region === 'overseas' && !show.overseas) return false;
+  if (f.region === 'taiwan' && show.overseas) return false;
+  if (f.admission !== 'all' && show.admission !== f.admission) return false;
   return true;
 }
 
-export function matchesFilter(show: FilterableShow, filter: Filter, admission: Admission): boolean {
-  return matchesMain(show, filter) && (admission === 'all' || show.admission === admission);
+/** 目前篩選條件的文字描述，例如「音樂祭/節・海外・免費」 */
+export function filterLabel(f: ShowFilter): string {
+  return [
+    f.category ? (categoryLabel(f.category) ?? f.category) : null,
+    f.series,
+    f.region === 'overseas' ? '海外' : f.region === 'taiwan' ? '台灣' : null,
+    f.admission !== 'all' ? admissionLabel(f.admission) : null
+  ]
+    .filter(Boolean)
+    .join('・');
 }

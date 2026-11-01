@@ -1,8 +1,8 @@
 'use client';
 
-import ShowFilterBar, { filterLabel, useShowFilter } from '@/components/ShowFilterBar';
+import ShowFilterBar, { useShowFilter } from '@/components/ShowFilterBar';
 import { formatShowDateShort } from '@/lib/format';
-import { matchesFilter } from '@/lib/show-filter';
+import { filterLabel, isFiltered, matchesFilter } from '@/lib/show-filter';
 import { computeStats, groupCoversByArtist, rankTopSongs, statsByCategory, type ArchiveShow } from '@/lib/stats';
 import TopSongs from './top-songs';
 
@@ -14,9 +14,9 @@ export type StatsShow = ArchiveShow & {
 
 /** 歌單統計的內容：可依分類、海外、入場方式、系列篩選，所有數字都只算篩選後的場次。預設（含搜尋引擎看到的）是全部場次 */
 export default function StatsView({ shows: allShows, today }: { shows: StatsShow[]; today: string }) {
-  const { filter, admission, choose } = useShowFilter();
-  const filtered = filter.kind !== 'all' || admission !== 'all';
-  const shows = allShows.filter((x) => matchesFilter(x, filter, admission));
+  const { filter, choose } = useShowFilter();
+  const filtered = isFiltered(filter);
+  const shows = allShows.filter((x) => matchesFilter(x, filter));
 
   const s = computeStats(shows);
   const monthsAgo = (n: number) => {
@@ -32,16 +32,14 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
   const covers = groupCoversByArtist(s.coverSongs);
   const byCategory = statsByCategory(allShows); // 分類比較表永遠看全部場次，不受上面的篩選影響
   const maxYearShows = Math.max(1, ...s.byYear.map((y) => y.shows));
-  const scope = filtered ? `「${filterLabel(filter, admission)}」` : '';
+  const scope = filtered ? `「${filterLabel(filter)}」` : '';
 
   return (
     <>
       <ShowFilterBar
         shows={allShows}
         filter={filter}
-        admission={admission}
         onChange={choose}
-        collapsible
         caption={filtered ? `以下只統計${scope}的場次：共 ${shows.length} 場，其中 ${s.showsWithSetlist} 場已公開歌單。` : undefined}
       />
 

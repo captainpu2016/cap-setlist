@@ -1,8 +1,8 @@
 'use client';
 
-import ShowFilterBar, { filterLabel, useShowFilter } from '@/components/ShowFilterBar';
+import ShowFilterBar, { useShowFilter } from '@/components/ShowFilterBar';
 import { admissionLabel, categoryLabel } from '@/lib/show-category';
-import { matchesFilter } from '@/lib/show-filter';
+import { filterLabel, isFiltered, matchesFilter } from '@/lib/show-filter';
 
 export interface ExplorerShow {
   id: string;
@@ -17,11 +17,11 @@ export interface ExplorerShow {
   overseas: boolean;
 }
 
-/** 全部場次：依年份列出，可用分類、海外、入場方式或系列篩選。預設（含搜尋引擎看到的）是全部場次 */
+/** 全部場次：依年份列出，可用分類、地區、入場方式、系列篩選（可同時使用）。預設（含搜尋引擎看到的）是全部場次 */
 export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
-  const { filter, admission, choose } = useShowFilter();
+  const { filter, choose } = useShowFilter();
 
-  const visible = shows.filter((s) => matchesFilter(s, filter, admission));
+  const visible = shows.filter((s) => matchesFilter(s, filter));
   const groups = new Map<string, ExplorerShow[]>();
   for (const s of visible) {
     const y = s.date.slice(0, 4);
@@ -29,18 +29,14 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
     groups.get(y)!.push(s);
   }
   const years = Array.from(groups.keys()).sort((a, b) => b.localeCompare(a));
-  const filtered = filter.kind !== 'all' || admission !== 'all';
 
   return (
     <div>
       <ShowFilterBar
         shows={shows}
         filter={filter}
-        admission={admission}
         onChange={choose}
-        collapsible
-        idleText={`目前顯示全部 ${shows.length} 場；可依分類、海外、入場方式、系列篩選`}
-        caption={filtered ? `${filterLabel(filter, admission)}：共 ${visible.length} 場` : undefined}
+        caption={isFiltered(filter) ? `${filterLabel(filter)}：共 ${visible.length} 場` : undefined}
       />
 
       <div className="mt-10 space-y-10">

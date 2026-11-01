@@ -1,196 +1,146 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ADMISSIONS, SHOW_CATEGORIES, admissionLabel, categoryLabel } from '@/lib/show-category';
+import { ADMISSIONS, SHOW_CATEGORIES } from '@/lib/show-category';
 import {
+  EMPTY_FILTER,
   buildHash,
-  matchesMain,
+  filterLabel,
+  isFiltered,
+  matchesFilter,
   parseHash,
-  type Admission,
-  type Filter,
-  type FilterableShow
+  type FilterableShow,
+  type ShowFilter
 } from '@/lib/show-filter';
 
-/** 篩選狀態同步在網址 # 後面（#c=分類 #s=系列 #o=1 #a=付費/免費），可以直接分享；沒有伺服器往返，所以頁面照樣能被快取 */
+export { filterLabel };
+
+/** 篩選狀態同步在網址 # 後面（#c=分類 #s=系列 #o=1 #a=free），可以直接分享；沒有伺服器往返，所以頁面照樣能被快取 */
 export function useShowFilter() {
-  const [filter, setFilter] = useState<Filter>({ kind: 'all' });
-  const [admission, setAdmission] = useState<Admission>('all');
+  const [filter, setFilter] = useState<ShowFilter>(EMPTY_FILTER);
 
   useEffect(() => {
-    const apply = () => {
-      const parsed = parseHash(window.location.hash);
-      setFilter(parsed.filter);
-      setAdmission(parsed.admission);
-    };
+    const apply = () => setFilter(parseHash(window.location.hash));
     apply();
     window.addEventListener('hashchange', apply);
     return () => window.removeEventListener('hashchange', apply);
   }, []);
 
-  const choose = useCallback((next: Filter, nextAdmission: Admission) => {
+  const choose = useCallback((next: ShowFilter) => {
     setFilter(next);
-    setAdmission(nextAdmission);
-    window.history.replaceState(null, '', `${window.location.pathname}${buildHash(next, nextAdmission)}`);
+    window.history.replaceState(null, '', `${window.location.pathname}${buildHash(next)}`);
   }, []);
 
-  return { filter, admission, choose };
+  return { filter, choose };
 }
 
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function Field({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: React.ReactNode }) {
+  const active = value !== '';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      className={`border-2 px-3 py-1.5 text-xs font-bold transition-colors ${
-        active ? 'border-signal bg-signal text-paper' : 'border-stage-700 text-stone-400 hover:border-stone-500 hover:text-paper'
-      }`}
-    >
-      {children}
-    </button>
+    <label className="block min-w-0">
+      <span className="mb-1 block font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full border-2 bg-stage-900 px-3 py-2 text-sm font-bold text-paper transition-colors focus:border-signal focus:outline-none ${
+          active ? 'border-signal' : 'border-stage-700 hover:border-stone-500'
+        }`}
+      >
+        {children}
+      </select>
+    </label>
   );
 }
 
-export function filterLabel(filter: Filter, admission: Admission): string {
-  return [
-    filter.kind === 'category'
-      ? (categoryLabel(filter.value) ?? filter.value)
-      : filter.kind === 'overseas'
-        ? '海外演出'
-        : filter.kind === 'series'
-          ? filter.value
-          : null,
-    admission !== 'all' ? admissionLabel(admission) : null
-  ]
-    .filter(Boolean)
-    .join('・');
-}
-
-/** 分類、海外、入場方式、系列的按鈕列；數字是場數 */
+/** 篩選列：分類、地區、入場、系列四個下拉選單，可以同時使用；選項後面的數字是在「其他三個條件」之下的場數 */
 export default function ShowFilterBar({
   shows,
   filter,
-  admission,
   onChange,
-  caption,
-  collapsible = false,
-  idleText
+  caption
 }: {
   shows: FilterableShow[];
-  filter: Filter;
-  admission: Admission;
-  onChange: (filter: Filter, admission: Admission) => void;
-  /** 篩選中時顯示在按鈕下方的說明（例如「海外演出：共 7 場」） */
+  filter: ShowFilter;
+  onChange: (filter: ShowFilter) => void;
+  /** 篩選中時顯示在選單下方的說明（例如「海外演出：共 7 場」） */
   caption?: string;
-  /** true：預設收合，只顯示目前的篩選條件，按「篩選」才展開所有按鈕 */
-  collapsible?: boolean;
-  /** 收合且沒有任何篩選時顯示的說明；沒給就用預設的「目前統計全部…」 */
-  idleText?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const categoryCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const s of shows) if (s.category) m.set(s.category, (m.get(s.category) ?? 0) + 1);
-    return m;
-  }, [shows]);
+  // 每個下拉選單的數字：套用「其他三個條件」後，符合該選項的場數
+  const counts = useMemo(() => {
+    const count = (patch: Partial<ShowFilter>) => shows.filter((s) => matchesFilter(s, { ...filter, ...patch })).length;
+    return {
+      category: (v: string | null) => count({ category: v }),
+      series: (v: string | null) => count({ series: v }),
+      region: (v: ShowFilter['region']) => count({ region: v }),
+      admission: (v: ShowFilter['admission']) => count({ admission: v })
+    };
+  }, [shows, filter]);
 
+  const categories = useMemo(() => {
+    const present = new Set(shows.map((s) => s.category).filter(Boolean));
+    return SHOW_CATEGORIES.filter((c) => present.has(c.value));
+  }, [shows]);
   const seriesList = useMemo(() => {
     const m = new Map<string, number>();
     for (const s of shows) if (s.series) m.set(s.series, (m.get(s.series) ?? 0) + 1);
-    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'));
+    return Array.from(m.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant')).map(([name]) => name);
   }, [shows]);
+  const hasOverseas = useMemo(() => shows.some((s) => s.overseas), [shows]);
+  const hasAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
 
-  const overseasCount = useMemo(() => shows.filter((s) => s.overseas).length, [shows]);
-  const anyAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
-
-  // 入場方式可以和其他篩選一起用；數字是在目前分類／系列／海外之下的場數
-  const admissionCounts = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const s of shows) if (matchesMain(s, filter) && s.admission) m.set(s.admission, (m.get(s.admission) ?? 0) + 1);
-    return m;
-  }, [shows, filter]);
-
-  if (categoryCounts.size === 0 && overseasCount === 0) return null;
-
-  const active = filter.kind !== 'all' || admission !== 'all';
-  const showPanel = !collapsible || open;
+  if (categories.length === 0 && !hasOverseas) return null;
 
   return (
-    <div className="mt-8 space-y-3">
-      {collapsible && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            className="inline-flex items-center gap-2 border-2 border-stage-700 px-3 py-1.5 text-xs font-bold text-stone-300 transition-colors hover:border-stone-500 hover:text-paper"
-          >
-            篩選場次
-            <span aria-hidden className={`inline-block transition-transform ${open ? 'rotate-180' : ''}`}>▾</span>
-          </button>
-          {active ? (
-            <span className="inline-flex items-center gap-2 text-sm text-paper">
-              <span className="border border-signal bg-signal/15 px-2 py-0.5 text-xs font-bold">{filterLabel(filter, admission)}</span>
-              <button
-                type="button"
-                onClick={() => onChange({ kind: 'all' }, 'all')}
-                className="text-xs text-stone-500 underline underline-offset-2 hover:text-paper"
-              >
-                清除篩選
-              </button>
-            </span>
-          ) : (
-            <span className="text-sm text-stone-500">{idleText ?? `目前統計全部 ${shows.length} 場；可依分類、海外、入場方式、系列縮小範圍`}</span>
-          )}
-        </div>
-      )}
-      {showPanel && (
-        <div className="space-y-3">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="依分類篩選">
-        <Chip active={filter.kind === 'all'} onClick={() => onChange({ kind: 'all' }, admission)}>
-          全部 {shows.length}
-        </Chip>
-        {SHOW_CATEGORIES.filter((c) => categoryCounts.has(c.value)).map((c) => (
-          <Chip
-            key={c.value}
-            active={filter.kind === 'category' && filter.value === c.value}
-            onClick={() => onChange({ kind: 'category', value: c.value }, admission)}
-          >
-            {c.label} {categoryCounts.get(c.value)}
-          </Chip>
-        ))}
-        {overseasCount > 0 && (
-          <Chip active={filter.kind === 'overseas'} onClick={() => onChange({ kind: 'overseas' }, admission)}>
-            海外 {overseasCount}
-          </Chip>
+    <div className="mt-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {categories.length > 0 && (
+          <Field label="分類" value={filter.category ?? ''} onChange={(v) => onChange({ ...filter, category: v || null })}>
+            <option value="">全部 {counts.category(null)}</option>
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label} {counts.category(c.value)}
+              </option>
+            ))}
+          </Field>
+        )}
+        {hasOverseas && (
+          <Field label="地區" value={filter.region === 'all' ? '' : filter.region} onChange={(v) => onChange({ ...filter, region: (v || 'all') as ShowFilter['region'] })}>
+            <option value="">全部 {counts.region('all')}</option>
+            <option value="taiwan">台灣 {counts.region('taiwan')}</option>
+            <option value="overseas">海外 {counts.region('overseas')}</option>
+          </Field>
+        )}
+        {hasAdmission && (
+          <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>
+            <option value="">不限 {counts.admission('all')}</option>
+            {ADMISSIONS.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label} {counts.admission(a.value)}
+              </option>
+            ))}
+          </Field>
+        )}
+        {seriesList.length > 0 && (
+          <Field label="系列" value={filter.series ?? ''} onChange={(v) => onChange({ ...filter, series: v || null })}>
+            <option value="">全部 {counts.series(null)}</option>
+            {seriesList.map((name) => (
+              <option key={name} value={name}>
+                {name} {counts.series(name)}
+              </option>
+            ))}
+          </Field>
         )}
       </div>
-      {anyAdmission && (
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="依入場方式篩選">
-          <span className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">入場</span>
-          <Chip active={admission === 'all'} onClick={() => onChange(filter, 'all')}>
-            不限
-          </Chip>
-          {ADMISSIONS.map((a) => (
-            <Chip key={a.value} active={admission === a.value} onClick={() => onChange(filter, a.value)}>
-              {a.label} {admissionCounts.get(a.value) ?? 0}
-            </Chip>
-          ))}
-        </div>
+      {(isFiltered(filter) || caption) && (
+        <p className="mt-3 flex flex-wrap items-center gap-x-3 text-sm text-stone-500">
+          {caption}
+          {isFiltered(filter) && (
+            <button type="button" onClick={() => onChange(EMPTY_FILTER)} className="text-xs underline underline-offset-2 hover:text-paper">
+              清除篩選
+            </button>
+          )}
+        </p>
       )}
-      {seriesList.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="依系列篩選">
-          <span className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">系列</span>
-          {seriesList.map(([name, n]) => (
-            <Chip key={name} active={filter.kind === 'series' && filter.value === name} onClick={() => onChange({ kind: 'series', value: name }, admission)}>
-              {name} {n}
-            </Chip>
-          ))}
-        </div>
-      )}
-        </div>
-      )}
-      {caption && <p className="text-sm text-stone-500">{caption}</p>}
     </div>
   );
 }
