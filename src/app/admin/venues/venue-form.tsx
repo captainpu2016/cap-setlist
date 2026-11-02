@@ -1,6 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
+import { VENUE_TYPES } from '@/lib/venue-type';
 import { upsertVenue, deleteVenue } from './actions';
 import type { Venue } from '@/types/database';
 
@@ -34,6 +35,20 @@ export default function VenueForm({ venue }: { venue?: Venue }) {
         <label className="admin-label" htmlFor="city">城市</label>
         <input id="city" name="city" defaultValue={venue?.city ?? ''} className="admin-input" placeholder="例：高雄" />
       </div>
+
+      {/* 要等資料庫執行過 0009_venue_type.sql 才有這個欄位；還沒執行就不顯示，避免儲存失敗 */}
+      {venue && 'venue_type' in venue && (
+        <div>
+          <label className="admin-label" htmlFor="venue_type">場地類型</label>
+          <select id="venue_type" name="venue_type" defaultValue={venue.venue_type ?? ''} className="admin-input">
+            <option value="">未分類</option>
+            {VENUE_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-stone-400">「巡演足跡」會統計去過幾間 Live house；球場、廣場、校園、旅館等歸「其他場地」。</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <div>

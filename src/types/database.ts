@@ -6,6 +6,8 @@ export type Venue = {
   city: string | null;
   latitude: number | null;
   longitude: number | null;
+  /** 0009_venue_type.sql 之後才有：Live house 或其他；null 代表還沒分類 */
+  venue_type?: 'livehouse' | 'other' | null;
   created_at: string;
   updated_at: string;
 };

@@ -80,59 +80,60 @@ export default function TourExplorer({ points }: { points: DatedPoint[] }) {
 
   return (
     <div>
-      <div className="mb-4 border-2 border-stage-700 bg-stage-900 p-4">
-        <div className="flex items-center justify-between text-xs text-stone-400">
-          <span>起始：{formatMonthKey(rangeStart)}</span>
-          <span>結束：{formatMonthKey(rangeEnd)}</span>
-        </div>
-
-        <div className="mt-3">
-          <label className="mb-1 block text-[11px] uppercase tracking-wide text-stone-500">起始月份</label>
-          <input
-            type="range"
-            min={0}
-            max={monthKeys.length - 1}
-            value={startIdx}
-            onChange={(e) => setStartIdx(Number(e.target.value))}
-            className="w-full accent-signal"
-          />
-        </div>
-
-        <div className="mt-3">
-          <label className="mb-1 block text-[11px] uppercase tracking-wide text-stone-500">結束月份</label>
-          <input
-            type="range"
-            min={0}
-            max={monthKeys.length - 1}
-            value={endIdx}
-            onChange={(e) => setEndIdx(Number(e.target.value))}
-            className="w-full accent-signal"
-          />
-        </div>
-
-        <div className="mt-4 flex items-center justify-between">
-          <label className="flex items-center gap-2 text-xs text-stone-400">
-            <input
-              type="checkbox"
-              checked={showRoute}
-              onChange={(e) => setShowRoute(e.target.checked)}
-              className="accent-signal"
-            />
-            顯示移動路線
-          </label>
-          {isFiltered && (
-            <button
-              type="button"
-              onClick={() => {
-                setStartIdx(defaultStartIdx);
-                setEndIdx(defaultEndIdx);
-              }}
-              className="font-accent text-xs uppercase tracking-[0.2em] text-stone-500 hover:text-marquee"
-            >
-              重設為近一年
-            </button>
-          )}
-        </div>
+      {/* 篩選區間：一列就好——起始月份、結束月份兩個下拉，右邊是路線開關與快速切換 */}
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-2 border-stage-700 bg-stage-900 px-3 py-2.5 text-xs text-stone-400">
+        <span className="font-accent uppercase tracking-[0.2em] text-stone-500">期間</span>
+        <select
+          value={lo}
+          onChange={(e) => setStartIdx(Number(e.target.value))}
+          aria-label="起始月份"
+          className="border-2 border-stage-700 bg-stage-950 px-2 py-1 text-sm font-bold text-paper focus:border-signal focus:outline-none"
+        >
+          {monthKeys.map((k, i) => (
+            <option key={k} value={i}>
+              {formatMonthKey(k)}
+            </option>
+          ))}
+        </select>
+        <span>至</span>
+        <select
+          value={hi}
+          onChange={(e) => setEndIdx(Number(e.target.value))}
+          aria-label="結束月份"
+          className="border-2 border-stage-700 bg-stage-950 px-2 py-1 text-sm font-bold text-paper focus:border-signal focus:outline-none"
+        >
+          {monthKeys.map((k, i) => (
+            <option key={k} value={i}>
+              {formatMonthKey(k)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            setStartIdx(0);
+            setEndIdx(defaultEndIdx);
+          }}
+          className={`px-2 py-1 font-bold transition-colors hover:text-paper ${lo === 0 && hi === defaultEndIdx ? 'text-signal' : ''}`}
+        >
+          全部
+        </button>
+        {isFiltered && (
+          <button
+            type="button"
+            onClick={() => {
+              setStartIdx(defaultStartIdx);
+              setEndIdx(defaultEndIdx);
+            }}
+            className="px-2 py-1 font-bold transition-colors hover:text-paper"
+          >
+            近一年
+          </button>
+        )}
+        <label className="ml-auto flex items-center gap-2">
+          <input type="checkbox" checked={showRoute} onChange={(e) => setShowRoute(e.target.checked)} className="accent-signal" />
+          顯示移動路線
+        </label>
       </div>
 
       <MapLoader points={dots} route={showRoute ? route : []} />

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { isVenueType, type VenueType } from '@/lib/venue-type';
 
 async function requireSession() {
   const supabase = createClient();
@@ -24,11 +25,20 @@ export async function upsertVenue(formData: FormData) {
 
   if (!name) throw new Error('場地名稱為必填');
 
+  // 場地類型：還沒執行 0009 migration 時表單沒有這個欄位，就不要動這一欄
+  let venueType: VenueType | null | undefined;
+  if (formData.has('venue_type')) {
+    const raw = (formData.get('venue_type') as string)?.trim();
+    if (raw && !isVenueType(raw)) throw new Error('場地類型不正確');
+    venueType = raw && isVenueType(raw) ? raw : null;
+  }
+
   const payload = {
     name,
     city,
     latitude: latitudeRaw ? Number(latitudeRaw) : null,
-    longitude: longitudeRaw ? Number(longitudeRaw) : null
+    longitude: longitudeRaw ? Number(longitudeRaw) : null,
+    ...(venueType !== undefined ? { venue_type: venueType } : {})
   };
 
   if (id && id !== 'new') {
@@ -42,6 +52,16 @@ export async function upsertVenue(formData: FormData) {
   revalidatePath('/admin/venues');
   revalidatePath('/admin/shows');
   redirect('/admin/venues');
+}
+
+/** 場地列表上直接改場地類型 */
+export async function updateVenueType(id: string, venueType: string) {
+  const supabase = await requireSession();
+  if (venueType && !isVenueType(venueType)) throw new Error('場地類型不正確');
+  const { error } = await supabase.from('venues').update({ venue_type: isVenueType(venueType) ? venueType : null }).eq('id', id);
+  if (error) throw new Error(error.message);
+  revalidatePath('/admin/venues');
+  revalidatePath('/tour');
 }
 
 export async function deleteVenue(formData: FormData) {
