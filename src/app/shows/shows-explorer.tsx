@@ -35,9 +35,9 @@ export default function ShowsExplorer({ shows, header }: { shows: ExplorerShow[]
 
   return (
     <div>
-      {/* 分類按鈕列在整個頁面的最上方，下面才是標題 */}
-      <CategoryTabs shows={shows} filter={filter} onChange={choose} />
       {header}
+      {/* 分類按鈕列：標題下方、其他下拉選單之前 */}
+      <CategoryTabs shows={shows} filter={filter} onChange={choose} />
       <ShowFilterBar
         shows={shows}
         filter={filter}

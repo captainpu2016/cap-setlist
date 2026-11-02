@@ -75,7 +75,7 @@ export function CategoryTabs({
     <div
       role="group"
       aria-label="依分類篩選"
-      className="-mx-6 mb-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+      className="-mx-6 mt-8 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
     >
       <button type="button" aria-pressed={!filter.category} onClick={() => onChange({ ...filter, category: null })} className={tab(!filter.category)}>
         全部
@@ -130,7 +130,7 @@ export default function ShowFilterBar({
   if (!hasAdmission && countries.length < 2) return null;
 
   return (
-    <div className="mt-8">
+    <div className="mt-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {hasAdmission && (
           <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>

@@ -47,9 +47,9 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
 
   return (
     <>
-      {/* 分類按鈕列在整個頁面的最上方，下面才是標題 */}
-      <CategoryTabs shows={allShows} filter={filter} onChange={choose} />
       {header}
+      {/* 分類按鈕列：標題下方、其他下拉選單之前 */}
+      <CategoryTabs shows={allShows} filter={filter} onChange={choose} />
       <ShowFilterBar
         shows={allShows}
         filter={filter}
@@ -63,15 +63,8 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
         </p>
       ) : (
         <>
-          {/* 一句話總覽（也給搜尋與 AI 直接引用） */}
-          <p className="mt-8 max-w-3xl text-lg leading-relaxed text-paper">
-            {filtered ? `${scope}` : ''}已公開歌單的 <strong className="font-black">{s.showsWithSetlist}</strong> 場演出，共唱過{' '}
-            <strong className="font-black">{s.originalSongCount}</strong> 首歌，另外翻唱 <strong className="font-black">{s.coverSongCount}</strong> 首，平均每場{' '}
-            <strong className="font-black">{s.avgLength.toFixed(1)}</strong> 首。
-          </p>
-
           {/* 區塊導覽：長頁面直接跳到想看的地方，捲動時固定在上方 */}
-          <nav aria-label="統計區塊" className="sticky top-14 z-30 -mx-6 mt-8 border-y border-stage-700 bg-stage-950/90 px-6 backdrop-blur sm:-mx-10 sm:px-10">
+          <nav aria-label="統計區塊" className="sticky top-14 z-30 -mx-6 mt-10 border-y border-stage-700 bg-stage-950/90 px-6 backdrop-blur sm:-mx-10 sm:px-10">
             <ul className="flex gap-1 overflow-x-auto py-2">
               {sections.map((x) => (
                 <li key={x.id} className="shrink-0">
@@ -136,7 +129,7 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
             <section id="covers" className="mt-16 scroll-mt-28">
               <h2 className="section-title mb-2 text-2xl">曾經翻唱過的歌</h2>
               <p className="mb-5 text-sm text-stone-500">
-                共翻唱過 {s.coverSongs.length} 首、{covers.foreign.length + covers.taiwan.length} 組樂團。海外樂團在前、台灣樂團在後，同一個樂團的歌排在一起。
+                共翻唱過 {s.coverSongs.length} 首、{covers.foreign.length + covers.taiwan.length} 組樂團，同一個樂團的歌排在一起。
               </p>
               <CoverLineup foreign={covers.foreign} taiwan={covers.taiwan} />
             </section>
