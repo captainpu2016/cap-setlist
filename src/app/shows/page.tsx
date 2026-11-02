@@ -51,26 +51,35 @@ export default async function ShowsListPage() {
     }
   };
 
+  const pageHeader = (
+    <>
+      <BackLink />
+      <div className="mt-6">
+        <PageHeader
+          eyebrow="Archive"
+          title="全部場次"
+          description={allShows.length > 0 ? `依年份列出全部 ${allShows.length} 場演出。` : undefined}
+        />
+      </div>
+    </>
+  );
+
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <JsonLd data={[listJsonLd, breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '全部場次', path: '/shows' }])]} />
       <div className="mx-auto max-w-2xl">
-        <BackLink />
-
-        <div className="mt-6">
-          <PageHeader
-            eyebrow="Archive"
-            title="全部場次"
-            description={allShows.length > 0 ? `依年份列出全部 ${allShows.length} 場演出。` : undefined}
-          />
-        </div>
-
-        {error ? (
-          <p className="mt-10 text-sm text-signal">讀取場次時發生錯誤：{error.message}</p>
-        ) : allShows.length === 0 ? (
-          <p className="mt-10 text-sm text-stone-500">還沒有上架的場次。</p>
+        {error || allShows.length === 0 ? (
+          <>
+            {pageHeader}
+            {error ? (
+              <p className="mt-10 text-sm text-signal">讀取場次時發生錯誤：{error.message}</p>
+            ) : (
+              <p className="mt-10 text-sm text-stone-500">還沒有上架的場次。</p>
+            )}
+          </>
         ) : (
           <ShowsExplorer
+            header={pageHeader}
             shows={allShows.map((s) => ({
               id: s.id,
               slug: s.slug,

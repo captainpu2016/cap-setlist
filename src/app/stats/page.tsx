@@ -38,11 +38,18 @@ export default async function StatsPage() {
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <JsonLd data={breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '歌單統計', path: '/stats' }])} />
       <div className="mx-auto max-w-5xl">
-        <BackLink />
-        <div className="mt-6">
-          <PageHeader eyebrow="Stats" title="歌單統計" description="把每一場的歌單加起來，看看普通隊長的現場到底都唱些什麼。" />
-        </div>
-        <StatsView shows={slim} today={todayTaipei()} />
+        <StatsView
+          shows={slim}
+          today={todayTaipei()}
+          header={
+            <>
+              <BackLink />
+              <div className="mt-6">
+                <PageHeader eyebrow="Stats" title="歌單統計" description="把每一場的歌單加起來，看看普通隊長的現場到底都唱些什麼。" />
+              </div>
+            </>
+          }
+        />
       </div>
     </main>
   );

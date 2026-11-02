@@ -52,7 +52,50 @@ function Field({ label, value, onChange, children }: { label: string; value: str
   );
 }
 
-/** 篩選列（由左到右）：分類、入場、國家，選了國家之後多一個城市；可以同時使用 */
+/** 分類按鈕列：放在頁面最上方。單行、超出時可以左右滑，手機版只佔一行的高度 */
+export function CategoryTabs({
+  shows,
+  filter,
+  onChange
+}: {
+  shows: FilterableShow[];
+  filter: ShowFilter;
+  onChange: (filter: ShowFilter) => void;
+}) {
+  const present = useMemo(() => new Set(shows.map((s) => s.category).filter(Boolean)), [shows]);
+  const categories = SHOW_CATEGORIES.filter((c) => present.has(c.value));
+  if (categories.length === 0) return null;
+
+  const tab = (active: boolean) =>
+    `shrink-0 border-2 px-3 py-1.5 text-xs font-bold transition-colors ${
+      active ? 'border-signal bg-signal text-paper' : 'border-stage-700 text-stone-400 hover:border-stone-500 hover:text-paper'
+    }`;
+
+  return (
+    <div
+      role="group"
+      aria-label="依分類篩選"
+      className="-mx-6 mb-6 flex gap-2 overflow-x-auto px-6 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+    >
+      <button type="button" aria-pressed={!filter.category} onClick={() => onChange({ ...filter, category: null })} className={tab(!filter.category)}>
+        全部
+      </button>
+      {categories.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          aria-pressed={filter.category === c.value}
+          onClick={() => onChange({ ...filter, category: c.value })}
+          className={tab(filter.category === c.value)}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** 篩選列（由左到右）：入場、國家，選了國家之後多一個城市；可以同時使用（分類在頁面最上方的按鈕列，另外是 CategoryTabs） */
 export default function ShowFilterBar({
   shows,
   filter,
@@ -65,10 +108,6 @@ export default function ShowFilterBar({
   /** 篩選中時顯示在選單下方的說明（例如「日本：共 7 場」） */
   caption?: string;
 }) {
-  const categories = useMemo(() => {
-    const present = new Set(shows.map((s) => s.category).filter(Boolean));
-    return SHOW_CATEGORIES.filter((c) => present.has(c.value));
-  }, [shows]);
   const hasAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
 
   // 出現過的國家：台灣在前，其他依場次數
@@ -88,21 +127,11 @@ export default function ShowFilterBar({
     return sortCitiesNorthToSouth(Array.from(m));
   }, [shows, filter.country]);
 
-  if (categories.length === 0 && countries.length < 2) return null;
+  if (!hasAdmission && countries.length < 2) return null;
 
   return (
     <div className="mt-8">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {categories.length > 0 && (
-          <Field label="分類" value={filter.category ?? ''} onChange={(v) => onChange({ ...filter, category: v || null })}>
-            <option value="">全部</option>
-            {categories.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </Field>
-        )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {hasAdmission && (
           <Field label="入場" value={filter.admission === 'all' ? '' : filter.admission} onChange={(v) => onChange({ ...filter, admission: (v || 'all') as ShowFilter['admission'] })}>
             <option value="">不限</option>

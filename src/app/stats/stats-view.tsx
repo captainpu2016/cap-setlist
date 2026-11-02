@@ -1,6 +1,7 @@
 'use client';
 
-import ShowFilterBar, { useShowFilter } from '@/components/ShowFilterBar';
+import type { ReactNode } from 'react';
+import ShowFilterBar, { CategoryTabs, useShowFilter } from '@/components/ShowFilterBar';
 import { filterLabel, isFiltered, matchesFilter } from '@/lib/show-filter';
 import { computeStats, groupCoversByArtist, rankTopSongs, statsByCategory, type ArchiveShow } from '@/lib/stats';
 import CoverLineup from './cover-lineup';
@@ -16,7 +17,7 @@ export type StatsShow = ArchiveShow & {
 };
 
 /** 歌單統計的內容：可依分類、海外、入場方式、系列篩選，所有數字都只算篩選後的場次。預設（含搜尋引擎看到的）是全部場次 */
-export default function StatsView({ shows: allShows, today }: { shows: StatsShow[]; today: string }) {
+export default function StatsView({ shows: allShows, today, header }: { shows: StatsShow[]; today: string; header: ReactNode }) {
   const { filter, choose } = useShowFilter();
   const filtered = isFiltered(filter);
   const shows = allShows.filter((x) => matchesFilter(x, filter));
@@ -46,6 +47,9 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
 
   return (
     <>
+      {/* 分類按鈕列在整個頁面的最上方，下面才是標題 */}
+      <CategoryTabs shows={allShows} filter={filter} onChange={choose} />
+      {header}
       <ShowFilterBar
         shows={allShows}
         filter={filter}

@@ -1,6 +1,7 @@
 'use client';
 
-import ShowFilterBar, { useShowFilter } from '@/components/ShowFilterBar';
+import type { ReactNode } from 'react';
+import ShowFilterBar, { CategoryTabs, useShowFilter } from '@/components/ShowFilterBar';
 import { admissionLabel, categoryLabel } from '@/lib/show-category';
 import { filterLabel, isFiltered, matchesFilter } from '@/lib/show-filter';
 
@@ -20,7 +21,7 @@ export interface ExplorerShow {
 }
 
 /** 全部場次：依年份列出，可用分類、地區、入場方式、系列篩選（可同時使用）。預設（含搜尋引擎看到的）是全部場次 */
-export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
+export default function ShowsExplorer({ shows, header }: { shows: ExplorerShow[]; header: ReactNode }) {
   const { filter, choose } = useShowFilter();
 
   const visible = shows.filter((s) => matchesFilter(s, filter));
@@ -34,6 +35,9 @@ export default function ShowsExplorer({ shows }: { shows: ExplorerShow[] }) {
 
   return (
     <div>
+      {/* 分類按鈕列在整個頁面的最上方，下面才是標題 */}
+      <CategoryTabs shows={shows} filter={filter} onChange={choose} />
+      {header}
       <ShowFilterBar
         shows={shows}
         filter={filter}
