@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { displaySongTitle } from '@/lib/song-title';
 import type { RankedSong } from '@/lib/stats';
+import { BarRow } from './bar-row';
 
 export interface TopSongsPeriod {
   key: string;
@@ -11,34 +12,26 @@ export interface TopSongsPeriod {
   rows: RankedSong[];
 }
 
-/** 排行：長條畫在整列後面，歌名直接壓在上面，第一名顏色加深；一眼看得出差距又不會有細線的單薄感 */
 function Bars({ rows, total }: { rows: RankedSong[]; total: number }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
-    <ol className="space-y-1.5">
+    <ol className="border-y border-stage-700">
       {rows.map((r, i) => (
-        <li key={r.id}>
-          <a href={`/song/${r.id}`} className="group relative block overflow-hidden border border-stage-700 bg-stage-900 transition-colors hover:border-stone-500">
-            <div
-              className={`absolute inset-y-0 left-0 border-r-2 border-signal bg-signal ${i === 0 ? 'opacity-45' : 'opacity-25'}`}
-              style={{ width: `${(r.count / max) * 100}%` }}
-              aria-hidden
-            />
-            <div className="relative flex items-center gap-3 px-3 py-2.5">
-              <span className={`w-6 shrink-0 font-accent text-sm ${i === 0 ? 'text-signal' : 'text-stone-500'}`}>
-                {String(i + 1).padStart(2, '0')}
-              </span>
-              <span className={`min-w-0 flex-1 truncate text-sm ${i === 0 ? 'font-bold' : 'font-medium'} text-paper`}>
-                {displaySongTitle(r.title)}
-              </span>
-              <span className="shrink-0 text-right font-accent text-base font-semibold leading-tight text-paper">
-                {r.count}
-                <span className="ml-0.5 text-[11px] font-normal text-stone-400"> 場</span>
-                <span className="block text-[11px] font-normal text-stone-400">{total > 0 ? Math.round((r.count / total) * 100) : 0}%</span>
-              </span>
-            </div>
-          </a>
-        </li>
+        <BarRow
+          key={r.id}
+          rank={String(i + 1).padStart(2, '0')}
+          label={displaySongTitle(r.title)}
+          percent={(r.count / max) * 100}
+          value={
+            <>
+              {r.count}
+              <span className="ml-0.5 text-[11px] font-normal text-stone-400"> 場</span>
+            </>
+          }
+          valueNote={`${total > 0 ? Math.round((r.count / total) * 100) : 0}%`}
+          href={`/song/${r.id}`}
+          strong={i === 0}
+        />
       ))}
     </ol>
   );

@@ -29,8 +29,6 @@ export type ArchiveStats = {
   coverSongs: { id: string; title: string; lastDate: string }[];
   topSongs: RankedSong[];
   byYear: { year: string; shows: number; avgLength: number; distinctSongs: number }[];
-  oneTimers: { id: string; title: string; showTitle: string; date: string; slug: string }[];
-  dormant: { id: string; title: string; lastDate: string; count: number; showsSince: number }[];
 };
 
 /**
@@ -120,8 +118,6 @@ export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
   const plays = new Map<string, RankedSong>(); // 只放原創歌
   const coverPlays = new Map<string, RankedSong>();
   const coverLast = new Map<string, string>();
-  const lastPlayed = new Map<string, { title: string; date: string; index: number }>();
-  const firstPlay = new Map<string, ArchiveShow>();
 
   // 由舊到新走一遍，才能抓到「首次演出」與「最近一次」
   const chronological = [...played].reverse();
@@ -137,8 +133,6 @@ export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
       const entry = plays.get(song.id) ?? { id: song.id, title: song.title, count: 0 };
       entry.count += 1;
       plays.set(song.id, entry);
-      if (!firstPlay.has(song.id)) firstPlay.set(song.id, show);
-      lastPlayed.set(song.id, { title: song.title, date: show.date, index: idx });
     });
   });
 
@@ -159,27 +153,6 @@ export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
       distinctSongs: new Set(list.flatMap((s) => s.songs.filter((x) => !x.isCover).map((x) => x.id))).size
     }));
 
-  const oneTimers = Array.from(plays.values())
-    .filter((p) => p.count === 1)
-    .map((p) => {
-      const show = firstPlay.get(p.id)!;
-      return { id: p.id, title: p.title, showTitle: show.title, date: show.date, slug: show.slug };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-
-  const latestIndex = chronological.length - 1;
-  const dormant = Array.from(lastPlayed.entries())
-    .map(([id, v]) => ({
-      id,
-      title: v.title,
-      lastDate: v.date,
-      count: plays.get(id)!.count,
-      showsSince: latestIndex - v.index
-    }))
-    .filter((d) => d.count >= 2)
-    .sort((a, b) => b.showsSince - a.showsSince || a.lastDate.localeCompare(b.lastDate))
-    .slice(0, 5);
-
   return {
     showsWithSetlist: played.length,
     totalSlots,
@@ -194,8 +167,6 @@ export function computeStats(allShows: ArchiveShow[]): ArchiveStats {
       .map((c) => ({ id: c.id, title: c.title, lastDate: coverLast.get(c.id) ?? '' }))
       .sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.title.localeCompare(b.title, 'zh-Hant')),
     topSongs: rank(plays, 10),
-    byYear,
-    oneTimers,
-    dormant
+    byYear
   };
 }
