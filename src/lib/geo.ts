@@ -119,3 +119,8 @@ export function venueGroupName(venue: string | null | undefined): string | null 
   const name = venue.trim().slice(city.length).trim().split('｜')[0].replace(/\s*(大庫|小庫)$/, '').trim();
   return name || null;
 }
+
+/** 場地欄位的第一個詞當作城市（和 format.ts 的 getCity 相同，這裡轉出一份給統計頁使用） */
+export function getCityOf(venue: string | null | undefined): string | null {
+  return getCity(venue ?? null);
+}
