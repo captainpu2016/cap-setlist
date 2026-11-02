@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { displaySongTitle } from '@/lib/song-title';
 import type { RankedSong } from '@/lib/stats';
-import { BarRow } from './bar-row';
+import { BarRow } from '@/components/BarRow';
 
 export interface TopSongsPeriod {
   key: string;

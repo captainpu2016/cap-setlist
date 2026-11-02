@@ -1,5 +1,5 @@
 import type { ArchiveStats } from '@/lib/stats';
-import { BarRow } from './bar-row';
+import { BarRow } from '@/components/BarRow';
 
 /** 每年的歌單：一年一列，長條是當年的場數，右邊是場數，名稱下方是平均首數與不同歌曲數 */
 export default function YearChart({ byYear }: { byYear: ArchiveStats['byYear'] }) {

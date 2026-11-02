@@ -98,3 +98,24 @@ export function sortVenuesByCity(venues: string[]): string[] {
       (cityOrder.get(getCity(a) ?? '') ?? 999) - (cityOrder.get(getCity(b) ?? '') ?? 999) || a.localeCompare(b, 'zh-Hant')
   );
 }
+
+/** 兩點之間的大圓（直線）距離，單位公里；座標為 [緯度, 經度] */
+export function distanceKm(a: [number, number], b: [number, number]): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b[0] - a[0]);
+  const dLng = toRad(b[1] - a[1]);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/**
+ * 場地排行用的場地名稱：去掉城市、去掉「｜」後面的舞台名稱、去掉大庫／小庫這類同一場館的不同廳，
+ * 例如「高雄 LIVE WAREHOUSE 小庫」→「LIVE WAREHOUSE」、「桃園 樂天桃園棒球場｜球舞台」→「樂天桃園棒球場」。
+ */
+export function venueGroupName(venue: string | null | undefined): string | null {
+  const city = getCity(venue ?? null);
+  if (!venue || !city) return null;
+  const name = venue.trim().slice(city.length).trim().split('｜')[0].replace(/\s*(大庫|小庫)$/, '').trim();
+  return name || null;
+}
