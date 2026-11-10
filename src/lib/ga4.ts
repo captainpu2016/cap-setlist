@@ -16,6 +16,8 @@ export interface ReportRow {
 }
 
 interface ReportOptions {
+  /** 指定 GA4 資源 ID；沒給就用環境變數 GA4_PROPERTY_ID（本站） */
+  propertyId?: string;
   startDate: string;
   endDate: string;
   dimensions?: string[];
@@ -27,7 +29,7 @@ interface ReportOptions {
 
 export async function runReport(opts: ReportOptions): Promise<ReportRow[]> {
   const sa = loadServiceAccount();
-  const propertyId = process.env.GA4_PROPERTY_ID;
+  const propertyId = opts.propertyId ?? process.env.GA4_PROPERTY_ID;
   if (!sa || !propertyId) throw new Error('GA4 尚未設定');
   const token = await getAccessToken(sa, SCOPE);
 

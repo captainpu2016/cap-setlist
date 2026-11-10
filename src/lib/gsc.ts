@@ -49,6 +49,8 @@ export async function listGscSites(): Promise<{ siteUrl: string; permissionLevel
 }
 
 interface QueryOptions {
+  /** 指定 Search Console 資源；沒給就用環境變數 GSC_SITE_URL（本站） */
+  siteUrl?: string;
   startDate: string; // YYYY-MM-DD
   endDate: string;
   dimensions?: ('date' | 'query' | 'page' | 'country' | 'device')[];
@@ -57,7 +59,7 @@ interface QueryOptions {
 
 /** searchAnalytics.query：dimensions 空陣列時回傳整個期間的總計（一列） */
 export async function querySearchAnalytics(opts: QueryOptions): Promise<GscRow[]> {
-  const site = process.env.GSC_SITE_URL;
+  const site = opts.siteUrl ?? process.env.GSC_SITE_URL;
   if (!site) throw new Error('尚未設定 GSC_SITE_URL');
   const res = await fetch(`${API}/sites/${encodeURIComponent(site)}/searchAnalytics/query`, {
     method: 'POST',
