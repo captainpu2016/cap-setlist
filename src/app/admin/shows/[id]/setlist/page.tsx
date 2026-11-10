@@ -10,18 +10,13 @@ type SongWithUsage = Song & { setlist_items: { count: number }[] };
 export default async function SetlistEditorPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const { data: show } = await supabase
-    .from('shows')
-    .select('*')
-    .eq('id', params.id)
-    .single<Show>();
-  if (!show) notFound();
-
-  const [{ data: items }, { data: songs }, { data: venues }, { data: others }] = await Promise.all([
+  // 資料庫在海外，每一輪查詢都要來回一趟，所以全部同時送出（場次 id 就是網址參數，不必等場次查完）
+  const [{ data: show }, { data: items }, { data: songs }, { data: venues }, { data: others }, { data: seriesRows }] = await Promise.all([
+    supabase.from('shows').select('*').eq('id', params.id).single<Show>(),
     supabase
       .from('setlist_items')
       .select('*, song:songs(*)')
-      .eq('show_id', show.id)
+      .eq('show_id', params.id)
       .order('position', { ascending: true })
       .returns<SetlistItemWithSong[]>(),
     supabase.from('songs').select('*, setlist_items(count)').order('title').returns<SongWithUsage[]>(),
@@ -29,14 +24,14 @@ export default async function SetlistEditorPage({ params }: { params: { id: stri
     supabase
       .from('shows')
       .select('id, title, show_date, setlist_items(count)')
-      .neq('id', show.id)
+      .neq('id', params.id)
       .order('show_date', { ascending: false })
       .limit(120)
-      .returns<{ id: string; title: string; show_date: string; setlist_items: { count: number }[] }[]>()
+      .returns<{ id: string; title: string; show_date: string; setlist_items: { count: number }[] }[]>(),
+    // 已用過的系列名稱（欄位還不存在時查詢會失敗，忽略即可）
+    supabase.from('shows').select('series').not('series', 'is', null).returns<{ series: string }[]>()
   ]);
-
-  // 已用過的系列名稱（欄位還不存在時查詢會失敗，忽略即可）
-  const { data: seriesRows } = await supabase.from('shows').select('series').not('series', 'is', null).returns<{ series: string }[]>();
+  if (!show) notFound();
   const seriesOptions = Array.from(new Set((seriesRows ?? []).map((r) => r.series))).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
 
   const songLibrary = (songs ?? []).map((s) => ({

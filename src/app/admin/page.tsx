@@ -8,23 +8,17 @@ type SongMissingLink = Pick<Song, 'id' | 'title' | 'spotify_track_id' | 'apple_m
 export default async function AdminDashboardPage() {
   const supabase = createClient();
 
-  const { data: recentShows } = await supabase
-    .from('shows')
-    .select('*')
-    .order('show_date', { ascending: false })
-    .limit(6)
-    .returns<Show[]>();
-
-  const { data: songsMissingLinks } = await supabase
-    .from('songs')
-    .select('id, title, spotify_track_id, apple_music_url')
-    .or('spotify_track_id.is.null,apple_music_url.is.null')
-    .limit(8)
-    .returns<SongMissingLink[]>();
-
   // 留言資料表還沒建立時查詢會出錯，這時就不顯示留言提醒
   const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
-  const [recentComments, reportedComments] = await Promise.all([
+  // 資料庫在海外，每一輪查詢都要來回一趟，所以四個查詢同時送出
+  const [{ data: recentShows }, { data: songsMissingLinks }, recentComments, reportedComments] = await Promise.all([
+    supabase.from('shows').select('*').order('show_date', { ascending: false }).limit(6).returns<Show[]>(),
+    supabase
+      .from('songs')
+      .select('id, title, spotify_track_id, apple_music_url')
+      .or('spotify_track_id.is.null,apple_music_url.is.null')
+      .limit(8)
+      .returns<SongMissingLink[]>(),
     supabase.from('show_comments').select('*', { count: 'exact', head: true }).gte('created_at', weekAgo),
     supabase.from('show_comments').select('*', { count: 'exact', head: true }).gt('report_count', 0)
   ]);
