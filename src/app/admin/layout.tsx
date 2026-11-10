@@ -9,7 +9,6 @@ const NAV = [
   { href: '/admin/shows', label: '場次管理' },
   { href: '/admin/comments', label: '留言管理' },
   { href: '/admin/analytics', label: '網站數據' },
-  { href: '/admin/search-console', label: '搜尋表現' },
   { href: '/admin/settings/site', label: '網站文案' },
   { href: '/admin/settings/spotify', label: 'Spotify 設定' }
 ];

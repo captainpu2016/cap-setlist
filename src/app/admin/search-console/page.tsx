@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import DataTabs from '../data-tabs';
 import { getArchive, displaySongTitle } from '@/lib/archive';
 import { todayTaipei } from '@/lib/format';
 import { hasServiceAccount, isGscConfigured, listGscSites, querySearchAnalytics, type GscRow } from '@/lib/gsc';
@@ -38,11 +39,11 @@ function daysBetween(from: string, to: string): number {
   return Math.round((new Date(to + 'T00:00:00Z').getTime() - new Date(from + 'T00:00:00Z').getTime()) / 86_400_000) + 1;
 }
 
-function Setup({ children }: { children: React.ReactNode }) {
+function Setup({ children, searchParams }: { children: React.ReactNode; searchParams?: { range?: string; from?: string; to?: string } }) {
   return (
     <div className="max-w-3xl">
-      <h1 className="font-display text-2xl font-bold text-stone-900">搜尋表現</h1>
-      <p className="mt-1 text-sm text-stone-500">資料來自 Google Search Console：訪客在 Google 搜尋什麼字、看到你們的網站排第幾、有沒有點進來。</p>
+      <DataTabs active="search" searchParams={searchParams} />
+      <p className="text-sm text-stone-500">資料來自 Google Search Console：訪客在 Google 搜尋什麼字、看到你們的網站排第幾、有沒有點進來。</p>
       <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-5 text-sm leading-relaxed text-amber-900">{children}</div>
     </div>
   );
@@ -84,7 +85,7 @@ export default async function AdminSearchConsolePage({ searchParams }: { searchP
   // ── 設定檢查：一步一步告訴你還缺什麼 ──
   if (!hasServiceAccount()) {
     return (
-      <Setup>
+      <Setup searchParams={searchParams}>
         <p className="font-bold">尚未設定 Google service account</p>
         <p className="mt-2">
           這個頁面和「網站數據」共用同一個 service account：請先設定環境變數 <code>GA4_SERVICE_ACCOUNT_JSON</code>。
@@ -103,7 +104,7 @@ export default async function AdminSearchConsolePage({ searchParams }: { searchP
       siteError = e instanceof Error ? e.message : '讀取失敗';
     }
     return (
-      <Setup>
+      <Setup searchParams={searchParams}>
         <p className="font-bold">還差一個環境變數：GSC_SITE_URL</p>
         {siteError ? (
           <p className="mt-2 text-red-700">{siteError}</p>
@@ -224,10 +225,10 @@ export default async function AdminSearchConsolePage({ searchParams }: { searchP
 
   return (
     <div className="max-w-5xl">
+      <DataTabs active="search" searchParams={searchParams} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-stone-900">搜尋表現</h1>
-          <p className="mt-1 text-sm text-stone-500">
+          <p className="text-sm text-stone-500">
             資料來自 Google Search Console：訪客在 Google 搜尋什麼字、看到你們排第幾、有沒有點進來。資料約晚 2–3 天才會出來，最近幾天可能是空的。
           </p>
         </div>

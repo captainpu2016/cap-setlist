@@ -1,3 +1,4 @@
+import DataTabs from '../data-tabs';
 import Link from 'next/link';
 import { isGa4Configured, runReport, type ReportRow } from '@/lib/ga4';
 import { getArchive, displaySongTitle } from '@/lib/archive';
@@ -106,7 +107,7 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
   if (!isGa4Configured()) {
     return (
       <div className="max-w-2xl">
-        <h1 className="font-display text-2xl font-bold text-stone-900">網站數據</h1>
+        <DataTabs active="traffic" searchParams={searchParams} />
         <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-5 text-sm leading-relaxed text-amber-900">
           <p className="font-bold">尚未連接 Google Analytics</p>
           <p className="mt-2">請在環境變數（本機 .env.local、正式站 Vercel）設定 <code>GA4_PROPERTY_ID</code> 與 <code>GA4_SERVICE_ACCOUNT_JSON</code>，並把 service account 的 email 加進 GA 的「資源存取管理」（檢視者）。</p>
@@ -376,10 +377,10 @@ export default async function AdminAnalyticsPage({ searchParams }: { searchParam
 
   return (
     <div className="max-w-5xl">
+      <DataTabs active="traffic" searchParams={searchParams} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-stone-900">網站數據</h1>
-          <p className="mt-1 text-sm text-stone-500">資料來自 Google Analytics 4，約每小時更新；漲跌是和前一段同長度期間比較。登入過後台的瀏覽器不會被計入。</p>
+          <p className="text-sm text-stone-500">資料來自 Google Analytics 4，約每小時更新；漲跌是和前一段同長度期間比較。登入過後台的瀏覽器不會被計入。</p>
         </div>
         <div className="flex flex-wrap items-center gap-1 rounded-md border border-stone-200 bg-white p-1 text-sm">
           {RANGES.map((r) => (
