@@ -63,6 +63,7 @@ export default async function SearchPerformance({
   searchParams,
   basePath,
   extra,
+  country = 'all',
   labelPage = (url: string) => {
     try {
       const u = new URL(url);
@@ -79,9 +80,14 @@ export default async function SearchPerformance({
   extra?: Record<string, string>;
   labelPage?: (url: string) => string;
   markers?: { date: string; title: string }[];
+  /** 只看來自日本的搜尋（jp）、日本以外（other），或全部（all） */
+  country?: 'all' | 'jp' | 'other';
 }) {
   const range = resolveRange(searchParams, SEARCH_PRESETS, '28', LAG_DAYS);
   const { from, to, dayCount, prevFrom, prevTo } = range;
+
+  const countryFilter = country === 'all' ? undefined : { operator: (country === 'jp' ? 'equals' : 'notEquals') as 'equals' | 'notEquals', code: 'jpn' };
+  const query = (o: Parameters<typeof querySearchAnalytics>[0]) => querySearchAnalytics({ ...o, siteUrl, country: countryFilter });
 
   let error: string | null = null;
   let total: GscRow | undefined;
@@ -93,13 +99,13 @@ export default async function SearchPerformance({
   let devices: GscRow[] = [];
   try {
     [[total], [prevTotal], daily, queries, pages, countries, devices] = await Promise.all([
-      querySearchAnalytics({ siteUrl, startDate: from, endDate: to }),
-      querySearchAnalytics({ siteUrl, startDate: prevFrom, endDate: prevTo }),
-      querySearchAnalytics({ siteUrl, startDate: from, endDate: to, dimensions: ['date'], rowLimit: 500 }),
-      querySearchAnalytics({ siteUrl, startDate: from, endDate: to, dimensions: ['query'], rowLimit: 20 }),
-      querySearchAnalytics({ siteUrl, startDate: from, endDate: to, dimensions: ['page'], rowLimit: 20 }),
-      querySearchAnalytics({ siteUrl, startDate: from, endDate: to, dimensions: ['country'], rowLimit: 10 }),
-      querySearchAnalytics({ siteUrl, startDate: from, endDate: to, dimensions: ['device'], rowLimit: 5 })
+      query({ startDate: from, endDate: to }),
+      query({ startDate: prevFrom, endDate: prevTo }),
+      query({ startDate: from, endDate: to, dimensions: ['date'], rowLimit: 500 }),
+      query({ startDate: from, endDate: to, dimensions: ['query'], rowLimit: 20 }),
+      query({ startDate: from, endDate: to, dimensions: ['page'], rowLimit: 20 }),
+      query({ startDate: from, endDate: to, dimensions: ['country'], rowLimit: 10 }),
+      query({ startDate: from, endDate: to, dimensions: ['device'], rowLimit: 5 })
     ]);
   } catch (e) {
     error = e instanceof Error ? e.message : '讀取 Search Console 失敗';

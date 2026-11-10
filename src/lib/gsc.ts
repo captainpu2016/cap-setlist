@@ -55,6 +55,8 @@ interface QueryOptions {
   endDate: string;
   dimensions?: ('date' | 'query' | 'page' | 'country' | 'device')[];
   rowLimit?: number;
+  /** 只看某個國家（國碼小寫三碼，例如 jpn）；notEquals 是「這個國家以外」 */
+  country?: { operator: 'equals' | 'notEquals'; code: string };
 }
 
 /** searchAnalytics.query：dimensions 空陣列時回傳整個期間的總計（一列） */
@@ -69,6 +71,9 @@ export async function querySearchAnalytics(opts: QueryOptions): Promise<GscRow[]
       endDate: opts.endDate,
       dimensions: opts.dimensions ?? [],
       rowLimit: opts.rowLimit ?? 25,
+      ...(opts.country
+        ? { dimensionFilterGroups: [{ groupType: 'and', filters: [{ dimension: 'country', operator: opts.country.operator, expression: opts.country.code }] }] }
+        : {}),
       dataState: 'final'
     }),
     // 搜尋資料本來就有延遲，快取一小時省配額

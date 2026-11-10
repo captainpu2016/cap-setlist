@@ -48,6 +48,7 @@ function pathLabel(path: string): string {
 export default async function JpTraffic({
   propertyId,
   host,
+  country = 'all',
   searchParams,
   basePath,
   extra
@@ -55,6 +56,8 @@ export default async function JpTraffic({
   propertyId: string;
   /** 網站的網域，用來只看站內的頁面動線（例如 captainpu.ryzm.jp） */
   host: string;
+  /** 只看來自日本的訪客（jp）、日本以外（other），或全部（all） */
+  country?: 'all' | 'jp' | 'other';
   searchParams: { range?: string; from?: string; to?: string };
   basePath: string;
   extra?: Record<string, string>;
@@ -64,6 +67,16 @@ export default async function JpTraffic({
   const cur = { startDate: from, endDate: to, propertyId };
   const prev = { startDate: prevFrom, endDate: prevTo, propertyId };
   const totalMetrics = ['activeUsers', 'newUsers', 'screenPageViews', 'sessions', 'engagementRate', 'averageSessionDuration', 'screenPageViewsPerSession'];
+
+  // 國家篩選：GA4 的 country 欄位是英文國名（Japan）。其他篩選條件（例如站內動線）用 andGroup 疊上去
+  const japan = { filter: { fieldName: 'country', stringFilter: { matchType: 'EXACT', value: 'Japan' } } };
+  const countryExpr = country === 'jp' ? japan : country === 'other' ? { notExpression: japan } : null;
+  const run = (o: Parameters<typeof runReport>[0]) =>
+    runReport(
+      countryExpr
+        ? { ...o, dimensionFilter: o.dimensionFilter ? { andGroup: { expressions: [o.dimensionFilter, countryExpr] } } : countryExpr }
+        : o
+    );
 
   // 進階區塊：讀不到就當作空的，不讓整頁壞掉
   const safe = async (p: Promise<ReportRow[]>): Promise<ReportRow[]> => {
@@ -80,9 +93,9 @@ export default async function JpTraffic({
   let daily: ReportRow[] = [];
   try {
     [[curTotals], [prevTotals], daily] = await Promise.all([
-      runReport({ ...cur, metrics: totalMetrics }),
-      runReport({ ...prev, metrics: totalMetrics }),
-      runReport({ ...cur, dimensions: ['date'], metrics: ['activeUsers', 'screenPageViews'], orderBy: { dimension: 'date', desc: false }, limit: 400 })
+      run({ ...cur, metrics: totalMetrics }),
+      run({ ...prev, metrics: totalMetrics }),
+      run({ ...cur, dimensions: ['date'], metrics: ['activeUsers', 'screenPageViews'], orderBy: { dimension: 'date', desc: false }, limit: 400 })
     ]);
   } catch (e) {
     error = e instanceof Error ? e.message : '讀取 GA4 失敗';
@@ -91,10 +104,10 @@ export default async function JpTraffic({
   const [pages, landing, flow, sources, sourceMedium, outbound, countries, cities, languages, devices, browsers, userTypes, hours, events] = error
     ? [[], [], [], [], [], [], [], [], [], [], [], [], [], []]
     : await Promise.all([
-        safe(runReport({ ...cur, dimensions: ['pagePath', 'pageTitle'], metrics: ['screenPageViews', 'activeUsers', 'userEngagementDuration'], orderBy: { metric: 'screenPageViews' }, limit: 15 })),
-        safe(runReport({ ...cur, dimensions: ['landingPage'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 8 })),
+        safe(run({ ...cur, dimensions: ['pagePath', 'pageTitle'], metrics: ['screenPageViews', 'activeUsers', 'userEngagementDuration'], orderBy: { metric: 'screenPageViews' }, limit: 15 })),
+        safe(run({ ...cur, dimensions: ['landingPage'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 8 })),
         safe(
-          runReport({
+          run({
             ...cur,
             dimensions: ['pageReferrer', 'pagePath'],
             metrics: ['screenPageViews'],
@@ -103,17 +116,17 @@ export default async function JpTraffic({
             dimensionFilter: { filter: { fieldName: 'pageReferrer', stringFilter: { matchType: 'CONTAINS', value: host } } }
           })
         ),
-        safe(runReport({ ...cur, dimensions: ['sessionSource'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 80 })),
-        safe(runReport({ ...cur, dimensions: ['sessionSourceMedium'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 10 })),
-        safe(runReport({ ...cur, dimensions: ['linkDomain', 'linkUrl'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 60, dimensionFilter: eventIs('click') })),
-        safe(runReport({ ...cur, dimensions: ['country'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 10 })),
-        safe(runReport({ ...cur, dimensions: ['city'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 12 })),
-        safe(runReport({ ...cur, dimensions: ['language'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 8 })),
-        safe(runReport({ ...cur, dimensions: ['deviceCategory'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 5 })),
-        safe(runReport({ ...cur, dimensions: ['browser'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 6 })),
-        safe(runReport({ ...cur, dimensions: ['newVsReturning'], metrics: ['activeUsers'], limit: 5 })),
-        safe(runReport({ ...cur, dimensions: ['dayOfWeek', 'hour'], metrics: ['sessions'], limit: 200 })),
-        safe(runReport({ ...cur, dimensions: ['eventName'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 15 }))
+        safe(run({ ...cur, dimensions: ['sessionSource'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 80 })),
+        safe(run({ ...cur, dimensions: ['sessionSourceMedium'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 10 })),
+        safe(run({ ...cur, dimensions: ['linkDomain', 'linkUrl'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 60, dimensionFilter: eventIs('click') })),
+        safe(run({ ...cur, dimensions: ['country'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 10 })),
+        safe(run({ ...cur, dimensions: ['city'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 12 })),
+        safe(run({ ...cur, dimensions: ['language'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 8 })),
+        safe(run({ ...cur, dimensions: ['deviceCategory'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 5 })),
+        safe(run({ ...cur, dimensions: ['browser'], metrics: ['activeUsers'], orderBy: { metric: 'activeUsers' }, limit: 6 })),
+        safe(run({ ...cur, dimensions: ['newVsReturning'], metrics: ['activeUsers'], limit: 5 })),
+        safe(run({ ...cur, dimensions: ['dayOfWeek', 'hour'], metrics: ['sessions'], limit: 200 })),
+        safe(run({ ...cur, dimensions: ['eventName'], metrics: ['eventCount'], orderBy: { metric: 'eventCount' }, limit: 15 }))
       ]);
 
   const t = (i: number) => curTotals?.metrics[i] ?? 0;

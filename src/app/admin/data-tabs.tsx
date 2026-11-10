@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-type Params = { range?: string; from?: string; to?: string };
+type Params = { range?: string; from?: string; to?: string; country?: string };
 
 interface Tab {
   key: 'traffic' | 'search';
@@ -47,6 +47,7 @@ export default function DataTabs({
   if (searchParams?.range) carry.range = searchParams.range;
   if (searchParams?.from) carry.from = searchParams.from;
   if (searchParams?.to) carry.to = searchParams.to;
+  if (site === 'jp' && searchParams?.country) carry.country = searchParams.country;
 
   return (
     <div className="mb-5 border-b border-stone-200">
