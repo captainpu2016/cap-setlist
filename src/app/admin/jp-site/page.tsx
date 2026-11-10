@@ -40,7 +40,7 @@ export default async function AdminJpSitePage({ searchParams }: { searchParams: 
       {tab === 'search' ? (
         <SearchPerformance siteUrl={JP_SITE.gscSiteUrl} searchParams={rest} basePath="/admin/jp-site" extra={{ tab: 'search' }} />
       ) : (
-        <JpTraffic propertyId={JP_SITE.ga4PropertyId} searchParams={rest} basePath="/admin/jp-site" extra={{ tab: 'traffic' }} />
+        <JpTraffic propertyId={JP_SITE.ga4PropertyId} host={new URL(JP_SITE.url).host} searchParams={rest} basePath="/admin/jp-site" extra={{ tab: 'traffic' }} />
       )}
     </div>
   );
