@@ -2,13 +2,15 @@ import { pctChange } from './helpers';
 
 const nf = new Intl.NumberFormat('zh-TW');
 
-export function DeltaBadge({ cur, prev }: { cur: number; prev: number }) {
+/** invert：數字越小越好（例如搜尋平均排名），下降顯示綠色、上升顯示紅色 */
+export function DeltaBadge({ cur, prev, invert = false }: { cur: number; prev: number; invert?: boolean }) {
   const pct = pctChange(cur, prev);
   if (pct === null) return <span className="text-xs font-medium text-emerald-600">新增</span>;
   if (Math.abs(pct) < 0.5) return <span className="text-xs text-stone-400">持平</span>;
   const up = pct > 0;
+  const good = invert ? !up : up;
   return (
-    <span className={`text-xs font-medium tabular-nums ${up ? 'text-emerald-600' : 'text-red-600'}`}>
+    <span className={`text-xs font-medium tabular-nums ${good ? 'text-emerald-600' : 'text-red-600'}`}>
       {up ? '▲' : '▼'} {Math.abs(pct).toFixed(0)}%
     </span>
   );
@@ -19,20 +21,22 @@ export function StatCard({
   value,
   cur,
   prev,
-  hint
+  hint,
+  invert = false
 }: {
   label: string;
   value: string;
   cur: number;
   prev: number;
   hint?: string;
+  invert?: boolean;
 }) {
   return (
     <div className="rounded-lg border border-stone-200 bg-white p-4">
       <p className="text-xs text-stone-500">{label}</p>
       <p className="mt-1 text-2xl font-bold tabular-nums text-stone-900">{value}</p>
       <p className="mt-1 flex items-center gap-1.5">
-        <DeltaBadge cur={cur} prev={prev} />
+        <DeltaBadge cur={cur} prev={prev} invert={invert} />
         <span className="text-xs text-stone-400">{hint ?? '較前一期'}</span>
       </p>
     </div>

@@ -22,7 +22,22 @@ const H = 200;
 const PAD = { l: 36, r: 8, t: 10, b: 22 };
 
 /** 每日趨勢面積圖：瀏覽量（灰底）疊上訪客（紅線）。滑鼠移過或手指按住會出現十字線與數字，演出日以虛線標示 */
-export default function AreaChart({ data, markers = [] }: { data: DailyPoint[]; markers?: ShowMarker[] }) {
+export default function AreaChart({
+  data,
+  markers = [],
+  viewsLabel = '瀏覽量',
+  usersLabel = '訪客',
+  hideUsers = false
+}: {
+  data: DailyPoint[];
+  markers?: ShowMarker[];
+  /** 灰色面積那條線的名稱（Search Console 用「曝光」） */
+  viewsLabel?: string;
+  /** 紅線的名稱 */
+  usersLabel?: string;
+  /** 只畫灰色面積，不畫紅線（單一數列時用） */
+  hideUsers?: boolean;
+}) {
   const ref = useRef<SVGSVGElement>(null);
   const [active, setActive] = useState<number | null>(null);
 
@@ -58,8 +73,8 @@ export default function AreaChart({ data, markers = [] }: { data: DailyPoint[]; 
   return (
     <div>
       <div className="mb-2 flex flex-wrap gap-4 text-xs text-stone-500">
-        <span className="flex items-center gap-1.5"><i className="inline-block h-2 w-3 rounded-sm bg-stone-300" />瀏覽量</span>
-        <span className="flex items-center gap-1.5"><i className="inline-block h-0.5 w-3 bg-red-600" />訪客</span>
+        <span className="flex items-center gap-1.5"><i className="inline-block h-2 w-3 rounded-sm bg-stone-300" />{viewsLabel}</span>
+        {!hideUsers && <span className="flex items-center gap-1.5"><i className="inline-block h-0.5 w-3 bg-red-600" />{usersLabel}</span>}
         {markers.length > 0 && (
           <span className="flex items-center gap-1.5"><i className="inline-block h-3 w-0 border-l border-dashed border-stone-900" />演出日</span>
         )}
@@ -84,7 +99,7 @@ export default function AreaChart({ data, markers = [] }: { data: DailyPoint[]; 
           ))}
           <path d={area} fill="#d6d3d1" opacity="0.55" />
           <path d={line('views')} fill="none" stroke="#57534e" strokeWidth="1.5" />
-          <path d={line('users')} fill="none" stroke="#dc2626" strokeWidth="2" />
+          {!hideUsers && <path d={line('users')} fill="none" stroke="#dc2626" strokeWidth="2" />}
 
           {markers.map((m) => {
             const i = data.findIndex((d) => d.date === m.date);
@@ -107,7 +122,7 @@ export default function AreaChart({ data, markers = [] }: { data: DailyPoint[]; 
             <g pointerEvents="none">
               <line x1={x(active)} x2={x(active)} y1={PAD.t} y2={y(0)} stroke="#78716c" strokeWidth="1" />
               <circle cx={x(active)} cy={y(point.views)} r="3.5" fill="#fff" stroke="#57534e" strokeWidth="1.5" />
-              <circle cx={x(active)} cy={y(point.users)} r="3.5" fill="#fff" stroke="#dc2626" strokeWidth="2" />
+              {!hideUsers && <circle cx={x(active)} cy={y(point.users)} r="3.5" fill="#fff" stroke="#dc2626" strokeWidth="2" />}
             </g>
           )}
         </svg>
