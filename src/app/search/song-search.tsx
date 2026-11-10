@@ -10,6 +10,18 @@ export interface SearchSong {
   shows: { id: string; slug: string; title: string; date: string; venue: string | null }[];
 }
 
+export interface SearchShow {
+  slug: string;
+  title: string;
+  date: string;
+  venue: string | null;
+  city: string | null;
+  series: string | null;
+  tags: string[];
+  /** 全部可搜尋的欄位合在一起的小寫字串 */
+  haystack: string;
+}
+
 type SortKey = 'count' | 'recent' | 'title';
 
 const SORTS: { key: SortKey; label: string }[] = [
@@ -47,7 +59,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return <>{parts}</>;
 }
 
-export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[]; initialQuery: string }) {
+export default function SongSearch({ songs, shows, initialQuery }: { songs: SearchSong[]; shows: SearchShow[]; initialQuery: string }) {
   const [query, setQuery] = useState(initialQuery);
   const [sort, setSort] = useState<SortKey>('count');
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -55,26 +67,35 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
 
   const q = query.trim();
 
+  // 空白分隔的每個詞都要符合（例如「高雄 2023」＝在高雄、2023 年的場次）
+  const terms = useMemo(() => q.toLowerCase().split(/\s+/).filter(Boolean), [q]);
+
+  const showResults = useMemo(() => (terms.length === 0 ? [] : shows.filter((sh) => terms.every((t) => sh.haystack.includes(t)))), [shows, terms]);
+  const [showLimit, setShowLimit] = useState(10);
+
   const results = useMemo(() => {
-    const list = q ? songs.filter((s) => s.title.toLowerCase().includes(q.toLowerCase())) : songs.slice();
+    const list = q
+      ? songs.filter((s) => terms.every((t) => (s.title + ' ' + (s.album ?? '')).toLowerCase().includes(t)))
+      : songs.slice();
     list.sort((a, b) => {
       if (sort === 'count') return b.shows.length - a.shows.length || a.title.localeCompare(b.title, 'zh-Hant');
       if (sort === 'recent') return b.shows[0].date.localeCompare(a.shows[0].date);
       return a.title.localeCompare(b.title, 'zh-Hant');
     });
     return list;
-  }, [songs, q, sort]);
+  }, [songs, q, terms, sort]);
 
   // 停止輸入一下子後才記錄搜尋關鍵字，避免每打一個字就送一次
   useEffect(() => {
     if (!q) return;
-    const timer = setTimeout(() => trackEvent('site_search', { search_term: q.slice(0, 40), result_count: results.length }), 1200);
+    const timer = setTimeout(() => trackEvent('site_search', { search_term: q.slice(0, 40), result_count: results.length + showResults.length }), 1200);
     return () => clearTimeout(timer);
-  }, [q, results.length]);
+  }, [q, results.length, showResults.length]);
 
   function updateQuery(value: string) {
     setQuery(value);
     setLimit(PAGE_SIZE);
+    setShowLimit(10);
     // 同步到網址，方便分享搜尋結果
     const url = value.trim() ? `/search?q=${encodeURIComponent(value.trim())}` : '/search';
     window.history.replaceState(null, '', url);
@@ -112,9 +133,9 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
           type="search"
           value={query}
           onChange={(e) => updateQuery(e.target.value)}
-          placeholder="輸入歌名關鍵字…"
+          placeholder="歌名、場地、城市、年份…"
           autoFocus
-          aria-label="搜尋歌曲"
+          aria-label="搜尋歌曲與場次"
           className="w-full rounded-sm border-2 border-stage-700 bg-stage-900 py-4 pl-12 pr-12 text-base font-medium text-paper placeholder:text-stone-600 focus:border-signal focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
@@ -129,12 +150,41 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
         )}
       </div>
 
+      {/* 場次結果 */}
+      {showResults.length > 0 && (
+        <section className="mt-6" aria-label="符合的演出">
+          <h2 className="font-accent text-xs tracking-widest text-signal">SHOWS・演出</h2>
+          <ul className="mt-3 space-y-2">
+            {showResults.slice(0, showLimit).map((sh) => (
+              <li key={sh.slug}>
+                <a href={`/show/${sh.slug}`} className="card-bar block py-3 pl-5 pr-4 transition-colors hover:bg-stage-800/50">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate font-bold text-paper">
+                      <Highlight text={sh.title} query={terms[0] ?? ''} />
+                    </span>
+                    <span className="shrink-0 font-accent text-xs tracking-wider text-stone-500">{formatDate(sh.date)}</span>
+                  </div>
+                  <p className="mt-1 truncate text-xs text-stone-500">
+                    {[sh.venue, sh.series, ...sh.tags].filter(Boolean).join('・')}
+                  </p>
+                </a>
+              </li>
+            ))}
+          </ul>
+          {showResults.length > showLimit && (
+            <button type="button" onClick={() => setShowLimit((l) => l + 20)} className="mt-3 btn-ghost w-full !py-2.5">
+              顯示更多演出（還有 {showResults.length - showLimit} 場）
+            </button>
+          )}
+        </section>
+      )}
+
       {/* 結果數量與排序 */}
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-stone-500">
           {q ? (
             <>
-              找到 <span className="font-bold text-marquee">{results.length}</span> 首符合「{q}」的歌曲
+              找到 <span className="font-bold text-marquee">{showResults.length}</span> 場演出、<span className="font-bold text-marquee">{results.length}</span> 首歌曲符合「{q}」
             </>
           ) : (
             <>
@@ -160,6 +210,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
       </div>
 
       {/* 歌曲列表 */}
+      {q && results.length > 0 && showResults.length > 0 && <h2 className="mt-6 font-accent text-xs tracking-widest text-signal">SONGS・歌曲</h2>}
       <ul className="mt-4 space-y-3">
         {visible.map((song) => {
           const isOpen = open.has(song.id) || results.length === 1;
@@ -182,7 +233,7 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-base font-black text-paper">
-                    <Highlight text={song.title} query={q} />
+                    <Highlight text={song.title} query={terms[0] ?? ''} />
                   </h2>
                   <p className="mt-0.5 truncate text-xs text-stone-500">
                     {song.album ? `${song.album}・` : ''}最近一次 {formatDate(song.shows[0].date)}
@@ -249,9 +300,9 @@ export default function SongSearch({ songs, initialQuery }: { songs: SearchSong[
         </button>
       )}
 
-      {q && results.length === 0 && (
+      {q && results.length === 0 && showResults.length === 0 && (
         <div className="mt-10 rounded-sm border border-dashed border-stage-700 py-12 text-center">
-          <p className="text-paper">沒有找到符合「{q}」的歌曲</p>
+          <p className="text-paper">沒有找到符合「{q}」的歌曲或演出</p>
           <p className="mt-2 text-xs text-stone-500">試試看更短的關鍵字，或確認有沒有打錯字。</p>
         </div>
       )}
