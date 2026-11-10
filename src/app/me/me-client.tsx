@@ -23,6 +23,7 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
   const [preview, setPreview] = useState<string | null>(null);
   const blobRef = useRef<Blob | null>(null);
   const [filter, setFilter] = useState('');
+  const [year, setYear] = useState<'all' | number | null>(null); // null＝尚未決定，等紀錄載入後再選
 
   // 載入這個裝置回報過的場次；伺服器沒回應時退回本機記號
   useEffect(() => {
@@ -70,9 +71,17 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
     }
   }
 
+  const allMine = useMemo(() => shows.filter((s) => attended.has(s.id)).sort((a, b) => a.date.localeCompare(b.date)), [shows, attended]);
+  const years = useMemo(() => Array.from(new Set(allMine.map((s) => Number(s.date.slice(0, 4))))).sort((a, b) => b - a), [allMine]);
+  // 預設看今年（有紀錄的話），否則看全部
+  const activeYear: 'all' | number = year ?? (years.includes(new Date().getFullYear()) ? new Date().getFullYear() : 'all');
+
   const recap: RecapData | null = useMemo(() => {
-    const mine = shows.filter((s) => attended.has(s.id)).sort((a, b) => a.date.localeCompare(b.date));
+    const mine = activeYear === 'all' ? allMine : allMine.filter((s) => s.date.startsWith(String(activeYear)));
     if (mine.length === 0) return null;
+    // 每首歌第一次在現場聽到的日期（從所有紀錄算起），用來數「今年第一次聽到」
+    const firstHeard = new Map<string, string>();
+    for (const s of allMine) for (const song of s.songs) if (!firstHeard.has(song.id)) firstHeard.set(song.id, s.date);
     const counts = new Map<string, { title: string; count: number }>();
     let totalPlays = 0;
     for (const s of mine) {
@@ -91,9 +100,17 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
       topSongs: Array.from(counts.values()).sort((a, b) => b.count - a.count || a.title.localeCompare(b.title, 'zh-Hant')),
       first: { title: mine[0].title, date: mine[0].date },
       latest: { title: mine[mine.length - 1].title, date: mine[mine.length - 1].date },
-      domain: window.location.host
+      domain: window.location.host,
+      year: activeYear === 'all' ? null : activeYear,
+      newSongs: activeYear === 'all' ? 0 : Array.from(counts.keys()).filter((id) => firstHeard.get(id)?.startsWith(String(activeYear))).length
     };
-  }, [shows, attended]);
+  }, [allMine, activeYear]);
+
+  function pickYear(y: 'all' | number) {
+    setYear(y);
+    blobRef.current = null;
+    setPreview(null);
+  }
 
   async function makeCard(): Promise<Blob | null> {
     if (!recap) return null;
@@ -111,7 +128,7 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
     setError(null);
     try {
       const blob = await makeCard();
-      if (blob) await shareOrDownload(blob, '我的現場紀錄-普通隊長.png', '我的現場紀錄');
+      if (blob) await shareOrDownload(blob, recap?.year ? `${recap.year}年度回顧-普通隊長.png` : '我的現場紀錄-普通隊長.png', recap?.year ? `我的 ${recap.year} 年度回顧` : '我的現場紀錄');
     } catch {
       setError('產生回顧卡失敗，請稍後再試。');
     } finally {
@@ -126,10 +143,36 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
 
   return (
     <div className="mt-10">
+      {ready && years.length > 0 && (
+        <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="回顧年份">
+          {years.map((y) => (
+            <button
+              key={y}
+              type="button"
+              onClick={() => pickYear(y)}
+              aria-pressed={activeYear === y}
+              className={`border-2 px-3 py-1.5 text-sm font-bold transition ${activeYear === y ? 'border-signal bg-signal text-paper' : 'border-stage-700 text-stone-300 hover:border-paper'}`}
+            >
+              {y} 年度回顧
+            </button>
+          ))}
+          {years.length > 1 && (
+            <button
+              type="button"
+              onClick={() => pickYear('all')}
+              aria-pressed={activeYear === 'all'}
+              className={`border-2 px-3 py-1.5 text-sm font-bold transition ${activeYear === 'all' ? 'border-signal bg-signal text-paper' : 'border-stage-700 text-stone-300 hover:border-paper'}`}
+            >
+              全部
+            </button>
+          )}
+        </div>
+      )}
+
       {ready && recap && (
         <section className="border-t-2 border-paper pt-6" aria-label="我的統計">
           <p className="font-accent text-2xl font-semibold text-paper">
-            <span className="text-6xl font-bold text-marquee">{recap.shows}</span> 場演出
+            <span className="text-6xl font-bold text-marquee">{recap.shows}</span> 場演出{recap.year ? <span className="ml-3 text-base text-stone-400">{recap.year} 年</span> : null}
           </p>
           <dl className="mt-4 grid grid-cols-3 gap-4 font-accent">
             <div>
@@ -138,9 +181,9 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
               <p className="text-xs text-stone-500">首不同的歌</p>
             </div>
             <div>
-              <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">Plays</dt>
-              <dd className="text-3xl font-bold text-paper">{recap.totalPlays}</dd>
-              <p className="text-xs text-stone-500">首次現場聽到</p>
+              <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">{recap.year ? 'New' : 'Plays'}</dt>
+              <dd className="text-3xl font-bold text-paper">{recap.year ? recap.newSongs : recap.totalPlays}</dd>
+              <p className="text-xs text-stone-500">{recap.year ? '首今年第一次聽到' : '首次現場聽到'}</p>
             </div>
             <div>
               <dt className="text-[11px] uppercase tracking-[0.25em] text-stone-500">Cities</dt>
@@ -155,7 +198,7 @@ export default function MeClient({ shows }: { shows: MeShow[] }) {
           )}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <button type="button" onClick={handleShare} disabled={making} className="btn-primary">
-              {making ? '產生中…' : '產生並分享回顧卡'}
+              {making ? '產生中…' : recap.year ? `產生並分享 ${recap.year} 年度回顧` : '產生並分享回顧卡'}
             </button>
             <button type="button" onClick={() => void makeCard()} disabled={making} className="btn-ghost">
               預覽

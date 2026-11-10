@@ -7,6 +7,10 @@ export interface RecapData {
   first: { title: string; date: string } | null;
   latest: { title: string; date: string } | null;
   domain: string;
+  /** 年度回顧的年份（例如 2026）；null 代表「全部紀錄」 */
+  year: number | null;
+  /** 年度回顧時：這一年第一次現場聽到的歌有幾首 */
+  newSongs: number;
 }
 
 const W = 1080;
@@ -45,7 +49,7 @@ export async function drawRecapCard(canvas: HTMLCanvasElement, data: RecapData):
   if (!ctx) throw new Error('canvas unsupported');
 
   const family = getComputedStyle(document.body).fontFamily;
-  const sample = `${data.topSongs.map((s) => s.title).join('')}${data.first?.title ?? ''}${data.latest?.title ?? ''}我的現場紀錄場演出首不同的歌座城市最常聽到的歌第一場最近一場`;
+  const sample = `${data.topSongs.map((s) => s.title).join('')}${data.first?.title ?? ''}${data.latest?.title ?? ''}我的現場紀錄場演出首不同的歌座城市最常聽到的歌第一場最近一場年度回顧今年第一次聽到首歌0123456789`;
   try {
     await Promise.all([document.fonts.load(`900 40px ${family}`, sample), document.fonts.load(`400 40px ${family}`, sample)]);
   } catch {
@@ -63,7 +67,7 @@ export async function drawRecapCard(canvas: HTMLCanvasElement, data: RecapData):
   ctx.fillStyle = GOLD;
   ctx.font = `900 28px ${family}`;
   ctx.textAlign = 'right';
-  ctx.fillText('MY SHOW RECAP', W - 64, 100);
+  ctx.fillText(data.year ? `MY ${data.year} RECAP` : 'MY SHOW RECAP', W - 64, 100);
   ctx.textAlign = 'left';
 
   // 紅色粗線
@@ -73,7 +77,7 @@ export async function drawRecapCard(canvas: HTMLCanvasElement, data: RecapData):
   // 主數字
   ctx.fillStyle = GOLD;
   ctx.font = `900 40px ${family}`;
-  ctx.fillText('我的現場紀錄', 64, 270);
+  ctx.fillText(data.year ? `${data.year} 年度回顧` : '我的現場紀錄', 64, 270);
 
   ctx.fillStyle = PAPER;
   ctx.font = `900 330px ${family}`;
@@ -83,11 +87,17 @@ export async function drawRecapCard(canvas: HTMLCanvasElement, data: RecapData):
   ctx.fillText('場演出', 56 + numW + 24, 590);
 
   // 三個小統計
-  const stats: [string, string][] = [
-    [String(data.distinctSongs), '首不同的歌'],
-    [String(data.totalPlays), '首次現場聽到'],
-    [String(data.cities), '座城市']
-  ];
+  const stats: [string, string][] = data.year
+    ? [
+        [String(data.distinctSongs), '首不同的歌'],
+        [String(data.newSongs), '首今年第一次聽到'],
+        [String(data.cities), '座城市']
+      ]
+    : [
+        [String(data.distinctSongs), '首不同的歌'],
+        [String(data.totalPlays), '首次現場聽到'],
+        [String(data.cities), '座城市']
+      ];
   const colW = (W - 128) / 3;
   stats.forEach(([n, label], i) => {
     const x = 64 + i * colW;
@@ -131,8 +141,8 @@ export async function drawRecapCard(canvas: HTMLCanvasElement, data: RecapData):
   // 第一場 / 最近一場
   const boxY = 1500;
   const boxes: [string, { title: string; date: string } | null][] = [
-    ['第一場', data.first],
-    ['最近一場', data.latest]
+    [data.year ? '今年第一場' : '第一場', data.first],
+    [data.year ? '今年最後一場' : '最近一場', data.latest]
   ];
   boxes.forEach(([label, v], i) => {
     if (!v) return;
@@ -159,7 +169,7 @@ export async function drawRecapCard(canvas: HTMLCanvasElement, data: RecapData):
   if (mascot) ctx.drawImage(mascot, W - 64 - 130, 1750, 130, 130);
   ctx.fillStyle = PAPER;
   ctx.font = `900 34px ${family}`;
-  ctx.fillText('你也來留下你的現場紀錄', 64, 1810);
+  ctx.fillText(data.year ? `你的 ${data.year} 也留下紀錄吧` : '你也來留下你的現場紀錄', 64, 1810);
   ctx.fillStyle = GOLD;
   ctx.font = `400 26px ${family}`;
   ctx.fillText(data.domain, 64, 1856);
