@@ -78,6 +78,11 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   const periodLabel = useYear ? `${thisYear} 年` : '近 12 個月';
   const periodCities = new Set(periodShows.map((s) => getCity(s.venue)).filter(Boolean)).size;
 
+  // 年底入口：12 月到隔年 1/15 之間，邀請歌迷去看自己的年度回顧
+  const [ty, tm, td] = today.split('-').map(Number);
+  const recapYear = tm === 12 ? ty : tm === 1 && td <= 15 ? ty - 1 : null;
+  const recapHasShows = recapYear !== null && playedShows.some((s) => s.show_date.startsWith(String(recapYear)));
+
   // 頁首入口：有下一場就導向下一場，沒有就導向最新一場的歌單
   const nextShow = [...allShows].reverse().find((s) => s.show_date >= today) ?? null;
   const latestShow = playedShows[0] ?? null;
@@ -155,6 +160,16 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
       </header>
 
       <section className="mx-auto max-w-5xl px-6 py-12 sm:px-10">
+        {recapYear !== null && recapHasShows && !hasFilter && (
+          <a href="/me" className="card-bar group mb-10 flex items-center gap-4 px-5 py-4">
+            <div className="min-w-0 flex-1">
+              <span className="tag-solid">{recapYear} Recap</span>
+              <p className="mt-1.5 font-black text-paper group-hover:text-marquee">看你的 {recapYear} 年度回顧</p>
+              <p className="text-xs text-stone-400">標記你今年去過的演出，產生一張可以分享的回顧卡。</p>
+            </div>
+            <span aria-hidden className="shrink-0 font-accent text-xl text-signal">→</span>
+          </a>
+        )}
         {allShows.length > 0 && (
           <FilterBar
             years={years}
