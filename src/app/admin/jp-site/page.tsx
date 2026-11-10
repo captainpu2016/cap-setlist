@@ -4,6 +4,7 @@ import SearchPerformance from '../search-console/search-performance';
 import { JP_SITE } from '@/lib/external-sites';
 import { hasServiceAccount } from '@/lib/gsc';
 import JpTraffic from './jp-traffic';
+import { fetchPageTitles, normalizePath } from '@/lib/page-titles';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,17 @@ export default async function AdminJpSitePage({ searchParams }: { searchParams: 
     if (key !== 'all') q.set('country', key);
     return '/admin/jp-site?' + q.toString();
   };
+  // 搜尋表現的頁面欄位：網址換成日文站的頁面標題
+  const titles = tab === 'search' ? await fetchPageTitles(JP_SITE.ga4PropertyId) : new Map<string, string>();
+  const labelPage = (url: string) => {
+    let path = url;
+    try {
+      path = new URL(url).pathname;
+    } catch {
+      /* 不是完整網址就直接用原字串 */
+    }
+    return titles.get(normalizePath(path)) ?? (normalizePath(path) === '/' ? '首頁' : path);
+  };
   const extra: Record<string, string> = { tab };
   if (country !== 'all') extra.country = country;
 
@@ -83,7 +95,7 @@ export default async function AdminJpSitePage({ searchParams }: { searchParams: 
         </p>
       )}
       {tab === 'search' ? (
-        <SearchPerformance siteUrl={JP_SITE.gscSiteUrl} country={country} searchParams={range} basePath="/admin/jp-site" extra={extra} />
+        <SearchPerformance siteUrl={JP_SITE.gscSiteUrl} country={country} labelPage={labelPage} searchParams={range} basePath="/admin/jp-site" extra={extra} />
       ) : (
         <JpTraffic
           propertyId={JP_SITE.ga4PropertyId}

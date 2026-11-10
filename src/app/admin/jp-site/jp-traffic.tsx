@@ -4,6 +4,7 @@ import AreaChart from '../analytics/area-chart';
 import { classifySource } from '../analytics/helpers';
 import { BarList, Card, Heatmap, StatCard, type BarRow } from '../analytics/charts';
 import RangeControls from '../range-controls';
+import { fetchPageTitles, normalizePath } from '@/lib/page-titles';
 
 export const TRAFFIC_PRESETS: RangePreset[] = [
   { key: '7', label: '近 7 天', days: 7 },
@@ -101,9 +102,10 @@ export default async function JpTraffic({
     error = e instanceof Error ? e.message : '讀取 GA4 失敗';
   }
 
-  const [pages, landing, flow, sources, sourceMedium, outbound, countries, cities, languages, devices, browsers, userTypes, hours, events] = error
-    ? [[], [], [], [], [], [], [], [], [], [], [], [], [], []]
+  const [titleMap, pages, landing, flow, sources, sourceMedium, outbound, countries, cities, languages, devices, browsers, userTypes, hours, events] = error
+    ? [new Map<string, string>(), [], [], [], [], [], [], [], [], [], [], [], [], [], []]
     : await Promise.all([
+        fetchPageTitles(propertyId),
         safe(run({ ...cur, dimensions: ['pagePath', 'pageTitle'], metrics: ['screenPageViews', 'activeUsers', 'userEngagementDuration'], orderBy: { metric: 'screenPageViews' }, limit: 15 })),
         safe(run({ ...cur, dimensions: ['landingPage'], metrics: ['sessions'], orderBy: { metric: 'sessions' }, limit: 8 })),
         safe(
@@ -148,7 +150,9 @@ export default async function JpTraffic({
     return { path: r.dims[0], title, views, users, avgEngage: users > 0 ? r.metrics[2] / users : 0 };
   });
 
-  const landingBars: BarRow[] = landing.map((r) => ({ name: pathLabel(r.dims[0]), value: r.metrics[0] }));
+  // 路徑換成頁面標題；查不到標題就顯示路徑
+  const label = (path: string) => titleMap.get(normalizePath(path)) ?? pathLabel(path);
+  const landingBars: BarRow[] = landing.map((r) => ({ name: label(r.dims[0]), value: r.metrics[0], sub: normalizePath(r.dims[0]) }));
 
   // 站內動線：上一頁 → 這一頁
   const flowMap = new Map<string, number>();
@@ -160,7 +164,7 @@ export default async function JpTraffic({
       continue;
     }
     if (fromPath === r.dims[1]) continue; // 重新整理
-    const key = pathLabel(fromPath) + ' → ' + pathLabel(r.dims[1]);
+    const key = label(fromPath) + ' → ' + label(r.dims[1]);
     flowMap.set(key, (flowMap.get(key) ?? 0) + r.metrics[0]);
   }
   const flowBars: BarRow[] = Array.from(flowMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 10);
@@ -255,7 +259,7 @@ export default async function JpTraffic({
                     {pageRows.map((r) => (
                       <tr key={r.path + r.title}>
                         <td className="max-w-[22rem] px-2 py-2.5">
-                          <span className="block truncate text-stone-800" title={r.title || r.path}>{r.title || pathLabel(r.path)}</span>
+                          <span className="block truncate text-stone-800" title={r.title || r.path}>{r.title || label(r.path)}</span>
                           <span className="block truncate text-[11px] text-stone-400">{r.path}</span>
                         </td>
                         <td className="px-2 py-2.5 text-right font-medium text-stone-900">{nf.format(r.views)}</td>
