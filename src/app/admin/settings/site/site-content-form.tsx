@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 import { updateSiteContent } from './actions';
 import type { SiteContent } from '@/lib/site-settings';
 
@@ -41,50 +42,29 @@ export default function SiteContentForm({ content }: { content: SiteContent }) {
         />
       </div>
 
-      <div>
-        <label className="admin-label" htmlFor="bg_image_url">首頁背景圖片網址（選填）</label>
-        <input
-          id="bg_image_url"
-          name="bg_image_url"
-          defaultValue={content.bgImageUrl ?? ''}
-          className="admin-input"
-          placeholder="https://xxxxxxxxxxxx.supabase.co/storage/v1/object/public/..."
-        />
-        <p className="mt-1 text-xs text-stone-400">
-          先到 Supabase Dashboard 左側「Storage」上傳照片，複製它給你的公開網址貼在這裡。留空則不顯示背景圖。
-        </p>
-        {content.bgImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={content.bgImageUrl}
-            alt="目前的背景圖片預覽"
-            className="mt-3 h-32 w-full rounded-md border border-stone-200 object-cover"
-          />
-        )}
-      </div>
+      <ImageUploadField
+        id="bg_image_url"
+        name="bg_image_url"
+        label="首頁背景圖片（選填）"
+        defaultValue={content.bgImageUrl}
+        prefix="bg"
+        maxEdge={2200}
+        maxBytes={600_000}
+        hint="直接選照片上傳，會自動縮小到適合網頁的大小。留空則不顯示背景圖。"
+      />
 
-      <div className="border-t border-stone-200 pt-5">
-        <label className="admin-label" htmlFor="card_badge_image_url">分享歌單卡片的徽章圖片（選填）</label>
-        <input
-          id="card_badge_image_url"
-          name="card_badge_image_url"
-          defaultValue={content.cardBadgeImageUrl ?? ''}
-          className="admin-input"
-          placeholder="https://xxxxxxxxxxxx.supabase.co/storage/v1/object/public/..."
-        />
-        <p className="mt-1 text-xs text-stone-400">
-          場次頁「分享歌單卡片」產生的直式圖片，左上角原本是星芒圖案，貼這裡的網址可以換成你自己的圖片（例如樂團 Logo）。
-          留空則維持原本的星芒圖案。所有場次的卡片會一起套用同一張圖，沒有分場次設定的選項。
-        </p>
-        {content.cardBadgeImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={content.cardBadgeImageUrl}
-            alt="目前的卡片徽章圖片預覽"
-            className="mt-3 h-24 w-24 rounded-full border border-stone-200 object-cover"
-          />
-        )}
-      </div>
+      <ImageUploadField
+        className="border-t border-stone-200 pt-5"
+        id="card_badge_image_url"
+        name="card_badge_image_url"
+        label="分享歌單卡片的徽章圖片（選填）"
+        defaultValue={content.cardBadgeImageUrl}
+        prefix="badge"
+        maxEdge={600}
+        keepPng
+        previewClassName="mt-3 h-24 w-24 rounded-full border border-stone-200 object-cover"
+        hint="場次頁「分享歌單卡片」左上角原本是星芒圖案，上傳這裡的圖片可以換成你自己的圖（例如樂團 Logo）。所有場次的卡片共用同一張。留空則維持星芒。"
+      />
 
       <div className="flex items-center gap-3">
         <button type="submit" disabled={isPending} className="admin-btn">

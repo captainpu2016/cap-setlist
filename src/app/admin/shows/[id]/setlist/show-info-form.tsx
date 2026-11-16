@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import ImageUploadField from '@/components/admin/ImageUploadField';
 import { updateShowInfo, deleteShow } from '../../actions';
 import type { Show, Venue } from '@/types/database';
 import { toTaipeiInputValue } from '@/lib/format';
@@ -137,27 +138,15 @@ export default function ShowInfoForm({ show, venues, seriesOptions = [] }: { sho
         </>
       )}
 
-      <div className="sm:col-span-2">
-        <label className="admin-label" htmlFor="cover_image_url">封面圖片網址（選填）</label>
-        <input
-          id="cover_image_url"
-          name="cover_image_url"
-          defaultValue={show.cover_image_url ?? ''}
-          className="admin-input"
-          placeholder="https://xxxxxxxxxxxx.supabase.co/storage/v1/object/public/..."
-        />
-        <p className="mt-1 text-xs text-stone-400">
-          先到 Supabase Dashboard 左側「Storage」上傳這場演出的照片，複製公開網址貼在這裡。留空則不顯示。
-        </p>
-        {show.cover_image_url && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={show.cover_image_url}
-            alt="目前的封面圖片預覽"
-            className="mt-3 h-32 w-full rounded-md border border-stone-200 object-cover"
-          />
-        )}
-      </div>
+      <ImageUploadField
+        className="sm:col-span-2"
+        id="cover_image_url"
+        name="cover_image_url"
+        label="封面圖片（選填）"
+        defaultValue={show.cover_image_url}
+        prefix="cover"
+        hint="直接選照片上傳，會自動縮小到適合網頁的大小（長邊 1600px、約 450 KB 以內），不用先自己壓縮。留空則不顯示。"
+      />
 
       <div className="sm:col-span-2">
         <label className="admin-label" htmlFor="setlist_reveal_at">歌單公開時間（選填）</label>
