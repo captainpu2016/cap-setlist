@@ -4,3 +4,9 @@ node_modules
 .env.local
 .vercel
 *.log
+
+# 敏感檔案與暫存檔：絕對不要進版本控制
+recovery-codes.txt
+*.zip
+tsconfig.tsbuildinfo
+.DS_Store

@@ -28,9 +28,9 @@ function csvCell(v: string | number | null): string {
 export async function GET(request: Request) {
   const supabase = createClient();
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
-  if (!session) return new Response('Unauthorized', { status: 401 });
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) return new Response('Unauthorized', { status: 401 });
 
   const [{ data: shows }, { data: songs }] = await Promise.all([
     supabase

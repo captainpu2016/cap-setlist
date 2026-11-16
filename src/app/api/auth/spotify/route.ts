@@ -11,10 +11,10 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET() {
   const supabase = createClient();
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
+    data: { user }
+  } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.redirect(new URL('/admin/login', process.env.NEXT_PUBLIC_SITE_URL));
   }
 

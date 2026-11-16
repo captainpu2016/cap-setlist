@@ -7,6 +7,7 @@ import {
   getSpotifyUserId
 } from '@/lib/spotify/client';
 import type { Show, SetlistItemWithSong } from '@/types/database';
+import { UUID, clientIp, jsonError, rateLimited, sameOrigin } from '@/lib/comment-guard';
 
 /**
  * POST /api/shows/[id]/generate-playlist
@@ -18,9 +19,14 @@ import type { Show, SetlistItemWithSong } from '@/types/database';
  * 不重複建立播放清單（見開發指南 6.4 節註記）。
  */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  // 公開路由：只接受本站頁面的請求、限制頻率、先確認代碼格式，才去碰資料庫與 Spotify
+  if (!sameOrigin(request)) return jsonError('來源不被允許', 403);
+  if (rateLimited(`playlist:${clientIp(request)}`, 5, 60_000)) return jsonError('操作太頻繁，請稍後再試。', 429);
+  if (!UUID.test(params.id)) return jsonError('找不到此場次', 404);
+
   const admin = createAdminClient();
 
- const { data: show, error: showError } = await admin
+  const { data: show, error: showError } = await admin
     .from('shows')
     .select('*')
     .eq('id', params.id)
@@ -29,6 +35,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   if (showError || !show) {
     return NextResponse.json({ error: '找不到此場次' }, { status: 404 });
+  }
+
+  // 歌單還沒到公開時間：不能提前用它建播放清單（那等於把歌單曲目提早洩漏）
+  if (show.setlist_reveal_at && new Date(show.setlist_reveal_at) > new Date()) {
+    return NextResponse.json({ error: '這場的歌單還沒公開' }, { status: 403 });
   }
 
   // 已經生成過，直接回傳既有連結，不重複建立

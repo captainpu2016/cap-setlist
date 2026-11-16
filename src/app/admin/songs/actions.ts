@@ -8,9 +8,9 @@ import { parseSpotifyTrackId } from '@/lib/format';
 async function requireSession() {
   const supabase = createClient();
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
-  if (!session) throw new Error('UNAUTHORIZED');
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('UNAUTHORIZED');
   return supabase;
 }
 

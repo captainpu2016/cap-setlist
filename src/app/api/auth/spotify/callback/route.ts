@@ -10,12 +10,12 @@ import { createAdminClient } from '@/lib/supabase/admin';
 export async function GET(request: Request) {
   const supabase = createClient();
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
+    data: { user }
+  } = await supabase.auth.getUser();
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL!;
 
-  if (!session) {
+  if (!user) {
     return NextResponse.redirect(new URL('/admin/login', siteUrl));
   }
 

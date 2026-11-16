@@ -31,19 +31,19 @@ export async function middleware(request: NextRequest) {
   );
 
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
+    data: { user }
+  } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
   const isLoginPage = pathname === '/admin/login';
 
-  if (pathname.startsWith('/admin') && !isLoginPage && !session) {
+  if (pathname.startsWith('/admin') && !isLoginPage && !user) {
     const redirectUrl = new URL('/admin/login', request.url);
     redirectUrl.searchParams.set('redirectedFrom', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isLoginPage && session) {
+  if (isLoginPage && user) {
     return NextResponse.redirect(new URL('/admin', request.url));
   }
 
