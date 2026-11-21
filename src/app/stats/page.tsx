@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
-import { getArchive } from '@/lib/archive';
-import { getCity, todayTaipei } from '@/lib/format';
-import { countryOfVenue, isOverseasVenue } from '@/lib/geo';
+import { todayTaipei } from '@/lib/format';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
-import { getFilterShows } from '@/lib/stats-shows';
+import { getFilterShows, getStatsShows } from '@/lib/stats-shows';
 import StatsShell from './stats-shell';
 import StatsView from './stats-view';
 
@@ -17,22 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StatsPage() {
-  const [{ shows }, filterShows] = await Promise.all([getArchive(), getFilterShows()]);
-  // 只送統計需要的欄位到瀏覽器端
-  const slim = shows.map((x) => ({
-    id: x.id,
-    slug: x.slug,
-    title: x.title,
-    date: x.date,
-    venue: x.venue,
-    category: x.category,
-    series: x.series,
-    admission: x.admission,
-    overseas: isOverseasVenue(x.venue),
-    country: countryOfVenue(x.venue),
-    city: getCity(x.venue),
-    songs: x.songs.map((song) => ({ id: song.id, title: song.title, isCover: song.isCover }))
-  }));
+  const [slim, filterShows] = await Promise.all([getStatsShows(), getFilterShows()]);
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">

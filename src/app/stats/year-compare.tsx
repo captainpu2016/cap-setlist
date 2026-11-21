@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ADMISSIONS, SHOW_CATEGORIES } from '@/lib/show-category';
 import { isIntroSong } from '@/lib/song-title';
-import type { StatsShow } from './stats-view';
+import type { StatsShow } from '@/lib/stats-shows';
 
 type Period = string; // 'all' 或 4 位數年份
 

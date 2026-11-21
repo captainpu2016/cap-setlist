@@ -1,21 +1,14 @@
 'use client';
 
 import { isFiltered, matchesFilter } from '@/lib/show-filter';
-import { computeStats, groupCoversByArtist, rankTopSongs, statsByCategory, type ArchiveShow } from '@/lib/stats';
-import CategoryBars from './category-bars';
+import { computeStats, groupCoversByArtist, rankTopSongs } from '@/lib/stats';
+import type { StatsShow } from '@/lib/stats-shows';
 import CoverLineup from './cover-lineup';
 import TopSongs from './top-songs';
 import YearChart from './year-chart';
 import { useStatsFilter } from './stats-shell';
-import YearCompare from './year-compare';
 
-export type StatsShow = ArchiveShow & {
-  series: string | null;
-  admission: string | null;
-  overseas: boolean;
-  country: string | null;
-  city: string | null;
-};
+export type { StatsShow };
 
 /** 歌單統計的內容：可依分類、海外、入場方式、系列篩選，所有數字都只算篩選後的場次。預設（含搜尋引擎看到的）是全部場次 */
 export default function StatsView({ shows: allShows, today }: { shows: StatsShow[]; today: string }) {
@@ -35,12 +28,10 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
     { key: 'all', label: '全部', since: null }
   ].map(({ since, ...p }) => ({ ...p, ...rankTopSongs(shows, since, 10) }));
   const covers = groupCoversByArtist(s.coverSongs);
-  const byCategory = statsByCategory(allShows); // 分類比較表永遠看全部場次，不受上面的篩選影響
 
   const sections = [
     { id: 'top', label: '常唱的歌' },
-    { id: 'trend', label: '趨勢與比較' },
-    { id: 'compare', label: '年度比較' },
+    { id: 'trend', label: '每年的歌單' },
     ...(s.coverSongs.length > 0 ? [{ id: 'covers', label: '曾經翻唱過的歌' }] : [])
   ];
   // 錨點不用網址 #，因為 # 已經拿來放篩選條件
@@ -76,27 +67,10 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
             <TopSongs periods={periods} />
           </section>
 
-          {/* 趨勢與比較：每年的歌單 | 不同類型的演出 */}
-          <div id="trend" className="mt-16 grid scroll-mt-28 gap-12 lg:grid-cols-2 lg:gap-10">
-            <section className="min-w-0">
-              <h2 className="section-title mb-5 text-2xl">每年的歌單</h2>
-              <YearChart byYear={s.byYear} />
-            </section>
-
-            {byCategory.length > 0 && (
-              <section className="min-w-0">
-                <h2 className="section-title mb-2 text-2xl">不同類型的演出</h2>
-                <p className="mb-4 text-sm text-stone-500">長條是各類型的演出場數；名稱下方是平均每場首數與翻唱占比（只算已公開歌單的場次，不受上面的篩選影響）。</p>
-                <CategoryBars rows={byCategory} />
-              </section>
-            )}
-          </div>
-
-          {/* 年度比較：自選兩個期間，不受上面的篩選影響 */}
-          <section id="compare" className="mt-16 scroll-mt-28">
-            <h2 className="section-title mb-2 text-2xl">年度比較</h2>
-            <p className="mb-5 text-sm text-stone-500">自己選兩個年份（或「全部」），比較演出場次、歌曲、城市，以及演出類型的比例變化（不受上方篩選影響）。</p>
-            <YearCompare shows={allShows} today={today} />
+          {/* 每年的歌單 */}
+          <section id="trend" className="mt-16 max-w-3xl scroll-mt-28">
+            <h2 className="section-title mb-5 text-2xl">每年的歌單</h2>
+            <YearChart byYear={s.byYear} />
           </section>
 
           {/* 曾經翻唱過的歌放在最後 */}

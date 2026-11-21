@@ -4,7 +4,10 @@ import { getCity, todayTaipei } from '@/lib/format';
 import { getShowCoordinates } from '@/lib/geo';
 import TourView, { type TourShow } from './tour-view';
 import StatsShell from '../stats/stats-shell';
-import { getFilterShows } from '@/lib/stats-shows';
+import { getFilterShows, getStatsShows } from '@/lib/stats-shows';
+import { statsByCategory } from '@/lib/stats';
+import CategoryBars from '../stats/category-bars';
+import YearCompare from '../stats/year-compare';
 import JsonLd from '@/components/JsonLd';
 import MonthlyHeatmap from './monthly-heatmap';
 import { breadcrumbJsonLd } from '@/lib/seo';
@@ -49,10 +52,12 @@ function buildMonthlyTimeline(shows: Show[]): { yearMonth: string; count: number
 
 export default async function TourPage() {
   const supabase = createPublicClient();
-  const [{ data: shows }, filterShows] = await Promise.all([
+  const [{ data: shows }, filterShows, statsShows] = await Promise.all([
     supabase.from('shows').select('*, venue_data:venues(*)').eq('status', 'published').returns<ShowWithVenue[]>(),
-    getFilterShows()
+    getFilterShows(),
+    getStatsShows()
   ]);
+  const byCategory = statsByCategory(statsShows);
   const filterBySlug = new Map(filterShows.map((f) => [f.slug, f]));
 
   const allShows = shows ?? [];
@@ -100,6 +105,22 @@ export default async function TourPage() {
               ) : (
                 <p className="text-sm text-stone-500">還沒有演出資料。</p>
               )}
+            </section>
+
+            {byCategory.length > 0 && (
+              <section className="mt-14">
+                <h2 className="section-title mb-1 text-xl">不同類型的演出</h2>
+                <p className="mb-4 text-sm text-stone-500">
+                  長條是各類型的演出場數；名稱下方是平均每場首數與翻唱占比（只算已公開歌單的場次，不受上方篩選影響）。
+                </p>
+                <CategoryBars rows={byCategory} />
+              </section>
+            )}
+
+            <section className="mt-14">
+              <h2 className="section-title mb-1 text-xl">年度比較</h2>
+              <p className="mb-4 text-sm text-stone-500">自己選兩個年份（或「全部」），比較演出場次、歌曲、城市，以及演出類型的比例變化（不受上方篩選影響）。</p>
+              <YearCompare shows={statsShows} today={todayTaipei()} />
             </section>
           </TourView>
         </StatsShell>
