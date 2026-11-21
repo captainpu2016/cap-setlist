@@ -115,3 +115,21 @@ export function taipeiInputToIso(value: string): string | null {
 export function todayTaipei(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: SITE_TIME_ZONE });
 }
+
+/**
+ * 演出是不是已經結束。
+ * 資料庫沒有「結束時間」欄位，所以用兩個條件判斷：
+ * 1. 演出日期已經過了；
+ * 2. 後台有設定「歌單公開時間」（通常訂在演出結束之後），而且那個時間已到、也不早於演出當天 0 點。
+ * 符合任一個，前台就當作已結束：不再顯示「即將開演／倒數／購票」，場次歸入歷史場次。
+ */
+export function isShowEnded(
+  show: { show_date: string; setlist_reveal_at?: string | null },
+  now: Date = new Date()
+): boolean {
+  const today = now.toLocaleDateString('en-CA', { timeZone: SITE_TIME_ZONE });
+  if (show.show_date < today) return true;
+  if (!show.setlist_reveal_at) return false;
+  const reveal = new Date(show.setlist_reveal_at).getTime();
+  return reveal <= now.getTime() && reveal >= new Date(`${show.show_date}T00:00:00+08:00`).getTime();
+}

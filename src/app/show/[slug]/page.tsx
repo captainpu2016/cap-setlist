@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { createPublicClient } from '@/lib/supabase/public';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { formatDateTimeTW, formatDuration, formatShowDate, getCity, sumDuration, todayTaipei } from '@/lib/format';
+import { formatDateTimeTW, formatDuration, formatShowDate, getCity, isShowEnded, sumDuration, todayTaipei } from '@/lib/format';
 import { displaySongTitle, getArchive } from '@/lib/archive';
 import { getShowLabels } from '@/lib/song-insights';
 import { breadcrumbJsonLd, getSiteUrl } from '@/lib/seo';
@@ -123,6 +123,8 @@ export default async function ShowPage({ params }: { params: { slug: string } })
   // 歌單有沒有公開：沒設定公開時間就直接顯示；有設定的話，要等時間到了才顯示
   const isRevealed = !show.setlist_reveal_at || new Date(show.setlist_reveal_at) <= new Date();
 
+  const ended = isShowEnded(show);
+
   const siteUrl = getSiteUrl();
   const showUrl = `${siteUrl}/show/${show.slug}`;
   const city = getCity(show.venue);
@@ -153,7 +155,7 @@ export default async function ShowPage({ params }: { params: { slug: string } })
         }
       : {}),
     ...(show.cover_image_url ? { image: [show.cover_image_url] } : {}),
-    ...(show.ticket_url && show.show_date >= todayTaipei()
+    ...(show.ticket_url && !ended
       ? { offers: { '@type': 'Offer', url: show.ticket_url, availability: 'https://schema.org/InStock' } }
       : {}),
     performer: { '@id': `${siteUrl}/#band` },
@@ -284,9 +286,10 @@ export default async function ShowPage({ params }: { params: { slug: string } })
             </a>
           )}
 
-          {show.show_date >= todayTaipei() && (
+          {!ended && (
             <UpcomingInfo
               date={show.show_date}
+              endsAt={show.setlist_reveal_at ?? null}
               startTime={show.start_time ?? null}
               ticketUrl={show.ticket_url ?? null}
               webcalUrl={`${siteUrl.replace(/^https?:/, 'webcal:')}/calendar.ics`}

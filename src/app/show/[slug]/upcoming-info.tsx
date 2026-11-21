@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { trackEvent } from '@/lib/analytics';
+import { isShowEnded } from '@/lib/format';
 
 function targetFor(date: string, startTime: string | null): number {
   const time = startTime ? startTime.slice(0, 5) : '00:00';
@@ -33,25 +34,35 @@ function countdownText(date: string, startTime: string | null, now: number): str
  */
 export default function UpcomingInfo({
   date,
+  endsAt = null,
   startTime,
   ticketUrl,
   webcalUrl
 }: {
   date: string;
+  /** 歌單公開時間；到了這個時間就視為演出已結束，這個區塊自動消失 */
+  endsAt?: string | null;
   startTime: string | null;
   ticketUrl: string | null;
   webcalUrl: string;
 }) {
   const [text, setText] = useState<string | null>(null);
+  const [ended, setEnded] = useState(false);
 
   useEffect(() => {
-    const update = () => setText(countdownText(date, startTime, Date.now()));
+    const update = () => {
+      // 頁面可能是舊的快取版本：在瀏覽器端再判斷一次，已結束就整塊隱藏
+      setEnded(isShowEnded({ show_date: date, setlist_reveal_at: endsAt }));
+      setText(countdownText(date, startTime, Date.now()));
+    };
     update();
     const timer = setInterval(update, 60_000);
     return () => clearInterval(timer);
-  }, [date, startTime]);
+  }, [date, startTime, endsAt]);
 
   const time = startTime ? startTime.slice(0, 5) : null;
+
+  if (ended) return null;
 
   return (
     <section className="mt-6 border-2 border-signal bg-stage-900 p-4 sm:p-5" aria-label="演出資訊">

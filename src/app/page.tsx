@@ -2,7 +2,7 @@ import { createPublicClient } from '@/lib/supabase/public';
 import type { Show } from '@/types/database';
 import Image from 'next/image';
 import { getSiteContent } from '@/lib/site-settings';
-import { getCity, todayTaipei } from '@/lib/format';
+import { getCity, isShowEnded, todayTaipei } from '@/lib/format';
 import ShowListSection from './show-list-section';
 import { sortCitiesNorthToSouth, sortVenuesByCity } from '@/lib/geo';
 import ShowTags from '@/components/ShowTags';
@@ -65,11 +65,12 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   });
 
   const today = todayTaipei();
-  const upcoming = filteredShows.filter((s) => s.show_date >= today).reverse();
-  const past = filteredShows.filter((s) => s.show_date < today);
+  const now = new Date();
+  const upcoming = filteredShows.filter((s) => !isShowEnded(s, now)).reverse();
+  const past = filteredShows.filter((s) => isShowEnded(s, now));
 
   // 頁首數字：今年已走過的場次與城市；今年場次太少（例如一月）就改看近 12 個月，避免數字太難看
-  const playedShows = allShows.filter((s) => s.show_date < today);
+  const playedShows = allShows.filter((s) => isShowEnded(s, now));
   const thisYear = today.slice(0, 4);
   const yearShows = playedShows.filter((s) => s.show_date.startsWith(thisYear));
   const rollingStart = `${Number(thisYear) - 1}${today.slice(4)}`;
@@ -84,7 +85,7 @@ export default async function HomePage({ searchParams }: { searchParams: HomeSea
   const recapHasShows = recapYear !== null && playedShows.some((s) => s.show_date.startsWith(String(recapYear)));
 
   // 頁首入口：有下一場就導向下一場，沒有就導向最新一場的歌單
-  const nextShow = [...allShows].reverse().find((s) => s.show_date >= today) ?? null;
+  const nextShow = [...allShows].reverse().find((s) => !isShowEnded(s, now)) ?? null;
   const latestShow = playedShows[0] ?? null;
   const featured = nextShow ?? latestShow;
   const daysUntil = nextShow ? Math.round((Date.parse(nextShow.show_date) - Date.parse(today)) / 86_400_000) : null;
