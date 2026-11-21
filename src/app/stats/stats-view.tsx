@@ -7,6 +7,7 @@ import { computeStats, groupCoversByArtist, rankTopSongs, statsByCategory, type 
 import CoverLineup from './cover-lineup';
 import TopSongs from './top-songs';
 import YearChart from './year-chart';
+import YearCompare from './year-compare';
 
 export type StatsShow = ArchiveShow & {
   series: string | null;
@@ -40,6 +41,7 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
   const sections = [
     { id: 'top', label: '常唱的歌' },
     { id: 'trend', label: '趨勢與比較' },
+    { id: 'compare', label: '年度比較' },
     ...(s.coverSongs.length > 0 ? [{ id: 'covers', label: '曾經翻唱過的歌' }] : [])
   ];
   // 錨點不用網址 #，因為 # 已經拿來放篩選條件
@@ -123,6 +125,13 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
               </section>
             )}
           </div>
+
+          {/* 年度比較：自選兩個期間，不受上面的篩選影響 */}
+          <section id="compare" className="mt-16 scroll-mt-28">
+            <h2 className="section-title mb-2 text-2xl">年度比較</h2>
+            <p className="mb-5 text-sm text-stone-500">自己選兩個年份（或「全部」），比較演出場次、歌曲、城市，以及演出類型的比例變化。</p>
+            <YearCompare shows={allShows} today={today} />
+          </section>
 
           {/* 曾經翻唱過的歌放在最後 */}
           {s.coverSongs.length > 0 && (
