@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 const ITEMS = [
   { href: '/', label: '場次', icon: HomeIcon },
   { href: '/search', label: '搜尋', icon: SearchIcon },
-  { href: '/tour', label: '巡演', icon: MapIcon },
   { href: '/stats', label: '統計', icon: StatsIcon },
   { href: '/me', label: '我的', icon: UserIcon }
 ];
@@ -20,7 +19,7 @@ export default function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {ITEMS.map((item) => {
-        const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+        const isActive = item.href === '/' ? pathname === '/' : item.href === '/stats' ? pathname.startsWith('/stats') || pathname.startsWith('/tour') : pathname.startsWith(item.href);
         const Icon = item.icon;
         return (
           <Link
@@ -73,16 +72,6 @@ function UserIcon() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-    </svg>
-  );
-}
-
-function MapIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z" />
-      <line x1="8" y1="2" x2="8" y2="18" />
-      <line x1="16" y1="6" x2="16" y2="22" />
     </svg>
   );
 }

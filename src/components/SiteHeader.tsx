@@ -6,8 +6,7 @@ import { usePathname } from 'next/navigation';
 
 const LINKS = [
   { href: '/', label: '場次', match: (p: string) => p === '/' || p.startsWith('/show') },
-  { href: '/tour', label: '巡演足跡', match: (p: string) => p.startsWith('/tour') },
-  { href: '/stats', label: '歌單統計', match: (p: string) => p.startsWith('/stats') },
+  { href: '/stats', label: '統計', match: (p: string) => p.startsWith('/stats') || p.startsWith('/tour') },
   { href: '/search', label: '搜尋', match: (p: string) => p.startsWith('/search') },
   { href: '/me', label: '我的紀錄', match: (p: string) => p.startsWith('/me') }
 ];

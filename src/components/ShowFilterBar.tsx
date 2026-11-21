@@ -7,6 +7,7 @@ import {
   EMPTY_FILTER,
   buildHash,
   filterLabel,
+  formatMonth,
   isFiltered,
   parseHash,
   type FilterableShow,
@@ -95,18 +96,70 @@ export function CategoryTabs({
   );
 }
 
+/** 期間篩選：起訖月份（含）。「全部」清掉期間，「近一年」是最近 12 個月；只有統計頁與巡演頁用 */
+function PeriodFilter({ shows, filter, onChange }: { shows: FilterableShow[]; filter: ShowFilter; onChange: (filter: ShowFilter) => void }) {
+  // 選項是有演出的月份；網址帶來的起訖月份就算沒演出，也要留在選單裡，才不會顯示成別的月份
+  const months = useMemo(
+    () => Array.from(new Set([...shows.map((s) => s.date?.slice(0, 7)), filter.from, filter.to].filter((m): m is string => Boolean(m)))).sort(),
+    [shows, filter.from, filter.to]
+  );
+  if (months.length < 2) return null;
+
+  const lastYearStart = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 11, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+  const isAll = !filter.from && !filter.to;
+  const isLastYear = filter.from === lastYearStart && !filter.to;
+  const select = (value: string | null, onPick: (v: string | null) => void, label: string, empty: string) => (
+    <select
+      value={value ?? ''}
+      onChange={(e) => onPick(e.target.value || null)}
+      aria-label={label}
+      className={`border-2 bg-stage-900 px-2 py-1.5 text-sm font-bold text-paper transition-colors focus:border-signal focus:outline-none ${value ? 'border-signal' : 'border-stage-700 hover:border-stone-500'}`}
+    >
+      <option value="">{empty}</option>
+      {months.map((m) => (
+        <option key={m} value={m}>
+          {formatMonth(m)}
+        </option>
+      ))}
+    </select>
+  );
+  const quick = (active: boolean) => `px-2 py-1 text-xs font-bold transition-colors hover:text-paper ${active ? 'text-signal' : 'text-stone-400'}`;
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2">
+      <span className="mr-1 font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">期間</span>
+      {select(filter.from, (v) => onChange({ ...filter, from: v }), '起始月份', '最早')}
+      <span className="text-xs text-stone-500">至</span>
+      {select(filter.to, (v) => onChange({ ...filter, to: v }), '結束月份', '最新')}
+      <button type="button" onClick={() => onChange({ ...filter, from: null, to: null })} className={quick(isAll)}>
+        全部
+      </button>
+      <button type="button" onClick={() => onChange({ ...filter, from: lastYearStart, to: null })} className={quick(isLastYear)}>
+        近一年
+      </button>
+    </div>
+  );
+}
+
 /** 篩選列（由左到右）：入場、國家，選了國家之後多一個城市；可以同時使用（分類在頁面最上方的按鈕列，另外是 CategoryTabs） */
 export default function ShowFilterBar({
   shows,
   filter,
   onChange,
-  caption
+  caption,
+  withPeriod = false
 }: {
   shows: FilterableShow[];
   filter: ShowFilter;
   onChange: (filter: ShowFilter) => void;
   /** 篩選中時顯示在選單下方的說明（例如「日本：共 7 場」） */
   caption?: string;
+  /** 是否多一列「期間」（起訖月份）；統計頁與巡演頁用，需要每場資料帶 date */
+  withPeriod?: boolean;
 }) {
   const hasAdmission = useMemo(() => shows.some((s) => s.admission), [shows]);
 
@@ -127,7 +180,7 @@ export default function ShowFilterBar({
     return sortCitiesNorthToSouth(Array.from(m));
   }, [shows, filter.country]);
 
-  if (!hasAdmission && countries.length < 2) return null;
+  if (!hasAdmission && countries.length < 2 && !withPeriod) return null;
 
   return (
     <div className="mt-4">
@@ -163,6 +216,7 @@ export default function ShowFilterBar({
           </Field>
         )}
       </div>
+      {withPeriod && <PeriodFilter shows={shows} filter={filter} onChange={onChange} />}
       {filter.series && (
         <p className="mt-3 inline-flex items-center gap-2 border border-signal bg-signal/15 px-2.5 py-1 text-xs font-bold text-paper">
           系列：{filter.series}

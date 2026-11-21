@@ -3,8 +3,8 @@ import type { Show, Venue } from '@/types/database';
 import { getCity, todayTaipei } from '@/lib/format';
 import { getShowCoordinates } from '@/lib/geo';
 import TourView, { type TourShow } from './tour-view';
-import PageHeader from '@/components/PageHeader';
-import BackLink from '@/components/BackLink';
+import StatsShell from '../stats/stats-shell';
+import { getFilterShows } from '@/lib/stats-shows';
 import JsonLd from '@/components/JsonLd';
 import MonthlyHeatmap from './monthly-heatmap';
 import { breadcrumbJsonLd } from '@/lib/seo';
@@ -49,11 +49,11 @@ function buildMonthlyTimeline(shows: Show[]): { yearMonth: string; count: number
 
 export default async function TourPage() {
   const supabase = createPublicClient();
-  const { data: shows } = await supabase
-    .from('shows')
-    .select('*, venue_data:venues(*)')
-    .eq('status', 'published')
-    .returns<ShowWithVenue[]>();
+  const [{ data: shows }, filterShows] = await Promise.all([
+    supabase.from('shows').select('*, venue_data:venues(*)').eq('status', 'published').returns<ShowWithVenue[]>(),
+    getFilterShows()
+  ]);
+  const filterBySlug = new Map(filterShows.map((f) => [f.slug, f]));
 
   const allShows = shows ?? [];
 
@@ -62,8 +62,14 @@ export default async function TourPage() {
     const coords = getShowCoordinates(show, show.venue_data);
     const city = show.venue_data?.city ?? getCity(show.venue) ?? null;
     const venueName = show.venue_data?.name ?? show.venue ?? '未知場地';
+    const f = filterBySlug.get(show.slug);
     return {
       date: show.show_date,
+      category: f?.category ?? null,
+      series: f?.series ?? null,
+      admission: f?.admission ?? null,
+      country: f?.country ?? null,
+      city: f?.city ?? null,
       title: show.title,
       venue: show.venue,
       venueName,
@@ -74,37 +80,29 @@ export default async function TourPage() {
     };
   });
 
-  const uncounted = tourShows.filter((s) => s.lat == null).length;
-  const cityTotal = new Set(allShows.map((s) => getCity(s.venue)).filter(Boolean)).size;
   const monthlyTimeline = buildMonthlyTimeline(allShows);
 
   return (
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <JsonLd data={breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '巡演足跡', path: '/tour' }])} />
       <div className="mx-auto max-w-5xl">
-        <BackLink />
-
-        <div className="mt-6">
-          <PageHeader
-            eyebrow="Tour Archive"
-            title="巡演足跡"
-            description={`${allShows.length} 場演出，走過 ${cityTotal} 個城市${
-              uncounted > 0 ? `（另有 ${uncounted} 場還沒有定位資料，不會顯示在地圖上）` : ''
-            }`}
-          />
-        </div>
-
-        <TourView shows={tourShows}>
-          <section className="mt-14">
-            <h2 className="section-title mb-1 text-xl">逐月演出趨勢</h2>
-            <p className="mb-4 text-sm text-stone-500">看的是整個歷史，不受上方期間篩選影響。</p>
-            {monthlyTimeline.length > 0 ? (
-              <MonthlyHeatmap timeline={monthlyTimeline} currentYearMonth={todayTaipei().slice(0, 7)} />
-            ) : (
-              <p className="text-sm text-stone-500">還沒有演出資料。</p>
-            )}
-          </section>
-        </TourView>
+        <StatsShell
+          active="tour"
+          filterShows={filterShows}
+          description="歷年演出的地點、移動路線，以及逐月演出節奏。"
+        >
+          <TourView shows={tourShows}>
+            <section className="mt-14">
+              <h2 className="section-title mb-1 text-xl">逐月演出趨勢</h2>
+              <p className="mb-4 text-sm text-stone-500">看的是整個歷史，不受上方篩選影響。</p>
+              {monthlyTimeline.length > 0 ? (
+                <MonthlyHeatmap timeline={monthlyTimeline} currentYearMonth={todayTaipei().slice(0, 7)} />
+              ) : (
+                <p className="text-sm text-stone-500">還沒有演出資料。</p>
+              )}
+            </section>
+          </TourView>
+        </StatsShell>
       </div>
     </main>
   );

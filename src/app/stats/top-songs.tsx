@@ -13,7 +13,6 @@ export interface TopSongsPeriod {
 }
 
 function Bars({ rows, total }: { rows: RankedSong[]; total: number }) {
-  const max = Math.max(1, ...rows.map((r) => r.count));
   return (
     <ol className="border-y border-stage-700">
       {rows.map((r, i) => (
@@ -21,7 +20,7 @@ function Bars({ rows, total }: { rows: RankedSong[]; total: number }) {
           key={r.id}
           rank={String(i + 1).padStart(2, '0')}
           label={displaySongTitle(r.title)}
-          percent={(r.count / max) * 100}
+          percent={total > 0 ? (r.count / total) * 100 : 0}
           value={
             <>
               {r.count}
@@ -30,7 +29,7 @@ function Bars({ rows, total }: { rows: RankedSong[]; total: number }) {
           }
           valueNote={`${total > 0 ? Math.round((r.count / total) * 100) : 0}%`}
           href={`/song/${r.id}`}
-          strong={i === 0}
+          strong={i < 3}
         />
       ))}
     </ol>
@@ -60,7 +59,7 @@ export default function TopSongs({ periods }: { periods: TopSongsPeriod[] }) {
             {p.label}
           </button>
         ))}
-        <span className="ml-auto text-xs text-stone-500">共 {period.showCount} 場演出，百分比是「出現在多少場裡」</span>
+        <span className="ml-auto text-xs text-stone-500">共 {period.showCount} 場演出；長條與百分比是「出現在多少場裡」</span>
       </div>
       {period.rows.length > 0 ? (
         <Bars rows={period.rows} total={period.showCount} />

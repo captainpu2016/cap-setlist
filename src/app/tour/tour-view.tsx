@@ -3,12 +3,20 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { BarRow } from '@/components/BarRow';
 import { countryOfVenue, distanceKm, getCityOf, venueGroupName } from '@/lib/geo';
+import { matchesFilter } from '@/lib/show-filter';
+import { useStatsFilter } from '../stats/stats-shell';
 import MapLoader from './map-loader';
 import type { RoutePoint, TourPoint } from './tour-map';
 import VenueRanking, { type VenueGroup } from './venue-ranking';
 
 export interface TourShow {
   date: string; // YYYY-MM-DD
+  /** 篩選用欄位（和歌單統計頁同一份） */
+  category: string | null;
+  series: string | null;
+  admission: string | null;
+  country: string | null;
+  city: string | null;
   title: string;
   venue: string | null;
   /** 場地名稱與座標（沒有座標的場次不會畫在地圖上，但仍會計入城市、場地與國家的統計） */
@@ -21,45 +29,16 @@ export interface TourShow {
 
 const nf = new Intl.NumberFormat('zh-TW');
 
-function formatMonthKey(key: string) {
-  const [y, m] = key.split('-');
-  return `${y}/${Number(m)}`;
-}
-
-/** 算出「最近 12 個月」對應到 monthKeys 陣列的起始 index，找不到就從頭開始 */
-function getDefaultStartIndex(monthKeys: string[]): number {
-  if (monthKeys.length === 0) return 0;
-  const today = new Date();
-  const cutoff = new Date(today.getFullYear(), today.getMonth() - 11, 1);
-  const cutoffKey = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, '0')}`;
-  const idx = monthKeys.findIndex((k) => k >= cutoffKey);
-  return idx === -1 ? 0 : idx;
-}
-
 /**
- * 巡演足跡的主體：最上面是起訖月份篩選，下面的數字摘要、地圖、城市排行、場地排行都只算所選期間。
- * 逐月演出趨勢（children）看的是整個歷史，不受這個篩選影響。
+ * 巡演足跡的主體：數字摘要、地圖、城市排行、場地排行，都只算符合上方篩選（分類、入場、國家、城市、期間）的場次，
+ * 篩選條件和歌單統計頁共用。逐月演出趨勢（children）看的是整個歷史，不受篩選影響。
  */
 export default function TourView({ shows, children }: { shows: TourShow[]; children?: ReactNode }) {
-  const monthKeys = useMemo(() => Array.from(new Set(shows.map((s) => s.date.slice(0, 7)))).sort(), [shows]);
-  const defaultStartIdx = useMemo(() => getDefaultStartIndex(monthKeys), [monthKeys]);
-  const defaultEndIdx = Math.max(monthKeys.length - 1, 0);
-
-  const [startIdx, setStartIdx] = useState(defaultStartIdx);
-  const [endIdx, setEndIdx] = useState(defaultEndIdx);
+  const filter = useStatsFilter();
   const [showRoute, setShowRoute] = useState(true);
 
-  const lo = Math.min(startIdx, endIdx);
-  const hi = Math.max(startIdx, endIdx);
-  const rangeStart = monthKeys[lo];
-  const rangeEnd = monthKeys[hi];
-  const isAll = lo === 0 && hi === defaultEndIdx;
-  const isDefault = lo === defaultStartIdx && hi === defaultEndIdx;
-
-  const filtered = useMemo(
-    () => shows.filter((s) => s.date.slice(0, 7) >= (rangeStart ?? '') && s.date.slice(0, 7) <= (rangeEnd ?? '9999')).sort((a, b) => a.date.localeCompare(b.date)),
-    [shows, rangeStart, rangeEnd]
-  );
+  const filtered = useMemo(() => shows.filter((s) => matchesFilter(s, filter)).sort((a, b) => a.date.localeCompare(b.date)), [shows, filter]);
+  const unlocated = filtered.filter((s) => s.lat == null).length;
 
   const stats = useMemo(() => {
     const countries = new Set(filtered.map((s) => countryOfVenue(s.venue)).filter(Boolean));
@@ -125,7 +104,7 @@ export default function TourView({ shows, children }: { shows: TourShow[]; child
     };
   }, [filtered]);
 
-  if (monthKeys.length === 0) {
+  if (shows.length === 0) {
     return <p className="mt-10 rounded-sm border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">目前還沒有演出資料。</p>;
   }
 
@@ -144,53 +123,25 @@ export default function TourView({ shows, children }: { shows: TourShow[]; child
   ];
   const maxCity = Math.max(1, ...stats.cityRanking.map(([, n]) => n));
 
-  const select =
-    'border-2 border-stage-700 bg-stage-950 px-2 py-1 text-sm font-bold text-paper focus:border-signal focus:outline-none';
+  // 篩選之後沒有任何場次：只留不受篩選影響的逐月趨勢
+  if (filtered.length === 0) {
+    return (
+      <div>
+        <p className="mt-10 border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">這個篩選條件下，沒有符合的演出。</p>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div>
-      {/* 期間篩選：整頁共用（逐月演出趨勢除外），放在最上面 */}
-      <div className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-2 border-2 border-stage-700 bg-stage-900 px-3 py-2.5 text-xs text-stone-400">
-        <span className="font-accent uppercase tracking-[0.2em] text-stone-500">期間</span>
-        <select value={lo} onChange={(e) => setStartIdx(Number(e.target.value))} aria-label="起始月份" className={select}>
-          {monthKeys.map((k, i) => (
-            <option key={k} value={i}>
-              {formatMonthKey(k)}
-            </option>
-          ))}
-        </select>
-        <span>至</span>
-        <select value={hi} onChange={(e) => setEndIdx(Number(e.target.value))} aria-label="結束月份" className={select}>
-          {monthKeys.map((k, i) => (
-            <option key={k} value={i}>
-              {formatMonthKey(k)}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={() => {
-            setStartIdx(0);
-            setEndIdx(defaultEndIdx);
-          }}
-          className={`px-2 py-1 font-bold transition-colors hover:text-paper ${isAll ? 'text-signal' : ''}`}
-        >
-          全部
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setStartIdx(defaultStartIdx);
-            setEndIdx(defaultEndIdx);
-          }}
-          className={`px-2 py-1 font-bold transition-colors hover:text-paper ${isDefault ? 'text-signal' : ''}`}
-        >
-          近一年
-        </button>
-        <span className="ml-auto text-stone-500">所選期間共 {filtered.length} 場</span>
-      </div>
+      {/* 數字跟著上方篩選走（和歌單統計頁一樣）：符合條件的場次數，以及沒有定位、不會畫在地圖上的場次 */}
+      <p className="mt-8 text-sm text-stone-400">
+        共 <b className="text-paper">{filtered.length}</b> 場演出
+        {unlocated > 0 && `（其中 ${unlocated} 場還沒有定位資料，不會顯示在地圖上）`}
+      </p>
 
-      <section className="mt-6 grid grid-cols-2 gap-px border-2 border-stage-700 bg-stage-700 sm:grid-cols-4" aria-label="巡演數字摘要">
+      <section className="mt-4 grid grid-cols-2 gap-px border-2 border-stage-700 bg-stage-700 sm:grid-cols-4" aria-label="巡演數字摘要">
         {summary.map((x) => (
           <div key={x.label} className="bg-stage-900 p-4">
             <p className="text-xs text-stone-500">{x.label}</p>

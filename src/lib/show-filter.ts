@@ -14,11 +14,16 @@ export interface ShowFilter {
   series: string | null;
   /** 選了國家之後，可以再選城市（場地欄位的第一個詞，例如「高雄」「大阪」） */
   city: string | null;
+  /** 期間：起訖月份（YYYY-MM，含），只在統計頁與巡演頁提供；null 代表不限 */
+  from: string | null;
+  to: string | null;
 }
 
-export const EMPTY_FILTER: ShowFilter = { category: null, admission: 'all', country: null, series: null, city: null };
+export const EMPTY_FILTER: ShowFilter = { category: null, admission: 'all', country: null, series: null, city: null, from: null, to: null };
 
 export interface FilterableShow {
+  /** 演出日期（YYYY-MM-DD）；有填才會套用期間篩選 */
+  date?: string;
   category: string | null;
   admission: string | null;
   country: string | null;
@@ -27,7 +32,7 @@ export interface FilterableShow {
 }
 
 export function isFiltered(f: ShowFilter): boolean {
-  return Boolean(f.category) || f.admission !== 'all' || Boolean(f.country) || Boolean(f.series) || Boolean(f.city);
+  return Boolean(f.category) || f.admission !== 'all' || Boolean(f.country) || Boolean(f.series) || Boolean(f.city) || Boolean(f.from) || Boolean(f.to);
 }
 
 /** 網址 # 後面的參數：c 分類、a 入場方式、co 國家、ct 城市。舊連結的 o=0（台灣）仍可用 */
@@ -40,7 +45,9 @@ export function parseHash(hash: string): ShowFilter {
     admission: a === 'paid' || a === 'free' || a === 'private' ? a : 'all',
     country: p.get('co') || (o === '0' ? '台灣' : null),
     series: p.get('s') || null,
-    city: p.get('ct') || null
+    city: p.get('ct') || null,
+    from: /^\d{4}-\d{2}$/.test(p.get('f') ?? '') ? p.get('f') : null,
+    to: /^\d{4}-\d{2}$/.test(p.get('t') ?? '') ? p.get('t') : null
   };
 }
 
@@ -51,6 +58,8 @@ export function buildHash(f: ShowFilter): string {
   if (f.country) p.set('co', f.country);
   if (f.series) p.set('s', f.series);
   if (f.city) p.set('ct', f.city);
+  if (f.from) p.set('f', f.from);
+  if (f.to) p.set('t', f.to);
   const q = p.toString();
   return q ? `#${q}` : '';
 }
@@ -61,7 +70,22 @@ export function matchesFilter(show: FilterableShow, f: ShowFilter): boolean {
   if (f.series && show.series !== f.series) return false;
   if (f.city && show.city !== f.city) return false;
   if (f.admission !== 'all' && show.admission !== f.admission) return false;
+  if (show.date && f.from && show.date.slice(0, 7) < f.from) return false;
+  if (show.date && f.to && show.date.slice(0, 7) > f.to) return false;
   return true;
+}
+
+/** 月份顯示成「2025/3」 */
+export function formatMonth(key: string): string {
+  const [y, m] = key.split('-');
+  return `${y}/${Number(m)}`;
+}
+
+function periodLabel(f: ShowFilter): string | null {
+  if (f.from && f.to) return f.from === f.to ? formatMonth(f.from) : `${formatMonth(f.from)}–${formatMonth(f.to)}`;
+  if (f.from) return `${formatMonth(f.from)} 起`;
+  if (f.to) return `至 ${formatMonth(f.to)}`;
+  return null;
 }
 
 /** 目前篩選條件的文字描述，例如「音樂祭/節・海外・免費」 */
@@ -71,7 +95,8 @@ export function filterLabel(f: ShowFilter): string {
     f.admission !== 'all' ? admissionLabel(f.admission) : null,
     f.series,
     f.country,
-    f.city
+    f.city,
+    periodLabel(f)
   ]
     .filter(Boolean)
     .join('・');

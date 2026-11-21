@@ -4,8 +4,8 @@ import { getCity, todayTaipei } from '@/lib/format';
 import { countryOfVenue, isOverseasVenue } from '@/lib/geo';
 import { breadcrumbJsonLd } from '@/lib/seo';
 import JsonLd from '@/components/JsonLd';
-import PageHeader from '@/components/PageHeader';
-import BackLink from '@/components/BackLink';
+import { getFilterShows } from '@/lib/stats-shows';
+import StatsShell from './stats-shell';
 import StatsView from './stats-view';
 
 export const revalidate = 3600;
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StatsPage() {
-  const { shows } = await getArchive();
+  const [{ shows }, filterShows] = await Promise.all([getArchive(), getFilterShows()]);
   // 只送統計需要的欄位到瀏覽器端
   const slim = shows.map((x) => ({
     id: x.id,
@@ -38,18 +38,9 @@ export default async function StatsPage() {
     <main className="min-h-screen bg-noise bg-halftone px-6 py-14 sm:px-10">
       <JsonLd data={breadcrumbJsonLd([{ name: '首頁', path: '/' }, { name: '歌單統計', path: '/stats' }])} />
       <div className="mx-auto max-w-5xl">
-        <StatsView
-          shows={slim}
-          today={todayTaipei()}
-          header={
-            <>
-              <BackLink />
-              <div className="mt-6">
-                <PageHeader eyebrow="Stats" title="歌單統計" description="把每一場的歌單加起來，看看普通隊長的現場到底都唱些什麼。" />
-              </div>
-            </>
-          }
-        />
+        <StatsShell active="stats" description="把每一場的歌單加起來，看看普通隊長的現場到底都唱些什麼。" filterShows={filterShows}>
+          <StatsView shows={slim} today={todayTaipei()} />
+        </StatsShell>
       </div>
     </main>
   );

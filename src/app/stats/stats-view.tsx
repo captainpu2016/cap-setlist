@@ -1,12 +1,12 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import ShowFilterBar, { CategoryTabs, useShowFilter } from '@/components/ShowFilterBar';
-import { filterLabel, isFiltered, matchesFilter } from '@/lib/show-filter';
+import { isFiltered, matchesFilter } from '@/lib/show-filter';
 import { computeStats, groupCoversByArtist, rankTopSongs, statsByCategory, type ArchiveShow } from '@/lib/stats';
+import CategoryBars from './category-bars';
 import CoverLineup from './cover-lineup';
 import TopSongs from './top-songs';
 import YearChart from './year-chart';
+import { useStatsFilter } from './stats-shell';
 import YearCompare from './year-compare';
 
 export type StatsShow = ArchiveShow & {
@@ -18,8 +18,8 @@ export type StatsShow = ArchiveShow & {
 };
 
 /** 歌單統計的內容：可依分類、海外、入場方式、系列篩選，所有數字都只算篩選後的場次。預設（含搜尋引擎看到的）是全部場次 */
-export default function StatsView({ shows: allShows, today, header }: { shows: StatsShow[]; today: string; header: ReactNode }) {
-  const { filter, choose } = useShowFilter();
+export default function StatsView({ shows: allShows, today }: { shows: StatsShow[]; today: string }) {
+  const filter = useStatsFilter();
   const filtered = isFiltered(filter);
   const shows = allShows.filter((x) => matchesFilter(x, filter));
 
@@ -36,7 +36,6 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
   ].map(({ since, ...p }) => ({ ...p, ...rankTopSongs(shows, since, 10) }));
   const covers = groupCoversByArtist(s.coverSongs);
   const byCategory = statsByCategory(allShows); // 分類比較表永遠看全部場次，不受上面的篩選影響
-  const scope = filtered ? `「${filterLabel(filter)}」` : '';
 
   const sections = [
     { id: 'top', label: '常唱的歌' },
@@ -49,16 +48,6 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
 
   return (
     <>
-      {header}
-      {/* 分類按鈕列：標題下方、其他下拉選單之前 */}
-      <CategoryTabs shows={allShows} filter={filter} onChange={choose} />
-      <ShowFilterBar
-        shows={allShows}
-        filter={filter}
-        onChange={choose}
-        caption={filtered ? `以下只統計${scope}的場次：共 ${shows.length} 場，其中 ${s.showsWithSetlist} 場已公開歌單。` : undefined}
-      />
-
       {s.showsWithSetlist === 0 ? (
         <p className="mt-10 border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">
           這個篩選條件下，還沒有已公開歌單的場次。
@@ -97,31 +86,8 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
             {byCategory.length > 0 && (
               <section className="min-w-0">
                 <h2 className="section-title mb-2 text-2xl">不同類型的演出</h2>
-                <p className="mb-4 text-sm text-stone-500">依演出分類比較歌單長度與翻唱比例（只算已公開歌單的場次，不受上面的篩選影響）。</p>
-                <div className="-mx-1 overflow-x-auto">
-                  <table className="w-full min-w-[340px] text-left text-sm">
-                    <thead className="text-xs text-stone-500">
-                      <tr>
-                        <th className="px-1 py-2 font-normal">分類</th>
-                        <th className="px-1 py-2 text-right font-normal">場數</th>
-                        <th className="px-1 py-2 text-right font-normal">平均每場</th>
-                        <th className="px-1 py-2 text-right font-normal">翻唱占比</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stage-700/70 border-y border-stage-700 tabular-nums">
-                      {byCategory.map((r) => (
-                        <tr key={r.value}>
-                          <td className="px-1 py-3 font-bold text-paper">
-                            <a href={`/shows#c=${r.value}`} className="hover:text-marquee">{r.label}</a>
-                          </td>
-                          <td className="px-1 py-3 text-right text-stone-300">{r.shows} 場</td>
-                          <td className="px-1 py-3 text-right text-stone-300">{r.avgLength.toFixed(1)} 首</td>
-                          <td className="px-1 py-3 text-right text-stone-300">{Math.round(r.coverShare * 100)}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <p className="mb-4 text-sm text-stone-500">長條是各類型的演出場數；名稱下方是平均每場首數與翻唱占比（只算已公開歌單的場次，不受上面的篩選影響）。</p>
+                <CategoryBars rows={byCategory} />
               </section>
             )}
           </div>
@@ -129,7 +95,7 @@ export default function StatsView({ shows: allShows, today, header }: { shows: S
           {/* 年度比較：自選兩個期間，不受上面的篩選影響 */}
           <section id="compare" className="mt-16 scroll-mt-28">
             <h2 className="section-title mb-2 text-2xl">年度比較</h2>
-            <p className="mb-5 text-sm text-stone-500">自己選兩個年份（或「全部」），比較演出場次、歌曲、城市，以及演出類型的比例變化。</p>
+            <p className="mb-5 text-sm text-stone-500">自己選兩個年份（或「全部」），比較演出場次、歌曲、城市，以及演出類型的比例變化（不受上方篩選影響）。</p>
             <YearCompare shows={allShows} today={today} />
           </section>
 

@@ -50,8 +50,8 @@ export function BarRow({
         <span className={`block truncate text-sm text-paper ${strong ? 'font-bold' : 'font-medium'}`}>{label}</span>
         {note && <span className="block truncate text-[11px] text-stone-500">{note}</span>}
       </span>
-      <span className="row-start-2 h-2.5 min-w-0 bg-stage-800 [grid-column:var(--bm)] sm:row-start-1 sm:[grid-column:var(--bd)]" aria-hidden>
-        <span className={`block h-full ${strong ? 'bg-signal' : 'bg-signal/65'}`} style={{ width: `${Math.max(1.5, Math.min(100, percent))}%` }} />
+      <span className="row-start-2 h-2 min-w-0 overflow-hidden rounded-r-[4px] bg-stage-800/80 [grid-column:var(--bm)] sm:row-start-1 sm:[grid-column:var(--bd)]" aria-hidden>
+        <span className={`block h-full rounded-r-[4px] ${strong ? 'bg-signal' : 'bg-signal/55'}`} style={{ width: `${Math.max(1.5, Math.min(100, percent))}%` }} />
       </span>
       <span className="row-start-1 text-right font-accent text-base font-semibold leading-tight text-paper [grid-column:var(--vm)] sm:[grid-column:var(--vd)]">
         {value}
