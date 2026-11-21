@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -122,6 +122,36 @@ function FitToTour({ coords }: { coords: [number, number][] }) {
   return null;
 }
 
+const CURVE_STEPS = 32;
+
+/** 一段已畫完的路線：外發光、主線與中間的方向箭頭。用 memo 包起來，播放時只有正在畫的那一段會重畫 */
+const Segment = memo(function Segment({ curve, color, angle, flowing }: { curve: [number, number][]; color: string; angle: number; flowing: boolean }) {
+  const glow = useMemo(() => ({ color, weight: 9, opacity: 0.18, lineCap: 'round' as const, interactive: false }), [color]);
+  const main = useMemo(
+    () => ({ color, weight: 3, opacity: 0.9, lineCap: 'round' as const, interactive: false, ...(flowing ? { dashArray: '10 8', className: 'route-flow-line' } : {}) }),
+    [color, flowing]
+  );
+  const icon = useMemo(() => arrowIcon(angle, color), [angle, color]);
+  return (
+    <>
+      <Polyline positions={curve} pathOptions={glow} />
+      <Polyline positions={curve} pathOptions={main} />
+      <Marker position={curve[Math.floor(curve.length / 2)]} icon={icon} interactive={false} />
+    </>
+  );
+});
+
+/** 播放時走在路線最前面的光點 */
+const headIcon = L.divIcon({
+  className: '',
+  html: '<div class="route-head-dot"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9]
+});
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const formatDate = (d: string) => d.replace(/-/g, '.');
+
 export default function TourMap({
   points,
   route = []
@@ -138,10 +168,85 @@ export default function TourMap({
         ]
       : [23.6978, 120.9605]; // 找不到任何點時，預設置中在台灣
 
-  const segments: { from: RoutePoint; to: RoutePoint }[] = [];
-  for (let i = 0; i < route.length - 1; i++) {
-    segments.push({ from: route[i], to: route[i + 1] });
-  }
+  // 每一段路線的弧線、顏色、箭頭方向，route 不變就不重算
+  const segs = useMemo(() => {
+    const n = route.length - 1;
+    return Array.from({ length: Math.max(n, 0) }, (_, i) => {
+      const from = route[i];
+      const to = route[i + 1];
+      if (from.lat === to.lat && from.lng === to.lng) return null;
+      const curve = curvePoints(from, to, CURVE_STEPS);
+      const mid = Math.floor(curve.length / 2);
+      const angle = bearing(curve[mid - 1][0], curve[mid - 1][1], curve[mid + 1][0], curve[mid + 1][1]);
+      return { key: `${from.date}-${i}`, curve, angle, color: routeColor(n > 1 ? i / (n - 1) : 1) };
+    });
+  }, [route]);
+
+  // ── 播放巡演：依日期一段一段把路線畫出來。t 是「走到第幾場」（小數代表正在兩場之間移動）
+  const N = route.length;
+  const canReplay = N >= 2;
+  const [replay, setReplay] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [t, setT] = useState(0);
+  const segMs = Math.min(900, Math.max(250, 20000 / Math.max(N - 1, 1))); // 整段播放大約 20 秒
+  const tRef = useRef(0);
+  tRef.current = t;
+
+  // 篩選條件改變（路線換了）就回到一般顯示
+  const routeKey = route.map((r) => `${r.date}@${r.lat},${r.lng}`).join('|');
+  useEffect(() => {
+    setReplay(false);
+    setPlaying(false);
+    setT(0);
+  }, [routeKey]);
+
+  useEffect(() => {
+    if (!playing) return;
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const next = Math.min(N - 1, tRef.current + (now - last) / segMs);
+      last = now;
+      setT(next);
+      if (next >= N - 1) {
+        setPlaying(false);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [playing, N, segMs]);
+
+  const start = () => {
+    setReplay(true);
+    setT(0);
+    setPlaying(true);
+  };
+  const togglePlay = () => {
+    if (!playing && t >= N - 1) {
+      setT(0); // 播完之後再按一次＝重播
+      setPlaying(true);
+    } else setPlaying(!playing);
+  };
+
+  const idx = Math.min(N - 1, Math.floor(t));
+  const doneCount = replay ? idx : segs.length;
+  const frac = t - idx;
+  const partial = replay && idx < segs.length ? segs[idx] : null;
+  const headPos: [number, number] | null = !replay || N === 0 ? null : partial ? partial.curve[Math.min(CURVE_STEPS, Math.round(frac * CURVE_STEPS))] : [route[idx].lat, route[idx].lng];
+  const current = route[idx];
+
+  // 圖釘：播放時，場地要等路線走到才出現
+  const firstVisit = useMemo(() => {
+    const m = new Map<string, number>();
+    route.forEach((r, i) => {
+      const k = `${r.lat.toFixed(5)},${r.lng.toFixed(5)}`;
+      if (!m.has(k)) m.set(k, i);
+    });
+    return m;
+  }, [route]);
+  const visiblePoints = replay ? points.filter((p) => (firstVisit.get(`${p.lat.toFixed(5)},${p.lng.toFixed(5)}`) ?? 0) <= idx) : points;
 
   // 只有觸控裝置（手機/平板）才預設鎖定，滑鼠裝置一開始就可以正常拖曳/滾輪縮放
   const [locked, setLocked] = useState(false);
@@ -171,39 +276,18 @@ export default function TourMap({
           maxNativeZoom={16}
         />
 
-        {segments.map((seg, i) => {
-          if (seg.from.lat === seg.to.lat && seg.from.lng === seg.to.lng) return null;
-          const curve = curvePoints(seg.from, seg.to);
-          const midIdx = Math.floor(curve.length / 2);
-          const angle = bearing(curve[midIdx - 1][0], curve[midIdx - 1][1], curve[midIdx + 1][0], curve[midIdx + 1][1]);
-          const t = segments.length > 1 ? i / (segments.length - 1) : 1;
-          const color = routeColor(t);
-          const isLatest = i === segments.length - 1;
-          return (
-            <Fragment key={`${seg.from.date}-${i}`}>
-              {/* 外發光 */}
-              <Polyline
-                positions={curve}
-                pathOptions={{ color, weight: 9, opacity: 0.18, lineCap: 'round', interactive: false }}
-              />
-              {/* 主線：最新一段持續流動，其餘為實線 */}
-              <Polyline
-                positions={curve}
-                pathOptions={{
-                  color,
-                  weight: 3,
-                  opacity: 0.9,
-                  lineCap: 'round',
-                  interactive: false,
-                  ...(isLatest ? { dashArray: '10 8', className: 'route-flow-line' } : {})
-                }}
-              />
-              <Marker position={curve[midIdx]} icon={arrowIcon(angle, color)} interactive={false} />
-            </Fragment>
-          );
-        })}
+        {segs.map((sg, i) =>
+          sg && i < doneCount ? <Segment key={sg.key} curve={sg.curve} angle={sg.angle} color={sg.color} flowing={!replay && i === segs.length - 1} /> : null
+        )}
+        {partial && frac > 0 && (
+          <Polyline
+            positions={partial.curve.slice(0, Math.floor(frac * CURVE_STEPS) + 1).concat([headPos as [number, number]])}
+            pathOptions={{ color: partial.color, weight: 3, opacity: 0.95, lineCap: 'round', interactive: false }}
+          />
+        )}
+        {headPos && <Marker position={headPos} icon={headIcon} interactive={false} zIndexOffset={1000} />}
 
-        {points.map((p) => (
+        {visiblePoints.map((p) => (
           <Marker key={`${p.city}-${p.label}`} position={[p.lat, p.lng]} icon={venueIcon(p.count)}>
             <Popup>
               <div style={{ fontSize: 13 }}>
@@ -231,6 +315,63 @@ export default function TourMap({
         >
           <span className="bg-stage-950/90 px-4 py-2 font-bold">輕觸以操作地圖</span>
         </button>
+      )}
+
+      {/* 播放巡演：沒開始時只有一顆按鈕；開始後底部出現播放列（暫停／拖動／目前的場次） */}
+      {canReplay && !replay && (
+        <button
+          type="button"
+          onClick={start}
+          className="absolute bottom-3 left-3 z-[1100] flex items-center gap-2 border-2 border-signal bg-stage-950/90 px-3 py-2 text-xs font-bold text-paper backdrop-blur transition hover:bg-signal"
+        >
+          <span aria-hidden>▶</span> 播放巡演
+        </button>
+      )}
+      {canReplay && replay && current && (
+        <div className="absolute inset-x-2 bottom-2 z-[1100] border-2 border-stage-700 bg-stage-950/92 p-2.5 backdrop-blur sm:inset-x-3 sm:bottom-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={togglePlay}
+              aria-label={playing ? '暫停' : t >= N - 1 ? '重播' : '播放'}
+              className="flex h-8 w-8 shrink-0 items-center justify-center bg-signal text-sm font-bold text-paper"
+            >
+              {playing ? '❚❚' : t >= N - 1 ? '↻' : '▶'}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={N - 1}
+              step={1}
+              value={idx}
+              onChange={(e) => {
+                setPlaying(false);
+                setT(Number(e.target.value));
+              }}
+              aria-label="巡演進度"
+              className="min-w-0 flex-1 accent-signal"
+            />
+            <span className="shrink-0 font-accent text-xs tabular-nums text-stone-400">
+              {pad(idx + 1)}/{pad(N)}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setPlaying(false);
+                setReplay(false);
+                setT(0);
+              }}
+              className="shrink-0 px-1 text-xs text-stone-400 underline underline-offset-2 hover:text-paper"
+            >
+              結束
+            </button>
+          </div>
+          <p className="mt-1.5 truncate text-xs text-stone-300">
+            <span className="font-accent tabular-nums text-marquee">{formatDate(current.date)}</span>
+            <span className="mx-1.5 text-stone-600">・</span>
+            {current.title}
+          </p>
+        </div>
       )}
     </div>
   );
