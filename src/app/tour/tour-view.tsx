@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import { BarRow } from '@/components/BarRow';
+import SectionNav from '@/components/SectionNav';
 import { countryOfVenue, distanceKm, getCityOf, venueGroupName } from '@/lib/geo';
 import { matchesFilter } from '@/lib/show-filter';
 import { useStatsFilter } from '../stats/stats-shell';
@@ -33,7 +34,7 @@ const nf = new Intl.NumberFormat('zh-TW');
  * 巡演足跡的主體：數字摘要、地圖、城市排行、場地排行，都只算符合上方篩選（分類、入場、國家、城市、期間）的場次，
  * 篩選條件和歌單統計頁共用。逐月演出趨勢（children）看的是整個歷史，不受篩選影響。
  */
-export default function TourView({ shows, children }: { shows: TourShow[]; children?: ReactNode }) {
+export default function TourView({ shows, sections: extraSections = [], children }: { shows: TourShow[]; /** children 裡各區塊的導覽項目（id 要和區塊上的 id 對得上） */ sections?: { id: string; label: string }[]; children?: ReactNode }) {
   const filter = useStatsFilter();
   const [showRoute, setShowRoute] = useState(true);
 
@@ -128,6 +129,7 @@ export default function TourView({ shows, children }: { shows: TourShow[]; child
     return (
       <div>
         <p className="mt-10 border border-dashed border-stage-700 p-6 text-center text-sm text-stone-500">這個篩選條件下，沒有符合的演出。</p>
+        {extraSections.length > 0 && <SectionNav sections={extraSections} label="巡演區塊" />}
         {children}
       </div>
     );
@@ -141,7 +143,9 @@ export default function TourView({ shows, children }: { shows: TourShow[]; child
         {unlocated > 0 && `（其中 ${unlocated} 場還沒有定位資料，不會顯示在地圖上）`}
       </p>
 
-      <section className="mt-4 grid grid-cols-2 gap-px border-2 border-stage-700 bg-stage-700 sm:grid-cols-4" aria-label="巡演數字摘要">
+      <SectionNav sections={[{ id: 'map', label: '地圖與路線' }, { id: 'ranking', label: '城市與場地' }, ...extraSections]} label="巡演區塊" className="mt-8" />
+
+      <section className="mt-6 grid grid-cols-2 gap-px border-2 border-stage-700 bg-stage-700 sm:grid-cols-4" aria-label="巡演數字摘要">
         {summary.map((x) => (
           <div key={x.label} className="bg-stage-900 p-4">
             <p className="text-xs text-stone-500">{x.label}</p>
@@ -154,7 +158,7 @@ export default function TourView({ shows, children }: { shows: TourShow[]; child
         ))}
       </section>
 
-      <section className="mt-10">
+      <section id="map" className="mt-10 scroll-mt-28">
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="section-title flex-1 text-xl">演出地圖與移動路線</h2>
           <label className="flex shrink-0 items-center gap-2 text-xs text-stone-400">
@@ -165,7 +169,7 @@ export default function TourView({ shows, children }: { shows: TourShow[]; child
         <MapLoader points={stats.dots} route={showRoute ? stats.route : []} />
       </section>
 
-      <div className="mt-14 grid gap-12 lg:grid-cols-2 lg:gap-10">
+      <div id="ranking" className="mt-14 grid scroll-mt-28 gap-12 lg:grid-cols-2 lg:gap-10">
         <section className="min-w-0">
           <h2 className="section-title mb-2 text-xl">城市排行</h2>
           <p className="mb-4 text-sm text-stone-500">各城市的演出場數。</p>

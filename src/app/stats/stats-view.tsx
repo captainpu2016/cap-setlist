@@ -1,5 +1,6 @@
 'use client';
 
+import SectionNav from '@/components/SectionNav';
 import { isFiltered, matchesFilter } from '@/lib/show-filter';
 import { computeStats, groupCoversByArtist, rankTopSongs } from '@/lib/stats';
 import type { StatsShow } from '@/lib/stats-shows';
@@ -34,8 +35,6 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
     { id: 'trend', label: '每年的歌單' },
     ...(s.coverSongs.length > 0 ? [{ id: 'covers', label: '曾經翻唱過的歌' }] : [])
   ];
-  // 錨點不用網址 #，因為 # 已經拿來放篩選條件
-  const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
     <>
@@ -46,21 +45,7 @@ export default function StatsView({ shows: allShows, today }: { shows: StatsShow
       ) : (
         <>
           {/* 區塊導覽：長頁面直接跳到想看的地方，捲動時固定在上方 */}
-          <nav aria-label="統計區塊" className="sticky top-14 z-30 -mx-6 mt-10 border-y border-stage-700 bg-stage-950/90 px-6 backdrop-blur sm:-mx-10 sm:px-10">
-            <ul className="flex gap-1 overflow-x-auto py-2">
-              {sections.map((x) => (
-                <li key={x.id} className="shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => jump(x.id)}
-                    className="px-3 py-1.5 font-accent text-xs font-semibold uppercase tracking-[0.15em] text-stone-400 transition-colors hover:text-marquee"
-                  >
-                    {x.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <SectionNav sections={sections} label="統計區塊" />
 
           <section id="top" className="mt-12 scroll-mt-28">
             <h2 className="section-title mb-5 text-2xl">常唱的歌</h2>

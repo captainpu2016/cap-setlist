@@ -96,8 +96,15 @@ export default async function TourPage() {
           filterShows={filterShows}
           description="歷年演出的地點、移動路線，以及逐月演出節奏。"
         >
-          <TourView shows={tourShows}>
-            <section className="mt-14">
+          <TourView
+            shows={tourShows}
+            sections={[
+              { id: 'monthly', label: '逐月趨勢' },
+              ...(byCategory.length > 0 ? [{ id: 'types', label: '類型比較' }] : []),
+              { id: 'compare', label: '年度比較' }
+            ]}
+          >
+            <section id="monthly" className="mt-14 scroll-mt-28">
               <h2 className="section-title mb-1 text-xl">逐月演出趨勢</h2>
               <p className="mb-4 text-sm text-stone-500">看的是整個歷史，不受上方篩選影響。</p>
               {monthlyTimeline.length > 0 ? (
@@ -108,7 +115,7 @@ export default async function TourPage() {
             </section>
 
             {byCategory.length > 0 && (
-              <section className="mt-14">
+              <section id="types" className="mt-14 scroll-mt-28">
                 <h2 className="section-title mb-1 text-xl">不同類型的演出</h2>
                 <p className="mb-4 text-sm text-stone-500">
                   長條是各類型的演出場數；名稱下方是平均每場首數與翻唱占比（只算已公開歌單的場次，不受上方篩選影響）。
@@ -117,7 +124,7 @@ export default async function TourPage() {
               </section>
             )}
 
-            <section className="mt-14">
+            <section id="compare" className="mt-14 scroll-mt-28">
               <h2 className="section-title mb-1 text-xl">年度比較</h2>
               <p className="mb-4 text-sm text-stone-500">自己選兩個年份（或「全部」），比較演出場次、歌曲、城市，以及演出類型的比例變化（不受上方篩選影響）。</p>
               <YearCompare shows={statsShows} today={todayTaipei()} />

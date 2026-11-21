@@ -140,15 +140,19 @@ export default function YearCompare({ shows, today }: { shows: StatsShow[]; toda
     </label>
   );
 
+  // 手機上三張卡並排很窄：「比較期間」小字在上、「對照期間」大字在下（直式）；電腦上維持「前 → 後」一行
   const stat = (label: string, va: number, vb: number, unit: string) => (
-    <div className="border border-stage-700 p-4">
+    <div className="min-w-0 border border-stage-700 p-3 sm:p-4">
       <p className="font-accent text-[11px] uppercase tracking-[0.25em] text-stone-500">{label}</p>
-      <div className="mt-2 flex items-end justify-between gap-3 tabular-nums">
-        <span className="text-2xl font-bold text-stone-300">{va}</span>
-        <span className="text-stone-600" aria-hidden>→</span>
-        <span className="text-3xl font-bold text-paper">{vb}</span>
+      <div className="mt-2 flex flex-col gap-0.5 tabular-nums sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+        <span className="text-sm font-bold text-stone-400 sm:text-2xl sm:text-stone-300">
+          {va}
+          <span className="ml-1 text-stone-600 sm:hidden" aria-hidden>→</span>
+        </span>
+        <span className="hidden text-stone-600 sm:inline" aria-hidden>→</span>
+        <span className="text-3xl font-bold leading-none text-paper">{vb}</span>
       </div>
-      <p className="mt-1 text-right text-xs">
+      <p className="mt-1.5 text-xs sm:text-right">
         <Delta a={va} b={vb} unit={unit} />
       </p>
     </div>
@@ -169,7 +173,7 @@ export default function YearCompare({ shows, today }: { shows: StatsShow[]; toda
         <p className="mt-6 text-sm text-stone-500">這兩個期間都還沒有場次。</p>
       ) : (
         <>
-          <div className="mt-6 grid grid-cols-3 gap-3">
+          <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
             {stat('場次', sa.shows, sb.shows, '場')}
             {stat('不同的歌', sa.songs, sb.songs, '首')}
             {stat('城市', sa.cities, sb.cities, '座')}
