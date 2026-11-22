@@ -21,6 +21,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    // 縮好的圖快取 30 天（預設只有 60 秒，會讓同一張圖被反覆重新縮圖、很快用完 Vercel 的圖片最佳化額度）。
+    // 換圖時請用新的檔名；用同一個檔名覆蓋的話，舊的縮圖最多會再顯示 30 天。
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       { protocol: 'https', hostname: 'i.scdn.co' },
       ...(supabaseHost ? [{ protocol: 'https', hostname: supabaseHost }] : [])
